@@ -2,18 +2,16 @@
   <ion-menu side="start" menuId="first" contentId="main">
     <ion-header class="ion-no-border">
       <ion-toolbar class="ion-padding ion-no-border " >
-        <ion-title >{{userName}}
-          <!-- <p class="cargo ion-no-margin">Cargo/Empresa</p> -->
-        </ion-title>
-
+        <!--NOVO TITULO-->
+        <ion-title class="menu-title">{{ menuTitle }}</ion-title>
       </ion-toolbar>
     </ion-header>
     <ion-content>
       <ion-list>
         <ion-item (click)="redirect('new-home')" lines="none" class="ion-no-border ion-margin-vertical"><ion-icon name="home"></ion-icon>Home</ion-item>
-        <ion-item (click)="redirect('profile')" lines="none" class="ion-no-border ion-margin-vertical"><ion-icon name="person-circle-outline"></ion-icon>Meu perfil</ion-item>
-        <ion-item (click)="redirect('home')" lines="none" class="ion-no-border ion-margin-vertical"><ion-icon name="person-circle-outline"></ion-icon>Nova requisição</ion-item>
-        <ion-item (click)="redirect('home-estoque')" lines="none" class="ion-no-border ion-margin-vertical"><ion-icon name="person-circle-outline"></ion-icon>Reserva de Equipamentos </ion-item>
+        <ion-item (click)="redirect('home')" lines="none" class="ion-no-border ion-margin-vertical"><ion-icon name="person-circle-outline"></ion-icon>Obras</ion-item>
+        <ion-item (click)="redirect('frotas-home')" lines="none" class="ion-no-border ion-margin-vertical"><ion-icon name="person-circle-outline"></ion-icon>Frotas</ion-item>
+        <ion-item (click)="redirect('profile')" lines="none" class="ion-no-border ion-margin-vertical"><ion-icon name="person-circle-outline"></ion-icon>Meu Perfil </ion-item>
         <!--<ion-item  lines="none" class="ion-no-border ion-margin-vertical"><ion-icon name="person-circle-outline"></ion-icon>Entrega de Termo</ion-item>
         <ion-item  lines="none" class="ion-no-border ion-margin-vertical"><ion-icon name="person-circle-outline"></ion-icon>Baixa de Termo</ion-item>-->
         <!-- <ion-item lines="none" class="ion-no-border"><ion-icon name="notifications-outline"></ion-icon>Notificações</ion-item> -->

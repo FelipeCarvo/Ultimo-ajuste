@@ -1,0 +1,119 @@
+:host {
+  ion-content {
+    /* Fundo azul da tela de frotas */
+    --background: #083244;
+  }
+
+  --btn-green-start: #2ec46f;
+  --btn-green-end:   #1fb45e;
+}
+
+/* ===== HEADER (remove faixa preta e iguala ao fundo) ===== */
+ion-header {
+  background: #083244;
+
+  ion-toolbar {
+    --background: #083244;
+    background: #083244;
+    --border-width: 0;
+    --border-color: transparent;
+    --padding-start: 0;
+    --padding-end: 0;
+    --padding-top: 0;
+    --padding-bottom: 0;
+    box-shadow: none;
+  }
+
+  .logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px 0 8px;
+
+    #logo-login {
+      height: 64px;
+      width: auto;
+      display: block;
+    }
+  }
+}
+
+/* ===== CONTEÚDO PRINCIPAL ===== */
+.home-content {
+  --background: #083244;
+}
+
+/* Wrapper onde ficam os botões */
+.buttons-wrapper {
+  padding: 24px 16px 16px; /* dá um respiro em cima dos botões */
+}
+
+.buttons-row {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== BOTÕES VERDES ===== */
+.btnGreen {
+  --background: linear-gradient(90deg, var(--btn-green-start), var(--btn-green-end));
+  --background-activated: linear-gradient(90deg, #28b766, #1aa953);
+  --border-radius: 10px;
+  --box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+  --color: #ffffff;
+
+  height: 48px;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.2px;
+  text-transform: none;
+
+  transition: transform 0.08s ease;
+}
+
+/* espaçamento entre os botões */
+.btn-home {
+  margin-bottom: 16px;
+}
+
+.btnGreen:active {
+  transform: translateY(1px);
+}
+
+/* Grid do header */
+ion-header ion-row > ion-col {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+
+@media (max-width: 767px) {
+  ion-header ion-row > ion-col {
+    margin-top: 8px;
+  }
+}
+
+/* (legacy) – caso ainda use em alguma parte da tela */
+.position-relative {
+  height: 80px !important;
+}
+
+.principalDiv {
+  padding-top: 0;
+}
+
+.filter-p {
+  color: #9fb6c3;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+p.ion-margin-vertical {
+  color: #9fb6c3;
+}
+
+ion-card,
+ion-item,
+ion-list {
+  --background: #0b3e52;
+  --ion-item-background: #0b3e52;
+  color: #e5f0f6;
+}

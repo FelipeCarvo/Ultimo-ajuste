@@ -1,0 +1,67 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar lines="none">
+    <ion-grid>
+      <ion-row class="header-row ion-align-items-center">
+        <ion-col size="auto">
+          <ion-buttons>
+            <ion-menu-button autoHide="false">
+              <ion-icon name="menu" class="ion-padding"></ion-icon>
+            </ion-menu-button>
+          </ion-buttons>
+        </ion-col>
+
+        <ion-col class="ion-text-center">
+          <div class="logo">
+            <img id="logo-login" src="../../assets/whiteLogo.svg" />
+          </div>
+        </ion-col>
+
+        <ion-col size="auto" class="menu-placeholder">
+          <ion-icon
+            name="menu"
+            class="ion-padding"
+            style="visibility: hidden;">
+          </ion-icon>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </ion-toolbar>
+</ion-header>
+<ion-content class="home-content">
+  <ion-grid class="buttons-wrapper">
+    <!-- Linha de cima: dois botões lado a lado -->
+    <ion-row class="ion-justify-content-center top-row">
+      <ion-col size="6" class="button-col">
+        <ion-button
+          class="btnGreen btn-abastecimento"
+          expand="block"
+          (click)="goAbastecimentoProprio()">
+          Abastecimento<br>Próprio
+        </ion-button>
+      </ion-col>
+
+      <ion-col size="6" class="button-col">
+        <ion-button
+          class="btnGreen btn-abastecimento"
+          expand="block"
+          (click)="goAbastecimentoPostos()">
+          Abastecimento<br>em Postos
+        </ion-button>
+      </ion-col>
+    </ion-row>
+
+    <!-- Linha de baixo: botão Voltar ocupando toda a largura -->
+    <ion-row class="ion-justify-content-center bottom-row">
+      <ion-col size="12" class="button-col">
+        <ion-button
+          class="btnGreen btn-voltar"
+          expand="block"
+          (click)="voltar()">
+          Voltar
+        </ion-button>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+</ion-content>
+
+

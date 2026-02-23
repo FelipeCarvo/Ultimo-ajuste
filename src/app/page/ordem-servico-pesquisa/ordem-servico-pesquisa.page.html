@@ -1,0 +1,68 @@
+<ion-header class="os-header">
+  <ion-toolbar lines="none">
+    <div class="os-header-bar">
+      <button class="os-back-btn" (click)="onBack()">
+        <img src="../../assets/icon/topoRequest.svg" alt="Voltar" />
+      </button>
+
+      <h1 class="os-title">Ordem de Serviço - Pesquisa</h1>
+
+      <div class="os-header-spacer"></div>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="os-content">
+  <div class="os-page">
+
+    <!-- Lista de OS -->
+    <ng-container *ngIf="listaOs?.length; else semResultado">
+
+      <div class="os-card" *ngFor="let os of listaOs">
+
+        <!-- HEADER DO CARD -->
+        <div class="os-card-header">
+          <div class="os-card-os">
+            N° OS: {{ os.osCod }}
+          </div>
+
+          <div class="os-card-status">
+            {{ os.statusDescricao }}
+          </div>
+        </div>
+
+        <!-- CORPO -->
+        <div class="os-card-body">
+          <div class="os-line">
+            <span class="os-label">Descrição:</span>
+            <span class="os-value">{{ os.osDescricao }}</span>
+          </div>
+
+          <div class="os-line">
+            <span class="os-label">Equipamento:</span>
+            <span class="os-value">
+              {{ os.equipCod }} - {{ os.equipIndentificador }}
+            </span>
+          </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="os-card-footer">
+          <button class="os-details-btn" (click)="verDetalhes(os)">
+            VER DETALHES
+          </button>
+        </div>
+
+      </div>
+
+    </ng-container>
+
+    <!-- Estado vazio -->
+    <ng-template #semResultado>
+      <div class="os-empty">
+        <p>Nenhuma Ordem de Serviço encontrada.</p>
+      </div>
+    </ng-template>
+
+  </div>
+</ion-content>

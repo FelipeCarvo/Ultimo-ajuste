@@ -1,0 +1,348 @@
+<ion-header class="os-header">
+  <ion-toolbar lines="none">
+    <div class="os-header-bar">
+      <!-- ícone casinha -->
+      <button class="os-back-btn" (click)="onBack()">
+        <img src="../../assets/icon/topoRequest.svg" alt="Voltar" />
+      </button>
+
+      <h1 class="os-title">Ordem de Serviço - Edição</h1>
+
+      <!-- só pra equilibrar o header -->
+      <div class="os-header-spacer"></div>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="os-content">
+  <div class="os-page">
+    <div class="os-card">
+      <form class="os-form">
+
+<!-- Número Ordem Serviço -->
+<div class="os-field">
+  <label class="os-label">Número Ordem Serviço</label>
+
+  <ion-input
+    class="os-input numero-os-disabled"
+    type="text"
+    name="numeroOS"
+    [(ngModel)]="numeroOS"
+    placeholder="Gerado automaticamente"
+    disabled>
+  </ion-input>
+</div>
+
+
+
+        <!-- Descrição -->
+        <div class="os-field">
+          <label class="os-label">Descrição</label>
+        <input
+          type="text"
+          class="os-input os-uppercase"
+          name="descricao"
+          [(ngModel)]="descricao"
+          (input)="descricao = descricao.toUpperCase()"
+        />
+        </div>
+
+<!-- EQUIPAMENTO -->
+<div class="os-field">
+  <label class="os-label">Equipamento</label>
+  
+  <app-autocomplete
+    [lista]="equipamentosLista"
+    [valorSelecionado]="equipamento"
+    campoDescricao="descricao"
+    (selecionado)="onEquipamentoSelecionado($event)">
+  </app-autocomplete>
+</div>
+
+   <!-- EMPREENDIMENTO -->
+<div class="os-field">
+  <label class="os-label">Empreendimento</label>
+
+  <app-autocomplete
+    [lista]="empreendimentosLista"
+    [valorSelecionado]="empreendimento"
+    campoDescricao="descricao"
+    (selecionado)="onEmpreendimentoSelecionado($event)">
+  </app-autocomplete>
+</div>
+
+
+<!-- Datas (Abertura / Conclusão) lado a lado -->
+<div class="os-group-inline">
+
+  <!-- Data Abertura -->
+  <div class="os-group-half">
+    <label class="os-label">Data Abertura</label>
+
+    <div
+      class="os-date-field"
+      [ngClass]="{ 'has-value': dataAbertura }"
+      (click)="openCalendar($event, 'dataAbertura')"
+    >
+      <span class="os-date-value">
+        {{ formatDate(dataAbertura) || 'dd/mm/aaaa' }}
+      </span>
+
+      <div class="os-date-icons">
+        <!-- ícone calendário -->
+        <ion-icon name="calendar-outline"></ion-icon>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Conclusão -->
+  <div class="os-group-half">
+    <label class="os-label">Data Conclusão</label>
+
+    <div
+      class="os-date-field"
+      [ngClass]="{ 'has-value': dataConclusao }"
+      (click)="openCalendar($event, 'dataConclusao')"
+    >
+      <span class="os-date-value">
+        {{ formatDate(dataConclusao) || 'dd/mm/aaaa' }}
+      </span>
+
+      <div class="os-date-icons">
+        <!-- botão limpar -->
+        <ion-icon
+          name="close-circle"
+          *ngIf="dataConclusao"
+          (click)="limparData('dataConclusao'); $event.stopPropagation()"
+        ></ion-icon>
+
+        <!-- ícone calendário -->
+        <ion-icon name="calendar-outline"></ion-icon>
+      </div>
+    </div>
+  </div>
+</div>
+
+    <!-- CLASSIFICAÇÃO -->
+<div class="os-field">
+  <label class="os-label">Classificação</label>
+
+  <app-autocomplete
+    [lista]="classificacoesLista"
+    [valorSelecionado]="classificacao"
+    campoDescricao="descricao"
+    (selecionado)="onClassificacaoSelecionada($event)">
+  </app-autocomplete>
+</div>
+
+<!-- TIPO -->
+<div class="os-field">
+  <label class="os-label">Tipo</label>
+
+  <app-autocomplete
+    [lista]="tiposOsLista"
+    [valorSelecionado]="tipo"
+    campoDescricao="descricao"
+    (selecionado)="onTipoSelecionado($event)">
+  </app-autocomplete>
+</div>
+
+ <!-- CAUSA DA INTERVENÇÃO -->
+<div class="os-field">
+  <label class="os-label">Causa da Intervenção</label>
+
+  <app-autocomplete
+    [lista]="causasIntervencaoLista"
+   [valorSelecionado]="causaIntervencao"
+    campoDescricao="descricao"
+    (selecionado)="onCausaSelecionada($event)">
+  </app-autocomplete>
+</div>
+
+
+<!-- OPERADOR / MOTORISTA -->
+<div class="os-field">
+  <label class="os-label">Operador / Motorista</label>
+
+  <app-autocomplete
+    [lista]="motoristasLista"
+    [valorSelecionado]="operadorMotorista"
+    campoDescricao="colaboradorNome"
+    (selecionado)="onMotoristaSelecionado($event)">
+  </app-autocomplete>
+</div>
+
+
+  <!-- EMPREENDIMENTO DA INTERVENÇÃO -->
+<div class="os-field">
+  <label class="os-label">Empreendimento da Intervenção</label>
+
+  <app-autocomplete
+    [lista]="empreendimentosLista"
+    [valorSelecionado]="empreendimentoIntervencao"
+    campoDescricao="descricao"
+    (selecionado)="onEmpreendimentoIntervSelecionado($event)">
+  </app-autocomplete>
+</div>
+
+
+
+<div class="os-group-inline">
+  <div class="os-group-half">
+    <label class="os-label">Hodômetro</label>
+    <input
+  class="os-input"
+  type="number"
+  [(ngModel)]="hodometro"
+  name="hodometro"
+/>
+  </div>
+
+  <div class="os-group-half">
+    <label class="os-label">Horímetro</label>
+ <input
+  class="os-input"
+  type="number"
+  [(ngModel)]="horimetro"
+  name="horimetro"
+/>
+  </div>
+</div>
+
+<!-- STATUS -->
+<div class="os-field">
+  <label class="os-label">Status</label>
+
+  <app-autocomplete
+    [lista]="statusLista"
+   [valorSelecionado]="statusCodigo"
+    campoDescricao="descricao"
+    (selecionado)="onStatusSelecionado($event)">
+  </app-autocomplete>
+</div>
+
+
+<!-- MANUTENTOR -->
+<div class="os-field">
+  <label class="os-label">Manutentor</label>
+
+  <app-autocomplete
+    [lista]="manutentoresLista"
+    [valorSelecionado]="manutentor"
+    campoDescricao="colaboradorNome"
+    (selecionado)="onManutentorSelecionado($event)">
+  </app-autocomplete>
+</div>
+
+     <!--ADIÇÃO DOS NOVOS CAMPOS-->
+        <div class="os-field">
+        <label class="os-label">Defeitos Constatados</label>
+       <textarea
+        class="os-textarea-native"
+        [(ngModel)]="defeitosConstatados"
+        name="defeitosConstatados">
+       </textarea>
+        </div>
+
+      <div class="os-field">
+        <label class="os-label">Causas Prováveis</label>
+      <textarea
+        class="os-textarea-native"
+        [(ngModel)]="causasProvaveis"
+        name="causasProvaveis">
+      </textarea>
+      </div>
+
+      <div class="os-field">
+        <label class="os-label">Observações</label>
+        <textarea
+          class="os-textarea-native"
+          [(ngModel)]="observacoes"
+          name="observacoes">
+        </textarea>
+      </div>
+
+      <div class="os-field">
+        <label class="os-label">Fotos</label>
+
+        <div *ngIf="fotos?.length; else semFoto" class="os-photo-grid">
+          <img
+            *ngFor="let f of fotos; let i = index"
+            class="os-photo-thumb"
+            [src]="f.dataUrl"
+            alt="Foto da OS"
+            (click)="abrirFotoOverlay(i)"
+          />
+          <div class="os-photo-hint"></div>
+        </div>
+
+        <ng-template #semFoto>
+          <div class="os-photo-empty">Nenhuma foto anexada</div>
+        </ng-template>
+      </div>
+
+      
+<!--ADIÇÃO DOS NOVOS BOTÕES-->
+    <div class="os-actions-column">
+      <button
+        class="os-confirm-btn"
+        (click)="salvarOS()"
+        [disabled]="carregando"
+        type="button">
+        CONFIRMAR
+      </button>
+
+<ion-button
+  expand="block"
+  fill="outline"
+  class="btn-anexar-foto"
+  (click)="irParaNovaFoto()">
+  ANEXAR FOTO
+</ion-button>
+
+
+    </div>
+
+      </form>
+    </div>
+  </div>
+
+  <ion-modal
+  [isOpen]="fotoModalAberto"
+  (didDismiss)="fecharFotoOverlay()"
+  cssClass="os-foto-modal"
+>
+  <ng-template>
+    <ion-content class="os-foto-modal-content">
+
+      <div class="os-foto-modal-card">
+
+        <!-- IMAGEM -->
+        <img
+          class="os-foto-modal-img"
+          [src]="fotoPreviewDataUrl"
+          alt="Foto da OS"
+        />
+
+        <!-- BOTÕES -->
+        <button
+          class="os-primary-btn"
+          type="button"
+          (click)="fecharFotoOverlay()"
+        >
+          FECHAR
+        </button>
+
+        <button
+          class="os-secondary-btn"
+          type="button"
+          (click)="excluirFotoLocal()"
+        >
+          EXCLUIR FOTO
+        </button>
+
+      </div>
+
+    </ion-content>
+  </ng-template>
+</ion-modal>

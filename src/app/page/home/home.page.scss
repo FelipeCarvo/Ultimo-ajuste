@@ -1,69 +1,140 @@
+:host {
+  ion-content {
+    --background: #083244; 
+  }
 
-    ion-header{ 
-        height: 320px;
-        width: 100%;
-        background-color: #023A51;
-        ::before {
-            position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-            background:url('../../../assets/img/loginBg.png') #023A51;
-            background-repeat: no-repeat;
-            background-size: cover;
-            opacity: .3;
-            content: "";
-            mix-blend-mode: multiply;
-            z-index: -1;
-            box-shadow: 0px 2px 36px rgba(0, 0, 0, 0.08);
-            border-radius: 0px 0px 18px 18px;
-        }
-        &::after{
-            content: none;
-        }
-        ion-toolbar{
-            --background:transparent;
-            --border-width: 0px;
-            height: 100%;
-            align-items: center;
-            display: flex;
-            ::before{
-                content: none;
-            }
-        }
-    }
-    .btnGreen{
-        width: 100%;
-        font-weight: 600;
-        --border-radius: 9px;
-        font-size: 22px;
-        --background: linear-gradient(180deg, #2CBC63 0%, #25AD59 100%);
-        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.12);
-        position: absolute;
-        top: -30px;
-        z-index: 10;
-        height: 80px;
-        letter-spacing: -0.08px;
-        line-height: 18px;
-    }
-    .principalDiv{
-        background: rgba(2, 58, 81, 1);
-        box-shadow: 0px 2px 36px rgb(0 0 0 / 30%);
-        border-radius: 18px 18px 0px 0px;
-        // margin-top:80px;
-        height: auto;
-        p{
-            color: #4682B4;
-        }
-        h3{
-            color: #4682B4;
-            font-size: 18px;
-        }
-        .box{
-            height: 100px;
-            background-color: #02435E;
-            border-radius: 9px;
-        }
-    }
+  --btn-green-start: #2ec46f;
+  --btn-green-end:   #1fb45e;
+}
 
+ion-header {
+  ion-toolbar {
+    --background: transparent;
+    --border-width: 0;
+    --border-color: transparent;
+    --padding-start: 0;
+    --padding-end: 0;
+    --padding-top: 0;
+    --padding-bottom: 0;
+  }
+
+  .logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px 0 8px;
+
+    #logo-login {
+      height: 64px;          
+      width: auto;
+      display: block;
+    }
+  }
+}
+
+
+.position-relative {
+  height: 80px !important; 
+}
+
+.btnGreen {
+  --background: linear-gradient(90deg, var(--btn-green-start), var(--btn-green-end));
+  --background-activated: linear-gradient(90deg, #28b766, #1aa953);
+  --border-radius: 10px;
+  --box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+  --color: #ffffff;
+
+  height: 48px;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.2px;
+  text-transform: none;
+
+
+  transition: transform .08s ease;
+}
+.btnGreen:active {
+  transform: translateY(1px);
+}
+
+ion-header ion-row > ion-col {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+
+@media (max-width: 767px) {
+  ion-header ion-row > ion-col {
+    margin-top: 8px;
+  }
+}
+
+.principalDiv {
+  padding-top: 0; 
+}
+
+.filter-p {
+  color: #9fb6c3;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+p.ion-margin-vertical {
+  color: #9fb6c3;
+}
+
+ion-card,
+ion-item,
+ion-list {
+  --background: #0b3e52;
+  --ion-item-background: #0b3e52;
+  color: #e5f0f6;
+
+
+
+
+}
+.buttons-wrapper {
+  margin-top: 24px; // distância da logo até os botões
+}
+
+.buttons-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;        // espaço entre os dois botões
+}
+
+.btn-home {
+  width: 160px;     // largura fixa IGUAL pros dois botões
+  height: 56px;
+  border-radius: 8px;
+  text-align: center;
+  white-space: normal; // permite quebrar linha dentro do botão
+}
+ion-header ion-toolbar {
+  /* mesma cor de fundo padrão do app,
+     pra não ficar aquela faixa preta */
+  --background: transparent;
+}
+
+ion-content {
+  --background: #00384c; // usa a cor que o resto do app está usando
+}
+
+.home-bg {
+  min-height: 100%;
+}
+
+/* área dos botões de cima */
+.buttons-wrapper {
+  margin-top: 16px;
+}
+
+.buttons-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.btn-home {
+  flex: 1;
+}

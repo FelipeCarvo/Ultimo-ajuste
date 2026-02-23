@@ -1,0 +1,235 @@
+/* HEADER no padrão das outras telas */
+.os-header,
+.os-header ion-toolbar {
+  --background: #f4f6f9 !important;
+  background: #f4f6f9 !important;
+  color: #2d6fb1;
+  --border-width: 0;
+}
+
+.os-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px 10px;
+}
+
+.os-header-spacer {
+  width: 24px;
+}
+
+.os-back-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  align-items: center;
+
+  img {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.os-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d6fb1;
+}
+
+/* Fundo da página */
+.os-content {
+  --background: #f4f6f9;
+}
+
+.os-page {
+  display: flex;
+  justify-content: center;
+  padding: 12px 12px 24px;
+}
+
+/* Card principal */
+.os-card {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 7px 16px rgba(0, 0, 0, 0.08);
+  padding: 18px 18px 24px;
+}
+
+/* Campos base */
+.abp-field {
+  margin-bottom: 12px;
+}
+
+.abp-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2d6fb1;
+}
+
+.abp-input {
+  --background: #f9fbff;
+  --padding-start: 10px;
+  --padding-end: 10px;
+  --min-height: 40px;
+  --color: #3a3a3a;
+
+  border-radius: 8px;
+  border: 1px solid #dde5f2;
+  font-size: 13px;
+
+  /* foco azul igual as outras telas */
+  --highlight-color-focused: #2d6fb1;
+  --highlight-color: #2d6fb1;
+  --highlight-color-valid: #2d6fb1;
+  --highlight-color-invalid: #2d6fb1;
+}
+
+.abp-input.ion-focused {
+  border-color: #2d6fb1 !important;
+}
+
+/* Select no mesmo estilo */
+.abp-select {
+  --color: #333;
+  --placeholder-color: #a0b2cf;
+  --placeholder-opacity: 1;
+  --padding-end: 32px;
+}
+
+/* Linhas com 2 ou 3 colunas */
+.abp-group-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.abp-group-row .abp-half {
+  flex: 0 0 48%;
+  max-width: 48%;
+  min-width: 0;
+}
+
+ion-select.abp-select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  --placeholder-color: #9a9a9a;
+  --placeholder-opacity: 1;
+}
+
+ion-select.abp-select::part(text) {
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.abp-half {
+  flex: 1;
+}
+
+.abp-third {
+  flex: 1;
+}
+
+/* DATA – ícone dentro do campo */
+.abp-date-input {
+  position: relative;
+}
+
+.abp-date-input .abp-input {
+  --padding-start: 12px;
+  --padding-end: 40px; // espaço pro ícone
+}
+
+.abp-date-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid #dde5f2;
+  background: #f4f7ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  z-index: 2;
+}
+
+.abp-date-btn ion-icon {
+  font-size: 16px;
+  color: #a0b2cf;
+}
+
+/* Botão confirmar */
+.abp-actions {
+  margin-top: 18px;
+}
+
+.abp-primary-btn {
+  width: 100%;
+  border: none;
+  border-radius: 22px;
+  padding: 10px 16px;
+  background: #e4f1ff;
+  color: #2d6fb1;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  font-size: 13px;
+}
+/* Força o texto do ion-select a ficar visível */
+ion-select.abp-select {
+  max-width: 100%;
+  width: 100%;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  --placeholder-color: #9a9a9a;
+  --placeholder-opacity: 1;
+}
+
+/* Parte interna do texto selecionado dentro do ion-select */
+ion-select.abp-select::part(text) {
+    max-width: 100%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+  color: #333 !important;
+  opacity: 1 !important;
+}
+
+/* Detalhes do bloco */
+.abp-details-block {
+  margin-bottom: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  color: #222 !important;
+  font-size: 15px;
+  font-weight: 500;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+}
+
+.abp-details-block div {
+  margin-bottom: 2px;
+  color: #222 !important;
+  font-weight: 500;
+}
+
+.abp-details-block strong {
+  color: #1a1a1a !important;
+  font-weight: 600;
+}

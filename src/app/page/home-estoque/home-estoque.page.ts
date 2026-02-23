@@ -76,11 +76,7 @@ export class HomeEstoquePage {
     this.dataFinal = dataFim;
     this.statusRequisicao = status;
     this.empreendimentoDescricao = empreendimento;
-    // if(!!empreendimento){
-    //   this.empreendimentoDescricao = empreendimento.replace(/[^0-9]/g,'');
-    // }else{
-    //   this.empreendimentoDescricao = '';
-    // }
+  
     setTimeout(() =>{
       this.getReq();
     },250);

@@ -1,5 +1,4 @@
-
- <style>
+<style>
   .wrapper {
   position: relative;
   width: 400px;
@@ -18,8 +17,10 @@
   height:200px;
   background-color: white;
 }
- </style>
- <ion-header >
+</style>
+
+
+<ion-header>
   <ion-toolbar lines="none">
     <ion-grid>
       <ion-row class="ion-justify-content-center">
@@ -32,58 +33,36 @@
     </ion-grid>
   </ion-toolbar>
 
- <ion-grid class="ion-no-padding position-relative" style="height: 80px;">
- <!--    <ion-row>
-      <ion-col>
-      </ion-col>
-    </ion-row>
-    <ion-row>
-      <ion-col>
-        <div class="signature-pad">
-          <div>
-            <canvas class="signature-pad-canvas" #canvas width="900" height="400" style="touch-action: none;"></canvas>
-          </div>
-        </div>
-      </ion-col>
-    </ion-row>
-    <ion-row>
-      <ion-col>
-        <ion-toolbar color="primary">
-          <ion-buttons slot="end">
-            <ion-button color="light" expand="full" [disabled]="isCanvasBlank()" (click)="save()"> Save</ion-button>
-            <ion-button color="light" expand="full" (click)="undo()"> Undo</ion-button>
-            <ion-button color="light" expand="full" (click)="clear()"> Clear</ion-button>
-          </ion-buttons>
-          <ion-title>
-            Signature Pad
-          </ion-title>
-        </ion-toolbar>
-      </ion-col>
-    </ion-row>-->
+  <ion-grid class="ion-no-padding position-relative" style="height: 200px;">
     <ion-row class="ion-justify-content-center">
       <ion-col size="5" style="padding-right: 10px;">
-        <ion-button style="font-size: 15px; " class="btnGreen ion-text-capitalize" (click)="newRequest()">Requisição <br/>de Compra</ion-button>
+        <ion-button
+          style="font-size: 15px;"
+          class="btnGreen ion-text-capitalize"
+          [routerLink]="['/tabs/home']"
+        >
+          Obras
+        </ion-button>
       </ion-col>
+
       <ion-col size="5" style="padding-left: 10px;">
-        <ion-button style="font-size: 15px;" class="btnGreen ion-text-capitalize" (click)="newRequestFrotaBt()">Estoque</ion-button>
+        <ion-button
+          style="font-size: 15px;"
+          class="btnGreen ion-text-capitalize"
+          [routerLink]="['/tabs/frotas-home']"
+        >
+          Frotas
+        </ion-button>
       </ion-col>
     </ion-row>
   </ion-grid>
 </ion-header>
-<ion-content [fullscreen]="true" >
-  <div style="height: 80px;"></div>
+
+<ion-content [fullscreen]="true">
+  <div style="height: 180px;"></div>
 </ion-content>
+
+
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 <script>
-
-  const canvas = document.querySelector("canvas");
-  const signaturePad = new SignaturePad(canvas);
-  signaturePad.addEventListener("beginStroke", () => {
-    console.log("Signature started");
-  }, { once: true });
-
-
-
-
 </script>
-

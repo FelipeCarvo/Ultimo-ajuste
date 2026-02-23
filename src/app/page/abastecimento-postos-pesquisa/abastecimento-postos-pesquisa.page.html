@@ -1,0 +1,69 @@
+<ion-header class="os-header">
+  <ion-toolbar lines="none">
+    <div class="os-header-bar">
+      <!-- Casinha -->
+      <button class="os-back-btn" (click)="onBack()">
+        <img src="../../assets/icon/topoRequest.svg" alt="Voltar" />
+      </button>
+
+      <h1 class="os-title">Abastecimento em Postos - Pesquisa</h1>
+
+      <div class="os-header-spacer"></div>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="os-content">
+  <div class="os-page">
+
+    <ng-container *ngIf="resultados && resultados.length; else vazio">
+
+      <div class="os-card" *ngFor="let item of resultados">
+
+        <!-- Cabeçalho -->
+        <div class="os-card-header">
+          <div class="os-card-os">
+            Fornecedor: {{ fornecedorLabel(item) || '-' }}
+          </div>
+        </div>
+
+        <!-- Corpo -->
+        <div class="os-card-body">
+          <div class="os-line">
+            <span class="os-label">Equipamento:</span>
+            <span class="os-value">{{ equipamentoLabel(item) || '-' }}</span>
+          </div>
+
+          <div class="os-line">
+            <span class="os-label">Voucher:</span>
+            <span class="os-value">{{ item.numVoucher || item.voucher || item.Voucher || '-' }}</span>
+          </div>
+
+          <div class="os-line">
+            <span class="os-label">Data:</span>
+            <span class="os-value">{{ formatarData(item.dataAbastecimento || item.dataabastecimento || item.data) || '-' }}</span>
+          </div>
+
+          <div class="os-line" *ngIf="item.observacao">
+            <span class="os-label">Observação:</span>
+            <span class="os-value">{{ item.observacao }}</span>
+          </div>
+        </div>
+
+        <!-- Botão -->
+        <div class="os-card-footer">
+          <button type="button" class="os-details-btn" (click)="verDetalhes(item)">
+            VER DETALHES
+          </button>
+        </div>
+
+      </div>
+
+    </ng-container>
+
+    <ng-template #vazio>
+      <div class="os-empty">Nenhum abastecimento encontrado.</div>
+    </ng-template>
+
+  </div>
+</ion-content>

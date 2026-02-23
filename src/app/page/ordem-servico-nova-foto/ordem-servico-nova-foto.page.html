@@ -1,0 +1,47 @@
+<ion-header class="os-header">
+  <ion-toolbar lines="none">
+    <div class="os-header-bar">
+
+      <!-- Ícone de Voltar -->
+      <button class="os-back-btn" (click)="onBack()">
+        <img src="../../assets/icon/topoRequest.svg" alt="Voltar" />
+      </button>
+
+      <h1 class="os-title">Ordem Serviço - Fotos</h1>
+
+      <div class="os-header-spacer"></div>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+
+<ion-content class="os-content">
+
+  <div class="os-page">
+    <div class="os-card">
+
+      <!-- Campo de Foto -->
+      <div class="os-field">
+        <label class="os-label">Foto</label>
+        <button type="button" class="os-picker-btn" (click)="localizarFoto()">
+          LOCALIZAR FOTO
+        </button>
+        <div class="os-photo-box">
+          <ng-container *ngIf="(fotoBase64 || foto); else vazio">
+            <img [src]="fotoBase64 || foto" alt="Foto selecionada" class="os-photo-img" />
+          </ng-container>
+          <ng-template #vazio>
+            <span class="os-photo-placeholder">Imagem carregada aqui...</span>
+          </ng-template>
+        </div>
+      </div>
+
+      <div class="os-actions">
+        <button type="button" class="os-primary-btn" (click)="confirmarFoto()">
+          CONFIRMAR INCLUSÃO DE FOTO
+        </button>
+      </div>
+
+    </div>
+  </div>
+</ion-content>

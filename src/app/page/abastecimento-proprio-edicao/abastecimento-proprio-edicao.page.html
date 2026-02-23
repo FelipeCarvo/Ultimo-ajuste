@@ -1,0 +1,279 @@
+<ion-header class="os-header">
+  <ion-toolbar lines="none">
+    <div class="os-header-bar">
+      <!-- casinha -->
+      <button class="os-back-btn" (click)="onBack()">
+        <img src="../../assets/icon/topoRequest.svg" alt="Voltar" />
+      </button>
+
+      <h1 class="os-title">Abastecimento Próprio - Edição</h1>
+
+      <div class="os-header-spacer"></div>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="os-content">
+  <div class="os-page">
+    <div class="os-card">
+
+
+   <div class="abp-field">
+  <label class="abp-label">Origem / Tanque</label>
+  <ion-select
+    class="abp-input abp-select"
+    interface="popover"
+    placeholder="Selecione"
+    [(ngModel)]="bombaSelecionada"
+    name="bombaSelecionada"
+    (ionChange)="onBombaChange($event)"
+  >
+    <ion-select-option *ngFor="let b of bombas" [value]="b.bombaId">
+      {{ b.bombaDescricao || b.bombaCod }}
+    </ion-select-option>
+  </ion-select>
+</div>
+
+
+
+
+      <!-- Equipamento (EquipamentosMobile da API) -->
+    <div class="abp-field">
+  <label class="abp-label">Equipamento</label>
+  <ion-select
+    class="abp-input abp-select"
+    interface="popover"
+    placeholder="Selecione"
+    [(ngModel)]="equipamentoSelecionado"
+    name="equipamentoSelecionado"
+  >
+    <ion-select-option *ngFor="let e of equipamentos" [value]="e.id">
+      {{ e.descricao }}
+    </ion-select-option>
+  </ion-select>
+</div>
+
+
+      <!-- DATA – campo TODO clicável + ícone dentro -->
+      <div class="abp-field">
+        <label class="abp-label">Data do abastecimento</label>
+        <div class="abp-date-input" (click)="openCalendar($event)">
+          <ion-input
+            class="abp-input abp-date-display"
+            readonly
+            placeholder="dd/mm/aaaa"
+            [value]="formatDate(data)"
+          >
+          </ion-input>
+
+          <button type="button" class="abp-date-btn" aria-label="Abrir calendário" title="Abrir calendário">
+            <ion-icon name="calendar-clear-outline"></ion-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Bomba / Bico e Destino (ainda sem API, por enquanto só layout) -->
+      <div class="abp-group-row">
+        <div class="abp-field abp-half">
+          <label class="abp-label">Bomba / Bico</label>
+          <ion-select class="abp-input abp-select" interface="popover" placeholder="Selecione"
+            [(ngModel)]="bicoSelecionado" name="bicoSelecionado" (ionChange)="onBicoChange($event)">
+            <ion-select-option *ngFor="let bico of bicos" [value]="bico.bicoId">
+              {{ bico.bicoDescricao || bico.bicoCdg }}
+            </ion-select-option>
+          </ion-select>
+        </div>
+
+        <div class="abp-field abp-half">
+          <label class="abp-label">Destino</label>
+          <ion-select class="abp-input abp-select" interface="popover" placeholder="Selecione"
+            [(ngModel)]="destinoSelecionado" name="destinoSelecionado" (ionChange)="onDestinoChange($event)">
+            <ion-select-option *ngFor="let destino of destinos" [value]="destino.destino">
+              {{ destino.destinoDesc }}
+            </ion-select-option>
+          </ion-select>
+        </div>
+      </div>
+
+      <!-- Empreendimento / Etapa -->
+      <div class="abp-group-row">
+        <div class="abp-field abp-half">
+          <label class="abp-label">Empreendimento</label>
+          <ion-select
+            class="abp-input abp-select"
+            interface="popover"
+            placeholder="Selecione"
+            [(ngModel)]="empreendimentoSelecionado"
+            name="empreendimentoSelecionado"
+            (ionChange)="onEmpreendimentoChange($event)"
+          >
+            <ion-select-option *ngFor="let emp of empreendimentos" [value]="emp.id">
+              {{ emp.descricao || emp.nome || emp.empreendimentoDesc || emp.empreendimentoNome }}
+            </ion-select-option>
+          </ion-select>
+        </div>
+        <div class="abp-field abp-half">
+          <label class="abp-label">Etapa</label>
+          <ion-select
+            class="abp-input abp-select"
+            interface="popover"
+            placeholder="Selecione"
+            [(ngModel)]="etapaSelecionada"
+            name="etapaSelecionada"
+            (ionChange)="onEtapaChange($event)"
+          >
+            <ion-select-option *ngFor="let etapa of etapas" [value]="etapa.id">
+              {{ etapa.descricao }}
+            </ion-select-option>
+          </ion-select>
+        </div>
+      </div>
+
+      <!-- Odômetro -->
+      <div class="abp-group-row">
+        <div class="abp-field abp-half">
+          <label class="abp-label">Odômetro Atual</label>
+          <ion-input class="abp-input" type="number"></ion-input>
+        </div>
+
+        <div class="abp-field abp-half">
+          <label class="abp-label">Odômetro Abastecimento</label>
+          <ion-input
+            class="abp-input"
+            type="number"
+            [(ngModel)]="odometro"
+            (ionChange)="onOdometroChange($event)"
+          ></ion-input>
+        </div>
+      </div>
+
+      <!-- Horímetro -->
+      <div class="abp-group-row">
+        <div class="abp-field abp-half">
+          <label class="abp-label">Horímetro Atual</label>
+          <ion-input class="abp-input" type="number"></ion-input>
+        </div>
+
+        <div class="abp-field abp-half">
+          <label class="abp-label">Horímetro</label>
+          <ion-input
+            class="abp-input"
+            type="number"
+            [(ngModel)]="horimetro"
+            (ionChange)="onHorimetroChange($event)"
+          ></ion-input>
+        </div>
+      </div>
+
+      <!-- Insumo -->
+      <div class="abp-field">
+        <label class="abp-label">Insumo</label>
+        <ion-select class="abp-input abp-select" interface="popover" placeholder="Selecione"
+          [(ngModel)]="insumoSelecionado" name="insumoSelecionado" (ionChange)="onInsumoChange($event)">
+          <ion-select-option *ngFor="let insumo of insumos" [value]="insumo.insumoId">
+            {{ insumo.insumoDescr }}
+          </ion-select-option>
+        </ion-select>
+      </div>
+
+      <!-- Troca / Reposição e Aplicação -->
+      <div class="abp-group-row">
+        <div class="abp-field abp-half">
+          <label class="abp-label">Troca/ Reposição</label>
+          <ion-select class="abp-input abp-select" interface="popover" placeholder="Selecione"
+            [(ngModel)]="tipoPrevAbast" name="tipoPrevAbast" [disabled]="!aplicacaoHabilitada">
+            <ion-select-option value="T">Troca</ion-select-option>
+            <ion-select-option value="R">Reposição</ion-select-option>
+          </ion-select>
+        </div>
+
+        <div class="abp-field abp-half">
+          <label class="abp-label">Aplicação</label>
+          <ion-select class="abp-input abp-select" interface="popover" placeholder="Selecione"
+            [(ngModel)]="aplicacaoSelecionada" name="aplicacaoSelecionada" [disabled]="!aplicacaoHabilitada">
+            <ion-select-option *ngFor="let aplic of aplicacoes" [value]="aplic.aplicacaoId">
+              {{ aplic.aplicacaoDescr }}
+            </ion-select-option>
+          </ion-select>
+        </div>
+      </div>
+
+      <!-- Quantidade / No.Bomba -->
+      <div class="abp-group-row">
+        <div class="abp-field abp-third">
+          <label class="abp-label">Quantidade</label>
+          <ion-input
+            class="abp-input"
+            type="number"
+            [(ngModel)]="quantidade"
+            (ionChange)="onQuantidadeChange($event)"
+          ></ion-input>
+        </div>
+        <div class="abp-field abp-third">
+          <label class="abp-label">No.Bomba Inicial</label>
+          <ion-input class="abp-input" type="number" [(ngModel)]="numBombaInicial" (ionChange)="onNumBombaInicialChange($event)"></ion-input>
+        </div>
+        <div class="abp-field abp-third">
+          <label class="abp-label">No.Bomba Final</label>
+          <ion-input class="abp-input" type="number" [(ngModel)]="numBombaFinal" (ionChange)="onNumBombaFinalChange($event)"></ion-input>
+        </div>
+      </div>
+
+      <!-- Motorista / Operador (agora ligado na API) -->
+      <div class="abp-group-row">
+        <div class="abp-field abp-half">
+          <label class="abp-label">Motorista / Operador</label>
+          <ion-select class="abp-input abp-select" interface="popover" placeholder="Selecione"
+            [(ngModel)]="motoristaOperadorSelecionado" (ionChange)="onMotoristaOperadorChange($event)">
+            <ion-select-option [value]="null">Selecione</ion-select-option>
+            <ion-select-option *ngFor="let m of motoristasOperadores" [value]="m.fornId">{{ m.colaboradorNome }}</ion-select-option>
+          </ion-select>
+        </div>
+
+        <div class="abp-field abp-half">
+          <label class="abp-label">Colaborador / Frentista</label>
+          <ion-select class="abp-input abp-select" interface="popover" placeholder="Selecione"
+            [(ngModel)]="colaboradorFrentistaSelecionado" (ionChange)="onColaboradorFrentistaChange($event)">
+            <ion-select-option [value]="null">Selecione</ion-select-option>
+            <ion-select-option *ngFor="let c of colaboradoresFrentista" [value]="c.id">{{ c.descricao }}</ion-select-option>
+          </ion-select>
+        </div>
+      </div>
+
+      <!-- Hora / Bloco -->
+      <div class="abp-group-row">
+        <div class="abp-field abp-half">
+          <label class="abp-label">Hora Abastecimento</label>
+          <ion-input class="abp-input" type="time" [(ngModel)]="horaAbastecimento" name="horaAbastecimento"></ion-input>
+        </div>
+
+        <div class="abp-field abp-half">
+          <label class="abp-label">Bloco</label>
+          <ion-select class="abp-input abp-select" interface="popover" placeholder="Selecione"
+            [(ngModel)]="blocoSelecionado" name="blocoSelecionado" (ionChange)="onBlocoChange($event)">
+            <ion-select-option [value]="null">Selecione</ion-select-option>
+            <ion-select-option *ngFor="let b of blocos" [value]="b.id || b.blocoId || b.BlocoId">{{ b.nome || b.nomeBloco || b.descricao || b.Descricao || (b | json) }}</ion-select-option>
+          </ion-select>
+        </div>
+      </div>
+
+      <!-- Observação -->
+      <div class="abp-field">
+        <label class="abp-label">Observação</label>
+        <ion-input
+          class="abp-input"
+          type="text"
+          [(ngModel)]="observacao"
+        ></ion-input>
+      </div>
+
+
+      <!-- Botão confirmar -->
+      <div class="abp-actions">
+        <button type="button" class="abp-primary-btn" (click)="confirmar()">
+          CONFIRMAR
+        </button>
+      </div>
+    </div>
+  </div>
+</ion-content>

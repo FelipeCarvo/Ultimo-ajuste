@@ -1,0 +1,238 @@
+<ion-header class="os-header">
+  <ion-toolbar lines="none">
+    <div class="os-header-bar">
+      <!-- casinha -->
+      <button class="os-back-btn" (click)="onBack()">
+        <img src="../../assets/icon/topoRequest.svg" alt="Voltar" />
+      </button>
+
+      <h1 class="os-title">Abastecimento em Postos - Edição</h1>
+
+      <div class="os-header-spacer"></div>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="os-content">
+  <div class="os-page">
+    <div class="os-card">
+
+<!-- Equipamento -->
+<div class="abp-field">
+  <label class="abp-label">Equipamento</label>
+  <app-autocomplete
+    [lista]="equipamentos"
+    campoDescricao="descricao"
+    [valorSelecionado]="equipamento"
+    (selecionado)="equipamento = $event?.id ?? null">
+  </app-autocomplete>
+</div>
+
+<!-- Empreendimento -->
+<div class="abp-field">
+  <label class="abp-label">Empreendimento</label>
+  <app-autocomplete
+    [lista]="empreendimentos"
+    campoDescricao="descricao"
+    [valorSelecionado]="empreendimento"
+    (selecionado)="onEmpreendimentoChange($event?.id)">
+  </app-autocomplete>
+</div>
+
+<!-- Empresa -->
+<div class="abp-field">
+  <label class="abp-label">Empresa</label>
+  <app-autocomplete
+    [lista]="empresas"
+    campoDescricao="descricao"
+    [valorSelecionado]="empresa"
+    (selecionado)="onEmpresaChange($event?.id)">
+  </app-autocomplete>
+</div>
+
+<!-- Fornecedor -->
+<div class="abp-field">
+  <label class="abp-label">Fornecedor</label>
+  <app-autocomplete
+    [lista]="fornecedores"
+    campoDescricao="descricao"
+    [valorSelecionado]="fornecedor"
+    (selecionado)="fornecedor = $event?.id ?? null">
+  </app-autocomplete>
+</div>
+
+<!-- Centro de despesas -->
+<div class="abp-field">
+  <label class="abp-label">Centro de despesas</label>
+  <app-autocomplete
+    [lista]="centrosDespesas"
+    campoDescricao="descricao"
+    [valorSelecionado]="centroDespesas"
+    (selecionado)="centroDespesas = $event?.id ?? null">
+  </app-autocomplete>
+</div>
+
+<!-- Etapa -->
+<div class="abp-field">
+  <label class="abp-label">Etapa</label>
+  <app-autocomplete
+    [lista]="etapas"
+    campoDescricao="descricao"
+    [valorSelecionado]="etapa"
+    (selecionado)="etapa = $event?.id ?? null">
+  </app-autocomplete>
+</div>
+
+<!-- Insumo -->
+<div class="abp-field">
+  <label class="abp-label">Insumo</label>
+  <app-autocomplete
+    [lista]="insumos"
+    campoDescricao="descricao"
+    [valorSelecionado]="insumo"
+    (selecionado)="onInsumoChange($event?.id)">
+  </app-autocomplete>
+</div>
+
+<!-- Observação -->
+<div class="abp-field">
+  <label class="abp-label">Observação</label>
+<input
+  type="text"
+  class="os-input"
+  [(ngModel)]="observacao"
+/>
+</div>
+
+<!-- Bloco -->
+<div class="abp-field">
+  <label class="abp-label">Bloco</label>
+  <app-autocomplete
+    [lista]="blocos"
+    campoDescricao="descricao"
+    [valorSelecionado]="bloco"
+    (selecionado)="bloco = $event?.id ?? null">
+  </app-autocomplete>
+</div>
+
+
+
+
+      <!-- Título seção Dados de Retorno -->
+      <div class="abp-section-title">
+        DADOS DE RETORNO
+      </div>
+
+<!-- DATA  -->
+<div class="abp-field">
+  <label class="abp-label">Dt.Retirada</label>
+
+  <div class="abp-date-input">
+
+    <input
+      type="text"
+      class="os-input abp-date-display"
+      readonly
+      placeholder="dd/mm/aaaa"
+      [value]="formatDate(dtRetirada)"
+      (click)="openCalendar($event, 'dtRetirada')"
+    />
+
+    <button
+      *ngIf="dtRetirada"
+      type="button"
+      class="abp-date-clear"
+      (click)="limparData('dtRetirada', $event)">
+      <ion-icon name="close-outline"></ion-icon>
+    </button>
+
+    <button
+      type="button"
+      class="abp-date-btn"
+      (click)="openCalendar($event, 'dtRetirada')">
+      <ion-icon name="calendar-clear-outline"></ion-icon>
+    </button>
+
+  </div>
+</div>
+
+<!-- QUANTIDADE + TOTAL  -->
+<div class="abp-group-row">
+
+  <div class="abp-field abp-half">
+    <label class="abp-label">Quantidade</label>
+    <input
+      type="number"
+      class="os-input"
+      [(ngModel)]="qtdRetirada"
+    />
+  </div>
+
+  <div class="abp-field abp-half">
+    <label class="abp-label">Total</label>
+    <input
+      type="number"
+      class="os-input"
+      [(ngModel)]="total"
+    />
+  </div>
+
+</div>
+
+      <!-- Hodômetro / Horímetro -->
+      <div class="abp-group-row">
+        <div class="abp-field abp-half">
+          <label class="abp-label">Hodômetro</label>
+            <input
+  type="number"
+  class="os-input"
+  [(ngModel)]="hodometro"
+/>
+        </div>
+        <div class="abp-field abp-half">
+          <label class="abp-label">Horímetro</label>
+            <input
+  type="number"
+  class="os-input"
+  [(ngModel)]="horimetro"
+/>
+        </div>
+
+        <!-- Retorno? -->
+         <div class="abp-checkbox-group">
+          <ion-checkbox [(ngModel)]="retorno" [ngModelOptions]="{standalone: true}"></ion-checkbox>
+          <span>Retorno?</span>
+        </div>
+
+      </div>
+<!-- Número Ctrl Posto -->
+ <!--ATENÇÃO AJUSTAR O TIPO DE CAMPO CONFORME O BACKEND-->
+        <div class="abp-group-row">
+        <div class="abp-field abp-half">
+          <label class="abp-label">Nº Ctrl Posto</label>
+          <input
+  type="text"
+  class="os-input"
+  [(ngModel)]="numeroControlePosto"
+/>
+        </div>
+
+        <div class="abp-checkbox-group">
+          <ion-checkbox [(ngModel)]="estoque" [ngModelOptions]="{standalone: true}"></ion-checkbox>
+          <span>Estoque</span>
+        </div>
+      </div>
+
+
+      <!-- Botão confirmar -->
+      <div class="abp-actions">
+        <button type="button" class="abp-primary-btn" (click)="confirmar()">
+          CONFIRMAR
+        </button>
+      </div>
+
+    </div>
+
+
+  </div>
+</ion-content>

@@ -45,20 +45,7 @@
     "bicoDescr": "string",
     "bicoId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     "fornecedorId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "responsavelId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "centroDespesaId": "00000000-0000-0000-0000-000000000000",
-    "centroDespesaDescr": null,
-    "orcamentoCodigo": 2,
-    "orcmentoVersaoCodigo": 1,
-    "etapaCodigo": "1.2.03",
-    "etapaDescricao": "ESCAVAÇÃO DE MATERIAL DE 2ª CATEGORIA, EMPREGANDO EXPLOSIVOS E TRATOR SOBRE ESTEIRAS",
-    "etapaId": "4c99859d-2d51-4a37-9217-0ecb5fc3aa54",
-    "orcamentoVersaoId": "f1db97fc-7d05-4029-8f8f-4c8075769714",
-    "blocoCodigo": 0,
-    "blocoDescricao": null,
-    "blocoId": "00000000-0000-0000-0000-000000000000"
-
-
+    "responsavelId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
   }
 ]
 ```
@@ -67,7 +54,6 @@
                      tpAbastecimento = 1  --> Abastecimento em Postos
 
 ##### 1.3. /api/frotas/Abastecimentos/ConsultaBomba
-
 * **Listas as Bombas de Abastecimentos**
 
 ```json
@@ -88,12 +74,9 @@
     "bombaId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
   }
 }
-```
-
+```  
 ##### 1.4. /api/frotas/Abastecimentos/ConsultaBico
-
 * **Lista os bicos de abastecimentos referente a bomba**
-
 ```json
 { 
   {
@@ -106,12 +89,9 @@
     "bombaId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
   }
 }
-```
-
+```  
 ##### 1.5. /api/frotas/Abastecimentos/ConsultaDestinoAbastecimentos
-
 * **Lista os Destinos referente ao lançamento do abastecimento **
-
 ```json
 {
   {
@@ -148,12 +128,9 @@
   }
   
 }
-```
-
+```  
 ##### 1.6. /api/frotas/Abastecimentos/ConsultaAplicacaoPrevEquipInsumo
-
 * **Lista todas Itens no controle de preventivo do equipamento com sua aplicação**
-
 ```json
 {
    {
@@ -166,12 +143,9 @@
     "quantidade": 0
   }
 }
-```
-
+```  
 ##### 1.7. /api/frotas/Abastecimentos/ConsultaEstoqueComboio
-
 * **Lista todos os insumos que estão no estoque do Comboio**
-
 ```json
 {
   {
@@ -190,12 +164,9 @@
   }
   
 }
-```
-
+```  
 ##### 1.8. /api/frotas/Abastecimentos/ConsultaUltimoNumeroBico
-
 * **Mostra o último número  utilizado na bomba**
-
 ```json
 {
    "numeracao": 0,
@@ -203,11 +174,10 @@
     "abastecimentoCod": 0,
     "abastecimentoId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
 }
-```
-
+```  
 ##### 1.9. /api/frotas/Abastecimentos/GravaAbastecimento
-
 * **Grava o abastecimento próprio ou de posto**
+
 
 ##### 1.10. API's para utilização conforme layout -Pesquisa Abastecimento Próprio
 
@@ -219,15 +189,7 @@
 **Utilizar a Api para consulta dos abastecimentos:  /api/frotas/Abastecimentos/ConsultaAbastecimento** com o parâmetro fixo:
 "TpAbastecimento" = 0 ;
 
-**Parâmetros Não Obrigatórios para Consulta**
-{DataIni} 
-{DataFim} 
-{IdEquipamento}
-{Origem}  ,  Passando  **Origem =3 Tras somente os abastecimento feitos pelo App**
-{TpAbastecimento}
-{ComboioBomba}
-{IdFornecedor} 
-{IdAbastecimento}
+Para retornar somente os abastecimentos com a origem do App, passar o parâmetro "Origem"  = 3
 
 ##### 1.11. API para utilização conforme layout -Grava Abastecimento Próprio
 
@@ -244,10 +206,8 @@
 * 9 - "Motorista/Operador"    --> Utilizar a /api/frotas/OrdensServico/ConsultaColaborador com o parâmetro "Classificacao" = 1
 * 10 - "Colaborador Frentista" --> Utilizar a /api/cadastros/Lookups/Pessoas   **Passar como parâmetro("tipoPessoa": "Funcionário")**
 * 11 - "Bloco"                 --> Utilizar /api/cadastros/Lookups/Unidades  **Passar como parâmetro(empreendimentoId), selecionado na consulta do empreendimento**
-* 13 - "Odômetro Atual*        --> Utilizar  o resultado da /api/frotas/Lookups/EquipamentosMobile apos a escolha do equipamento(campo 2) , Habitar quando tipoControle(retorno da api EquipamentosMobile) = 'A' or 'V'
-* 15 - "Horímetro Atual*        --> Utilizar  o resultado da /api/frotas/Lookups/EquipamentosMobile apos a escolha do equipamento(campo 2) , Habitar quando tipoControle (retorno da api EquipamentosMobile)= 'A' or 'H'
-* **Campo Novo -- "Aplicação"**    --> Utilizar /api/frotas/Abastecimentos/ConsultaAplicacaoPrevEquipInsumo  **Passar como parâmetro(EquipamentoId,InsumoId), selecionado na consulta do    equipamento e Insumo** , habiltar combo somente se consulta "Aplicação" retornar regsitro
-* **Campo Novo -- "Troca/Reposição"**    -->  Fazer uma Combo com "T - Troca" e "R - Reposição" , habiltar combo somente se consulta "Aplicação" retornar regsitro
+* **Campo Novo -- "Aplicação"**    --> Utilizar /api/frotas/Abastecimentos/ConsultaAplicacaoPrevEquipInsumo  **Passar como parâmetro(EquipamentoId,InsumoId), selecionado na consulta do    equipamento e Insumo** , habiltar combo somente se consulta "Aplicação" retornar regsitro 
+* **Campo Novo -- "Troca/Reposição"**    -->  Fazer uma Combo com "T - Troca" e "R - Reposição" , habiltar combo somente se consulta "Aplicação" retornar regsitro 
 
 **** **Utilizar para Gravar Abastecimento Próprio  a  /api/frotas/Abastecimentos/GravaAbastecimento**
 Parâmetros Obrigatórios para criar um Abastecimento Próprio:
@@ -269,7 +229,7 @@ Parâmetros Não Obrigatórios para criar um Abastecimento Próprio:
 {NumBicoFinal}             , Numero Bomba Final        (20-informado no print Grava Abastecimento Próprio)
 {IdEmprd}                  , Empreendimento            (5-informado no print Grava Abastecimento Próprio)
 **{TipoPrevAbast},         , Campo Novo                "Troca/Reposição", sendo "T" para Troca  "R" para Reposição
-{AplicacaoPrevId}          , Campo Novo                "Aplicação", Utilizar o parâmetro ("aplicacaoId" do resultado da api ConsultaAplicacaoPrevEquipInsumo )**,
+{AplicacaoPrevId}          , Campo Novo                "Aplicação", Utilizar o parâmetro ("aplicacaoId" do resultado da api ConsultaAplicacaoPrevEquipInsumo )**,   
 {IdTanqueDestino},         , Informar resultado do campo destino a api ConsultaDestinoAbastecimentos quando destinoTipo<>"M"
 
 ##### 1.12. API para utilização conforme layout -Pesquisa Abastecimento Posto
@@ -280,38 +240,19 @@ Parâmetros Não Obrigatórios para criar um Abastecimento Próprio:
 * 2 - "Equipamento"     --> Utilizar a  /api/frotas/Lookups/Equipamentos
 
 **Utilizar a Api para consulta dos abastecimentos:  /api/frotas/Abastecimentos/ConsultaAbastecimento** com o parâmetro fixo:
-"TpAbastecimento" = 1 ; 
-
-**Parâmetros Não Obrigatórios para Consulta**
-{DataIni} 
-{DataFim} 
-{IdEquipamento}
-{Origem}  ,  Passando  **Origem =3 Tras somente os abastecimento feitos pelo App**
-{IdFornecedor} 
-{IdAbastecimento}
+"TpAbastecimento" = 1 ;
 
 ##### 1.13. API para utilização conforme layout -Gravar Abastecimento Posto
 
 ![](./Frt_ApiFrotas/image7.png)
 
 * 1 - "Equipamento"        --> Utilizar a  /api/frotas/Lookups/EquipamentosMobile
-
 * 2 - "Empreendimento"     --> Utilizar a  /api/cadastros/Lookups/Empreendimentos
-
 * 3 - "Empresa"            --> Utilizar a  /api/cadastros/Lookups/Empresas  **Passar como parâmetro("tipoEmpresa":0)**
-
 * 4 - "Centro de Despesa"  --> Utilizar a  /api/cadastros/Lookups/PlanoContasDespesas , utilizar como LookupKey "planoContasPadraoId" do retorno do Insumo
-
 * 5 - "Etapa"              --> Utilizar a  /api/orcamentos/Lookups/Etapas  **Passar como parâmetro(empreendimentoId), selecionado na consulta do empreendimento**
-
 * 6 - "Insumo"             --> Utilizar a  /api/suprimentos/Lookups/Insumos **Passar como parâmetros("empreendimentoId" selecionado em  "Empreendimento" e "somenteInsumosDeAbastecimento" = true)**
-
-* 8  - Hor.Odô.           --> Utilizar  o resultado da /api/frotas/Lookups/EquipamentosMobile apos a escolha do equipamento(campo 1) , 
-                              quando tipoControle(retorno da api EquipamentosMobile) = 'A' or 'V'   preencher o  campo com  "odometro"
-                              quando tipoControle(retorno da api EquipamentosMobile) = 'H   preencher o  campo com  "horimetro"
-
 * 8.1 - "Bloco"            --> Utilizar a  /api/cadastros/Lookups/Blocos   **Passar como parâmetro("empreendimentoId")**
-
 * Campo Novo  - "Fornecedor"         --> Utilizar a /api/cadastros/Lookups/Pessoas   **Passar como parâmetro("tipoPessoa": "Fornecedor")**
 
 
@@ -327,17 +268,17 @@ Parâmetros Obrigatórios para criar um Abastecimento Posto:
 {IdEtapa}          ,  Etapa                (5-informado no print Grava Abastecimento em posto)
 {IdInsumo}         ,  Insumo               (6-informado no print Grava Abastecimento em posto)
 {IdBloco}          ,  Bloco                (8-informado no print Grava Abastecimento em posto)
-{QtdInsumo}        ,  Quantidade Solicitada e Retirada (11 e 14 -informado no print Grava Abastecimento em posto), Informando a Quantidade Solicitada preencher a Quantidade Retirada, será a mesma
-{TotalAbastecimentoPosto} ,   Valor Solicitada e Total (12 e 15 -informado no print Grava Abastecimento em posto), Informando o valor total do abastecimento.
+{QtdInsumo}        ,  Quantidade Solicitada e Retirada (11 e 14 -informado no print Grava Abastecimento em posto), Informando a Quantidade Solicitada preencher a Quantidade Retirada, será a mesma 
+{TotalAbastecimentoPosto} ,   Valor Solicitada e Total (12 e 15 -informado no print Grava Abastecimento em posto), Informando a Quantidade Solicitada preencher a Quantidade Retirada, será a mesma 
 {Origem}  --> Campo interno do SienconSp7,não preenchido pelo usuário para Mobile utilizar Sempre **ORIGEM =3**
 
 Parãmetros Não Obrigatórios para criar um Abastecimento Posto:
 {Observacao}         ,  Observação           (7-informado no print Grava Abastecimento em posto)
 {Odometro},          ,  Odômetro             (16-informado no print Grava Abastecimento em posto)
 {Horimetro}          ,  Horímetro            (17-informado no print Grava Abastecimento em posto)
-{NumeroControlePosto},  Nº Controle do Posto (18-informado no print Grava Abastecimento em posto)
-{Retorno}            ,  Retorno              (19-informado no print Grava Abastecimento em posto) **Default para o usuário sempre Checado =1**      0 Não Checado  e 1 Para Checado
-{Estoque}            ,  Estoque              (20-informado no print Grava Abastecimento em posto) **Default para o usuário sempre Não Checado =0**  0 Não Checado  e 1 Para Checado
+{NumeroControlePosto},  Nº Controle do Posto (18-informado no print Grava Abastecimento em posto) 
+{Retorno}            ,  Retorno              (19-informado no print Grava Abastecimento em posto) **Default para o usuário sempre Checado =1**      0 Não Checado  e 1 Para Checado 
+{Estoque}            ,  Estoque              (20-informado no print Grava Abastecimento em posto) **Default para o usuário sempre Não Checado =0**  0 Não Checado  e 1 Para Checado 
 
 #### 2. API Comuns
 
@@ -361,26 +302,10 @@ Parãmetros Não Obrigatórios para criar um Abastecimento Posto:
 
 ##### 3.3. /api/frotas/Lookups/CausaIntervencao
 
-##### 3.4. API para utilização conforme layout -Pesquisa
 
-![](./Frt_ApiFrotas/image2.png)
-
-* 1 - "Número Os"             --> Inserir somente o numero
-* 2 - "Empreendimento"        --> Utilizar a  /api/cadastros/Lookups/Empreendimentos
-* 3 - "Equipamento"           --> Utilizar a  /api/frotas/Lookups/EquipamentosMobile
-* 4 - "Causa Intervenção"     --> Utilizar a  /api/frotas/Lookups/CausaIntervencao
-* 5 - "Manutentor"           --> Utilizar a /api/frotas/OrdensServico/ConsultaColaborador com o parâmetro "Classificacao" = 2
-* 6 - "Status"               --> Fazer uma Combo com os Status existentes na OS.
-  Codigo	Descrição do Status
-  0	      Aberta
-  1	      Serviço Iniciado
-  2	      Serviço Concluido
-  3	      Fechada
-  4	      Reprov./Cancelada
 
 **Utilizar para a consulta das OS a /api/frotas/OrdensServico/ConsultaGeralOrdensServico**
-*** campos de Retorno da API
-
+*** campos de Retorno da API 
 ```
 json
 [
@@ -529,49 +454,28 @@ json
 **** **Utilizar para Gravar OS a  /api/frotas/OrdensServico/GravarOrdemServico**
 **** **Utilizar para Gravar Fotos  a  /api/frotas/OrdensServico/GravarOrdemServicoFoto**
 
-**Parâmetros Obrigatórios para criar uma OS**:
-
+Parâmetros Obrigatórios para criar uma OS:
 {EquipamentoId}   --> Id do equipapamento   - (1-informado no print de Ordem de Serviço Edição ,Aba Principal)
-
 {Descricao}       --> Descrição da OS       - (11-informado no print de Ordem de Serviço Edição,Aba Principal)
-
 {Origem}          --> Campo interno do SienconSp7,não preenchido pelo usuário para Mobile utilizar Sempre **ORIGEM =3**
 
-**Parêmetros Não Obrigatórios para criar  OS:**
-
+Parêmetros Não Obrigatórios para criar  OS:
 {OsId}                    --> Id da OS - passar somente quando for edição, no Insert o método GravarOrdemServico, retorno o Id da Os Gerada
-
 {OsDataAbertura}          --> Data de Abertura                - (12-informado no print de Ordem de Serviço Edição,Aba Principal)
-
 {OsDataConclusao}         --> Data de Abertura                - (13-informado no print de Ordem de Serviço Edição,Aba Principal)
-
 **{Odometro}                --> Odometro                      - Campo Novo a ser criado no PDF -- (Odômetro)** , Habitar quando tipoControle(retorno da api EquipamentosMobile) = 'A' or 'V'
-
 **{Horimetro}               --> Horímetro                     - Campo Novo a ser criado no PDF -- (Horímetro)**, Habitar quando tipoControle (retorno da api EquipamentosMobile)= 'A' or 'H'
-
 {Observacao}              --> Observação                      - (16-informado no print de Ordem de Serviço Edição,Aba Observação)
-
 {ObsDef}                  --> Defeitos Constatados            - (14-informado no print de Ordem de Serviço Edição,Aba Defeitos/Causa)
-
 {ObsCausas}               --> Causas Prováveis                - (15-informado no print de Ordem de Serviço Edição,Aba Defeitos/Causa)
-
 {ObsProvidencias}         --> Providencias
-
 {FornecedorId}            --> Fornecedor
-
 {EmprdintervencaoId}      --> Empreendiemnto de Intervenção   - (7-informado no print de Ordem de Serviço Edição,Aba Principal)
-
 {CausasId}                --> Causa da Intervenção            - (5-informado no print de Ordem de Serviço Edição,Aba Principal)
-
 {MotoristaOperadorId}     --> Operador/Motorista              - (6-informado no print de Ordem de Serviço Edição,Aba Principal)
-
 {EquipBloqueado}          --> Equipamento Bloqueado - 0 Não bloquedo/ 1 Bloqueado
-
 {EmprdAberturaId}         --> Empreendiemnto de Intervenção   - (2-informado no print de Ordem de Serviço Edição,Aba Principal)
-
 {NfFornecedor}            --> Fornecedor externo
 {ManutentorResponsavelId} --> Manutentor                      - (9-informado no print de Ordem de Serviço Edição,Aba Principal)
-
 {ClassificacaoId}         --> Classificação                   - (3-informado no print de Ordem de Serviço Edição,Aba Principal)
-
 {TipoServicoId}           --> Tipo                            - (4-informado no print de Ordem de Serviço Edição,Aba Principal)

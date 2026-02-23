@@ -7,7 +7,6 @@ import { Store } from '@ngxs/store';
 import {ReqState} from '@core/store/state/req.state';
 import {ResetStateReq} from '@core/store/actions/req.actions';
 import { ResetStateInsumos } from '@core/store/actions/insumos.actions';
-//import SignaturePad from 'signature_pad';
 import { setHours, setMinutes, setSeconds, formatISO } from 'date-fns';
 
 
@@ -22,10 +21,6 @@ import { setHours, setMinutes, setSeconds, formatISO } from 'date-fns';
     standalone: false
 })
 export class newHomePage {
-  // @ViewChild('canvas', { static: true }) signaturePadElement;
-  // signaturePad: any;
-  // canvasWidth: number;
-  // canvasHeight: number;
   listReq: Array<any> = [];
   load = false;
   showFIlters  = false;
@@ -34,7 +29,6 @@ export class newHomePage {
   dataInicial = new Date(Date.now()  - 10 * 24 * 60 * 60 * 1000);
   dataFinal = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000);
   constructor(
-    //private elementRef: ElementRef,
     private router: Router,
     private rquestService: RequestService,
     private store: Store,
@@ -52,9 +46,6 @@ export class newHomePage {
 
   }
   ngOnInit(): void {
-    //console.log('ngOnInit');
-    // this.getReq()
-    //this.init();
   }
 
 
@@ -76,6 +67,16 @@ export class newHomePage {
     }
     this.router.navigate(['tabs/home-estoque']);
   }
+  ordemServico() {
+    console.log('Botão Ordem Serviço clicado, navegando para tabs/ordem-servico');
+    this.router.navigate(['tabs/ordem-servico']);
+  }
+
+  abastecimento() {
+    console.log('Botão Abastecimento clicado');
+    this.router.navigate(['/tabs/abastecimento']);
+  }
+
   viewAllRequest(){
     this.router.navigate(['tabs/all-request']);
   }
@@ -86,11 +87,7 @@ export class newHomePage {
     this.dataFinal = dataFim;
     this.statusRequisicao = status;
     this.empreendimentoDescricao = empreendimento;
-    // if(!!empreendimento){
-    //   this.empreendimentoDescricao = empreendimento.replace(/[^0-9]/g,'');
-    // }else{
-    //   this.empreendimentoDescricao = '';
-    // }
+
     setTimeout(() =>{
       this.getReq();
     },250)

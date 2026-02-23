@@ -1,0 +1,813 @@
+PENDÊNCIAS - ABASTECIMENTO PRÓPRIO (APP)
+
+Data Última Atualização: 25/12/2025 - 11:30
+Status: Funcionalidade parcialmente implementada
+
+⚠️⚠️⚠️ LIMITAÇÃO CRÍTICA DO BACKEND ⚠️⚠️⚠️
+
+PROBLEMA: Registros salvos com destino Bomba/Comboio/Devolução NÃO aparecem na listagem!
+
+CAUSA RAIZ:
+  1. Backend rejeita IdEquipamento quando destino não é tipo "M" (Equipamento)
+     → Erro 500: "Equipamento não pode ser informado para esse destino"
+
+  2. Consulta ConsultaAbastecimento só retorna registros que TÊM equipamentoId
+     → Registros sem equipamento são ignorados pela query
+
+RESULTADO:
+  ✅ Registro salva com sucesso (retorna GUID)
+  ❌ Registro NUNCA aparece nas consultas
+
+EVIDÊNCIA (25/12/2025):
+  - Salvamos registro com destino "01 - BOMBA 001" (tipo B)
+  - GUID retornado: 1cfa622c-2d9a-438d-8965-172b6609bc11
+  - Listagem continua mostrando apenas 2 registros antigos
+  - Novo registro existe no banco, mas consulta não retorna
+
+SOLUÇÃO TEMPORÁRIA:
+  → Sempre use destino tipo "M" (Equipamento) para registros aparecerem na listagem
+
+SOLUÇÃO DEFINITIVA (REQUER BACKEND):
+  Opção A: Backend aceitar IdEquipamento para TODOS os tipos de destino
+  Opção B: Consulta retornar registros SEM equipamentoId também
+
+====================================================================
+✅ O QUE JÁ FOI IMPLEMENTADO HOJE (25/12/2025)
+====================================================================
+
+1. ✅ Campo Etapa voltou a ficar sempre habilitado (removido [disabled])
+   - Removido helper text "Selecione Empreendimento e Insumo primeiro"
+   - Comportamento default restaurado
+
+2. ✅ Comentário crítico adicionado no método confirmar()
+   - Documenta limitação do backend
+   - Orienta desenvolvedores futuros
+
+====================================================================
+✅ O QUE JÁ FOI IMPLEMENTADO (24/12/2025)
+====================================================================
+
+1. ✅ CSP (Content Security Policy) configurado no index.html
+2. ✅ Interface AbastecimentoConsulta corrigida (camelCase)
+3. ✅ Tela de listagem funcionando corretamente
+4. ✅ Exibição de dados nos cards (equipamento, data, quantidade, etc)
+5. ✅ Navegação "Ver Detalhes" implementada (passa dados via state)
+6. ✅ Tela de edição recebe dados no construtor
+7. ✅ Formulário preenche campos principais automaticamente:
+   - Data, Bomba, Equipamento, Bico, Insumo, Quantidade, Odômetro, Horímetro
+8. ✅ Carregamento de listas dependentes (bicos, destinos, insumos, etc)
+9. ✅ Filtro "Origem: 3" removido para buscar todos os abastecimentos próprios
+
+
+====================================================================
+❌ LIMITAÇÃO CONHECIDA: API NÃO RETORNA TODOS OS CAMPOS
+====================================================================
+
+**IMPORTANTE:** A API `/api/frotas/Abastecimentos/ConsultaAbastecimento` é para
+LISTAGEM, não para edição completa. Não existe endpoint para buscar detalhes
+completos de um abastecimento (confirmado via Swagger).
+
+**Campos que NÃO retornam na API de listagem:**
+- Destino (destinoId)
+- Empreendimento (só retorna código emprdCod, não o ID)
+- Etapa (etapaId)
+- Bloco (blocoId)
+- Números da bomba (numBombaInicial/Final)
+- Hora do abastecimento
+- Motorista/Operador (responsavelId vem zerado)
+- Colaborador/Frentista
+- Aplicação (aplicacaoId)
+- Troca/Reposição (tipoPrevAbast)
+
+**Consequência:** Ao clicar "Ver Detalhes", apenas campos básicos são preenchidos.
+Os demais ficam vazios para o usuário preencher se desejar atualizar.
+
+
+====================================================================
+🔧 PENDÊNCIAS CRÍTICAS (IMPEDEM USO CORRETO)
+====================================================================
+
+[ ] 1. CAMPOS NÃO ENVIADOS NO PAYLOAD
+    Problema: Campos existem na UI, usuário seleciona, mas não são salvos
+
+    Campos afetados:
+    - TipoPrevAbast (Troca/Reposição)
+    - AplicacaoPrevId (Aplicação)
+    - IdEtapa (Etapa)
+    - IdTanqueDestino (quando destino não é equipamento)
+
+    Arquivo: src/app/page/abastecimento-proprio-edicao/abastecimento-proprio-edicao.page.ts
+    Método: confirmar()
+
+    Ação: Adicionar esses campos ao objeto params antes de enviar
+
+[ ] 2. VALIDAÇÕES INCOMPLETAS
+    Problema: Campos obrigatórios não são validados antes de enviar
+
+    Faltam validações para:
+    - Bico (obrigatório)
+    - Destino (obrigatório)
+    - Insumo (obrigatório)
+
+    Arquivo: src/app/page/abastecimento-proprio-edicao/abastecimento-proprio-edicao.page.ts
+    Método: confirmar()
+
+    Ação: Adicionar validações com mensagens de erro específicas
+
+[ ] 3. CAMPOS NA UI SEM CONEXÃO
+    Problema: Campos aparecem mas não fazem nada
+
+    Campos afetados:
+    - Odômetro Atual (existe mas não tem ngModel)
+    - Horímetro Atual (existe mas não tem ngModel)
+    - Hora Abastecimento (input time não conectado)
+
+    Decisão necessária:
+    - OPÇÃO A: Conectar ao formulário e enviar no payload (descobrir nomes no backend)
+    - OPÇÃO B: Remover da UI se não são necessários
+
+    Arquivo: src/app/page/abastecimento-proprio-edicao/abastecimento-proprio-edicao.page.html
+    Arquivo: src/app/page/abastecimento-proprio-edicao/abastecimento-proprio-edicao.page.ts
+
+
+====================================================================
+⚠️ PENDÊNCIAS IMPORTANTES (PODEM CAUSAR PROBLEMAS)
+====================================================================
+
+[ ] 4. IMPLEMENTAR IdTanqueDestino
+    Problema: Doc exige esse campo quando destino NÃO é equipamento
+
+    Lógica necessária:
+    - Se destinoTipo <> 'M' (não é equipamento)
+    - Então enviar IdTanqueDestino = destinoSelecionado
+
+    Arquivo: src/app/page/abastecimento-proprio-edicao/abastecimento-proprio-edicao.page.ts
+    Método: confirmar()
+
+[ ] 5. REVISAR LÓGICA DE IdEquipamento
+    Problema: Atualmente só envia quando destino é equipamento
+
+    Questão: Backend precisa IdEquipamento SEMPRE ou só quando destino='M'?
+
+    Ação: Verificar com backend e ajustar se necessário
+
+    Arquivo: src/app/page/abastecimento-proprio-edicao/abastecimento-proprio-edicao.page.ts
+    Método: confirmar()
+
+
+====================================================================
+📋 MELHORIAS RECOMENDADAS (NÃO BLOQUEIAM)
+====================================================================
+
+[ ] 6. IMPLEMENTAR ConsultaUltimoNumeroBico
+    Benefício: Auto-preencher No.Bomba Inicial (melhora UX)
+
+    Passos:
+    1. Criar método no serviço:
+       consultarUltimoNumeroBico(bombaId, bicoId)
+       -> GET /api/frotas/Abastecimentos/ConsultaUltimoNumeroBico
+
+    2. Chamar quando bomba+bico forem selecionados
+
+    3. Auto-preencher this.numBombaInicial com resultado+1
+
+    Arquivos:
+    - src/app/services/abastecimento.service.ts
+    - src/app/page/abastecimento-proprio-edicao/abastecimento-proprio-edicao.page.ts
+
+[ ] 7. MELHORAR EXPERIÊNCIA DO USUÁRIO
+    - Adicionar loading spinners durante carregamento
+    - Desabilitar botão CONFIRMAR durante gravação
+    - Melhorar mensagens de erro (mais específicas)
+    - Adicionar confirmação ao sair com dados não salvos
+
+[ ] 8. CRIAR ENDPOINT NO BACKEND (OPCIONAL)
+    Benefício: Permitir edição completa com todos os campos
+
+    Endpoint sugerido:
+    GET /api/frotas/Abastecimentos/BuscarPorId/{abastecimentoId}
+
+    Deve retornar TODOS os campos salvos, incluindo:
+    - destinoId, empreendimentoId, etapaId, blocoId
+    - numBombaInicial, numBombaFinal
+    - responsavelId (válido), colaboradorId
+    - aplicacaoId, tipoPrevAbast
+    - hora do abastecimento (se existe)
+
+    Atualização necessária no app:
+    - Criar método obterAbastecimentoPorId() no serviço
+    - Usar este método em vez de passar dados via state
+
+
+====================================================================
+📊 RESUMO DO STATUS
+====================================================================
+
+FUNCIONAL HOJE:
+✅ Novo abastecimento (cadastro) - 90% funcional
+✅ Pesquisa com filtros - 100% funcional
+✅ Listagem de resultados - 100% funcional
+✅ Navegação entre telas - 100% funcional
+✅ Ver detalhes (parcial) - mostra campos básicos
+
+NÃO FUNCIONAL:
+❌ Salvar Troca/Reposição e Aplicação (não envia no payload)
+❌ Salvar Etapa (não envia no payload)
+❌ Edição completa (faltam muitos campos na API de listagem)
+❌ Validações de campos obrigatórios
+
+RISCO ATUAL:
+- Usuário pode gravar sem Bico/Destino/Insumo (campos obrigatórios)
+- Usuário seleciona Aplicação/Etapa mas dados não são salvos
+- Campos "Atual" e "Hora" aparecem mas não funcionam
+
+
+====================================================================
+🎯 PRIORIDADES SUGERIDAS
+====================================================================
+
+**FASE 1 - URGENTE (2-3 horas)**
+1. Adicionar TipoPrevAbast, AplicacaoPrevId, IdEtapa ao payload
+2. Implementar IdTanqueDestino
+3. Adicionar validações de campos obrigatórios
+
+**FASE 2 - IMPORTANTE (1-2 horas)**
+4. Decidir sobre campos "Atual" e "Hora" (conectar ou remover)
+5. Revisar lógica de IdEquipamento
+
+**FASE 3 - MELHORIAS (opcional)**
+6. Implementar ConsultaUltimoNumeroBico
+7. Melhorar UX geral
+8. Solicitar endpoint de busca completa ao backend
+
+
+====================================================================
+FIM DO DOCUMENTO DE PENDÊNCIAS
+====================================================================
+
+Última atualização: 24/12/2025 - 22:40
+Responsável: Análise após implementação parcial
+
+
+
+Fontes analisadas:
+- Documentação: Documentacao/Frt_ApiFrotas.md
+  - 1.10 Pesquisa Abastecimento Próprio
+  - 1.11 Gravar Abastecimento Próprio
+- Código (tela filtros): src/app/page/abastecimento-proprio/abastecimento-proprio.page.html
+- Código (tela filtros - lógica): src/app/page/abastecimento-proprio/abastecimento-proprio.page.ts
+- Código (listagem): src/app/page/abastecimento-proprio-pesquisa/abastecimento-proprio-pesquisa.page.html
+- Código (listagem - lógica): src/app/page/abastecimento-proprio-pesquisa/abastecimento-proprio-pesquisa.page.ts
+- Código (edição/cadastro): src/app/page/abastecimento-proprio-edicao/abastecimento-proprio-edicao.page.html
+- Código (edição/cadastro - lógica): src/app/page/abastecimento-proprio-edicao/abastecimento-proprio-edicao.page.ts
+- Serviço: src/app/services/abastecimento.service.ts
+
+
+====================================================================
+VISÃO GERAL - ESTRUTURA IMPLEMENTADA
+====================================================================
+
+A funcionalidade de Abastecimento Próprio possui 3 telas principais:
+
+1) TELA DE FILTROS (abastecimento-proprio.page)
+   - Permite filtrar por: Origem/Tanque, Equipamento, Data Inicial, Data Final
+   - Possui botão "NOVO" (navega para tela de edição)
+   - Possui botão "PESQUISAR" (navega para tela de listagem com filtros)
+
+2) TELA DE LISTAGEM/RESULTADOS (abastecimento-proprio-pesquisa.page)
+   - Exibe cards com resultados da pesquisa
+   - Cada card mostra: Equipamento, Placa, Data, Quantidade, Insumo, Fornecedor, Voucher
+   - Botão "VER DETALHES" em cada card (navega para tela de edição)
+
+3) TELA DE EDIÇÃO/CADASTRO (abastecimento-proprio-edicao.page)
+   - Formulário completo com todos os campos
+   - Integração com múltiplas APIs para carregar combos
+   - Botão "CONFIRMAR" que grava os dados
+
+STATUS GERAL: Estrutura básica implementada (~70-80%), mas com pendências importantes.
+
+
+====================================================================
+PARTE 1 - ANÁLISE DA TELA DE FILTROS (PESQUISA)
+====================================================================
+
+Documentação (1.10) vs Implementação Atual:
+
+| Campo Documentação          | Campo na UI        | Implementado? | Status |
+|-----------------------------|--------------------|---------------|--------|
+| Origem/Tanque (ConsultaBomba) | Origem / Tanque  | SIM           | OK     |
+| Equipamento (EquipamentosMobile) | Equipamento   | SIM           | OK     |
+| -                           | Data Inicial       | SIM           | EXTRA* |
+| -                           | Data Final         | SIM           | EXTRA* |
+
+* EXTRA: A documentação não menciona filtros de data, mas estão implementados e são úteis.
+
+FUNCIONALIDADE:
+✅ Campos de filtro funcionando
+✅ Navegação para tela de listagem com queryParams
+✅ Botão "NOVO" funcionando
+✅ Integração com API: consultarAbastecimentoProprio()
+
+OBSERVAÇÕES:
+- Filtros de data são extras mas úteis (não causam problema)
+- A UI permite pesquisar sem preencher nenhum filtro (retorna todos)
+
+
+====================================================================
+PARTE 2 - ANÁLISE DA TELA DE LISTAGEM (RESULTADOS)
+====================================================================
+
+CAMPOS EXIBIDOS NOS CARDS:
+✅ Equipamento (codequipamento + modelo)
+✅ Placa
+✅ Data do abastecimento
+✅ Quantidade
+✅ Insumo
+✅ Fornecedor/Posto (fornecedorRazao)
+✅ Voucher (numVoucher) - se existir
+
+FUNCIONALIDADE:
+✅ Recebe filtros via queryParams
+✅ Chama API consultarAbastecimentoProprio() com TpAbastecimento=0 e Origem=3
+✅ Exibe mensagem quando não há resultados
+✅ Botão "VER DETALHES" em cada card
+
+OBSERVAÇÕES:
+- O campo "Fornecedor/Posto" aparece nos cards, mas para abastecimento próprio normalmente não há fornecedor externo (pode ser o frentista ou ficar vazio)
+- A listagem está funcional e correta
+
+
+====================================================================
+PARTE 3 - ANÁLISE DA TELA DE EDIÇÃO/CADASTRO (PRINCIPAL)
+====================================================================
+
+IMPORTANTE: Esta tela se chama "Abastecimento Próprio - Edição" mas atualmente funciona APENAS como CADASTRO NOVO.
+
+===========================
+3.1. CAMPOS IMPLEMENTADOS
+===========================
+
+Tabela (Documentação 1.11 -> Implementação):
+
+| Campo Doc (Nº)              | Campo UI                    | ngModel conectado? | Carrega API? | Envia Payload? | Status |
+|-----------------------------|-----------------------------|--------------------|--------------|----------------|--------|
+| 1 - Origem/Tanque           | Origem / Tanque             | SIM (bombaSelecionada) | SIM (ConsultaBomba) | SIM (IdTanqueOrigem) | OK |
+| 2 - Equipamento             | Equipamento                 | SIM (equipamentoSelecionado) | SIM (EquipamentosMobile) | PARCIAL* | OK* |
+| 3 - Bico                    | Bomba / Bico                | SIM (bicoSelecionado) | SIM (ConsultaBico) | SIM (IdBico) | OK |
+| 4 - Destino                 | Destino                     | SIM (destinoSelecionado) | SIM (ConsultaDestinoAbastecimentos) | SIM (TpDestino) | OK |
+| 5 - Empreendimento          | Empreendimento              | SIM (empreendimentoSelecionado) | SIM (Empreendimentos) | SIM (IdEmprd) | OK |
+| 6 - Etapa                   | Etapa                       | SIM (etapaSelecionada) | SIM (Etapas) | NÃO** | FALTA |
+| 7 - Insumo                  | Insumo                      | SIM (insumoSelecionado) | SIM (ConsultaEstoqueComboio) | SIM (IdInsumo) | OK |
+| 8 - BombaInicial            | No.Bomba Inicial            | SIM (numBombaInicial) | NÃO*** | SIM (NumBicoInicial) | PARCIAL |
+| 9 - Motorista/Operador      | Motorista / Operador        | SIM (motoristaOperadorSelecionado) | SIM (ConsultaColaborador Classif=1) | SIM (OperadorSolicitanteId) | OK |
+| 10 - Colaborador Frentista  | Colaborador / Frentista     | SIM (colaboradorFrentistaSelecionado) | SIM (Pessoas Funcionário) | SIM (FrentistaId) | OK |
+| 11 - Bloco                  | Bloco                       | SIM (blocoSelecionado) | SIM (Unidades/Blocos) | SIM (IdBloco) | OK |
+| NOVO - Aplicação            | Aplicação                   | SIM (aplicacaoSelecionada) | SIM (ConsultaAplicacaoPrevEquipInsumo) | NÃO | FALTA |
+| NOVO - Troca/Reposição      | Troca/ Reposição            | SIM (tipoPrevAbast) | NÃO (combo fixo T/R) | NÃO | FALTA |
+| 12 - Data                   | Data do abastecimento       | SIM (data) | NÃO (calendário) | SIM (DataAbastecimento) | OK |
+| - Odômetro                  | Odômetro Abastecimento      | SIM (odometro) | NÃO | SIM (Odometro) | OK |
+| - Odômetro                  | Odômetro Atual              | NÃO | NÃO | NÃO | PROBLEMA |
+| - Horímetro                 | Horímetro                   | SIM (horimetro) | NÃO | SIM (Horimetro) | OK |
+| - Horímetro                 | Horímetro Atual             | NÃO | NÃO | NÃO | PROBLEMA |
+| 19 - Quantidade             | Quantidade                  | SIM (quantidade) | NÃO | SIM (QtdInsumo) | OK |
+| 20 - No.Bomba Final         | No.Bomba Final              | SIM (numBombaFinal) | NÃO | SIM (NumBicoFinal) | OK |
+| - Hora                      | Hora Abastecimento          | NÃO | NÃO | NÃO | FALTA |
+| - Observação                | Observação                  | SIM (observacao) | NÃO | SIM (Observacao) | OK |
+
+LEGENDA:
+* PARCIAL (Equipamento): IdEquipamento só é enviado quando destinoTipo='M', mas doc sugere que pode ser necessário sempre
+** FALTA (Etapa): Campo existe, está conectado, mas NÃO está sendo enviado no payload (não há IdEtapa no payload)
+*** PARCIAL (BombaInicial): Doc recomenda consultar ConsultaUltimoNumeroBico para auto-preencher, mas não foi implementado
+
+===========================
+3.2. CAMPOS FIXOS (NÃO VISÍVEIS AO USUÁRIO)
+===========================
+
+No payload de gravação, são enviados valores fixos:
+
+✅ TpAbastecimento = 0 (identifica como abastecimento próprio)
+✅ Origem = 3 (identifica que é do app mobile)
+
+Estes campos estão corretos conforme a documentação.
+
+===========================
+3.3. PARÂMETROS OBRIGATÓRIOS (DOC 1.11) vs PAYLOAD ATUAL
+===========================
+
+Documentação diz que são OBRIGATÓRIOS:
+
+| Parâmetro         | Enviado? | Validado? | Observação |
+|-------------------|----------|-----------|------------|
+| TpAbastecimento   | SIM (0)  | NÃO       | Fixo no código |
+| DataAbastecimento | SIM      | SIM       | Toast de erro se vazio |
+| TpDestino         | SIM      | NÃO       | Não valida se foi selecionado |
+| IdTanqueOrigem    | SIM      | SIM       | Validado como "Origem/Tanque obrigatória" |
+| IdBico            | SIM      | NÃO       | Não valida se foi selecionado |
+| IdEquipamento     | PARCIAL* | SIM       | Só quando destinoTipo='M' |
+| IdInsumo          | SIM      | NÃO       | Não valida se foi selecionado |
+| QtdInsumo         | SIM      | SIM       | Validado se > 0 |
+| Origem            | SIM (3)  | NÃO       | Fixo no código |
+
+* IdEquipamento: A lógica atual só envia quando destino exige (destinoTipo='M'), mas isso pode estar incorreto.
+
+PROBLEMA: Vários campos obrigatórios não são validados antes de enviar.
+
+===========================
+3.4. PARÂMETROS NÃO OBRIGATÓRIOS vs PAYLOAD ATUAL
+===========================
+
+| Parâmetro Doc         | Enviado?  | Implementado na UI? |
+|-----------------------|-----------|---------------------|
+| Horimetro             | SIM       | SIM                 |
+| Odometro              | SIM       | SIM                 |
+| OperadorSolicitanteId | SIM       | SIM                 |
+| NumBicoInicial        | SIM       | SIM                 |
+| NumBicoFinal          | SIM       | SIM                 |
+| IdEmprd               | SIM       | SIM                 |
+| TipoPrevAbast         | NÃO ❌    | SIM (mas não envia) |
+| AplicacaoPrevId       | NÃO ❌    | SIM (mas não envia) |
+| IdTanqueDestino       | NÃO ❌    | NÃO                 |
+| Observacao            | SIM       | SIM                 |
+| FrentistaId           | SIM       | SIM                 |
+| IdBloco               | SIM       | SIM                 |
+
+PROBLEMAS CRÍTICOS:
+❌ TipoPrevAbast: Campo existe na UI (Troca/Reposição), usuário pode selecionar, mas NÃO é enviado no payload
+❌ AplicacaoPrevId: Campo existe na UI (Aplicação), usuário pode selecionar, mas NÃO é enviado no payload
+❌ IdTanqueDestino: Doc diz que deve ser informado quando destinoTipo<>"M", mas não está implementado
+❌ IdEtapa: Campo existe na UI, está funcionando, mas NÃO é enviado no payload
+
+===========================
+3.5. CAMPOS DA UI QUE NÃO ESTÃO NA DOCUMENTAÇÃO
+===========================
+
+| Campo UI              | Conectado? | Observação |
+|-----------------------|------------|------------|
+| Odômetro Atual        | NÃO        | Existe visualmente mas não tem ngModel nem vai pro payload |
+| Horímetro Atual       | NÃO        | Existe visualmente mas não tem ngModel nem vai pro payload |
+| Hora Abastecimento    | NÃO        | Campo tipo "time" existe mas não está conectado |
+
+RECOMENDAÇÃO:
+- Se "Odômetro Atual" e "Horímetro Atual" não são necessários, REMOVER da UI
+- Se são necessários, CONECTAR ao payload (mas documentar qual o nome do parâmetro no backend)
+- "Hora Abastecimento": verificar se deve ser enviado separado ou já está na DataAbastecimento
+
+
+====================================================================
+PARTE 4 - PROBLEMA CRÍTICO: TELA DIZ "EDIÇÃO" MAS NÃO EDITA
+====================================================================
+
+SITUAÇÃO ATUAL:
+- A página se chama "Abastecimento Próprio - Edição"
+- Existe rota configurada: '/tabs/abastecimento-proprio-edicao'
+- Na listagem, ao clicar "VER DETALHES", passa abastecimentoId via queryParams
+- MAS o componente de edição NÃO:
+  ❌ Não lê o parâmetro abastecimentoId da rota
+  ❌ Não busca os dados existentes na API
+  ❌ Não preenche o formulário com valores salvos
+  ❌ Não diferencia entre "novo" e "edição"
+
+RESULTADO:
+- Ao clicar "VER DETALHES" de um abastecimento existente, abre formulário vazio
+- Funciona APENAS como NOVO cadastro
+- Não há como editar um abastecimento já gravado
+
+O QUE PRECISA SER FEITO:
+1. No ngOnInit(), verificar se há abastecimentoId nos queryParams ou route state
+2. Se houver ID, buscar os dados na API (talvez precise criar método específico: consultarAbastecimentoProprioPorId)
+3. Preencher todos os campos do formulário com os valores retornados
+4. Ao gravar, verificar se é edição (tem ID) ou novo
+5. Se edição, talvez precise enviar o ID no payload (verificar com backend se é PUT ou POST com ID)
+
+
+====================================================================
+PARTE 5 - INTEGRAÇÃO COM APIs (O QUE ESTÁ FUNCIONANDO)
+====================================================================
+
+O serviço abastecimento.service.ts possui as seguintes integrações:
+
+✅ listarBombas()
+   -> GET /api/frotas/Abastecimentos/ConsultaBomba
+
+✅ listarBicos(bombaId)
+   -> GET /api/frotas/Abastecimentos/ConsultaBico
+   -> Parâmetro: Id (bombaId)
+
+✅ listarDestinos(bombaId)
+   -> GET /api/frotas/Abastecimentos/ConsultaDestinoAbastecimentos
+   -> Parâmetro: bombaId
+
+✅ listarEquipamentosMobile()
+   -> POST /api/frotas/Lookups/EquipamentosMobile
+
+✅ listarEquipamentos()
+   -> POST /api/frotas/Lookups/Equipamentos
+
+✅ listarInsumosComboio(bombaId)
+   -> GET /api/frotas/Abastecimentos/ConsultaEstoqueComboio
+   -> Parâmetro: bombaId
+
+✅ consultarAplicacaoPrevEquipInsumo(equipamentoId, insumoId)
+   -> GET /api/frotas/Abastecimentos/ConsultaAplicacaoPrevEquipInsumo
+   -> Parâmetros: equipamentoId, insumoId
+
+✅ listarEmpreendimentos()
+   -> POST /api/cadastros/Lookups/Empreendimentos
+
+✅ listarColaboradoresMotoristaOperador()
+   -> GET /api/frotas/OrdensServico/ConsultaColaborador
+   -> Parâmetro: Classificacao=1
+
+✅ listarColaboradoresFrentista()
+   -> POST /api/cadastros/Lookups/Pessoas
+   -> Body: { tipoPessoa: 'Funcionário' }
+
+✅ listarBlocosPorEmpreendimento(empreendimentoId)
+   -> POST /api/cadastros/Lookups/Blocos
+   -> Body: { empreendimentoId }
+
+✅ consultarAbastecimentoProprio(filtros)
+   -> GET /api/frotas/Abastecimentos/ConsultaAbastecimento
+   -> Parâmetros: TpAbastecimento=0, Origem=3, + filtros
+
+✅ gravarAbastecimento(payload)
+   -> POST /api/frotas/Abastecimentos/GravaAbastecimento
+   -> Body: payload completo
+
+❌ NÃO IMPLEMENTADO: ConsultaUltimoNumeroBico
+   -> Recomendado pela doc (item 8) para preencher No.Bomba Inicial automaticamente
+
+
+====================================================================
+PARTE 6 - LÓGICA DE DEPENDÊNCIAS ENTRE CAMPOS
+====================================================================
+
+O formulário possui lógicas de dependência bem implementadas:
+
+✅ BOMBA -> Carrega: Bicos, Destinos, Insumos, Empreendimento (filtrado)
+✅ EMPREENDIMENTO -> Carrega: Blocos, habilita carregar Etapas
+✅ INSUMO + EMPREENDIMENTO -> Carrega: Etapas
+✅ EQUIPAMENTO + INSUMO -> Carrega: Aplicações (e habilita Troca/Reposição e Aplicação)
+✅ DESTINO tipo 'M' -> Torna Equipamento obrigatório na validação
+
+OBSERVAÇÃO:
+A lógica está bem estruturada, apenas faltam alguns campos no payload final.
+
+
+====================================================================
+PARTE 7 - RESUMO DOS PROBLEMAS ENCONTRADOS
+====================================================================
+
+PRIORIDADE CRÍTICA (Impede uso correto):
+
+1. ❌ TELA NÃO EDITA
+   - Componente não carrega dados existentes
+   - Sempre funciona como "novo"
+   - Ao clicar "VER DETALHES" na listagem, abre formulário vazio
+
+2. ❌ CAMPOS SELECIONADOS MAS NÃO ENVIADOS NO PAYLOAD
+   - TipoPrevAbast (Troca/Reposição): campo existe, usuário seleciona, mas não é enviado
+   - AplicacaoPrevId (Aplicação): campo existe, usuário seleciona, mas não é enviado
+   - IdEtapa (Etapa): campo existe, usuário seleciona, mas não é enviado
+
+3. ❌ CAMPO DOCUMENTADO MAS NÃO IMPLEMENTADO
+   - IdTanqueDestino: doc diz para enviar quando destinoTipo<>"M", mas não está no código
+
+PRIORIDADE ALTA (Pode causar erros):
+
+4. ❌ VALIDAÇÕES INCOMPLETAS
+   - Não valida se Bico foi selecionado (obrigatório)
+   - Não valida se Destino foi selecionado (obrigatório)
+   - Não valida se Insumo foi selecionado (obrigatório)
+
+5. ❌ CAMPOS NA UI SEM CONEXÃO
+   - "Odômetro Atual" existe mas não tem ngModel
+   - "Horímetro Atual" existe mas não tem ngModel
+   - "Hora Abastecimento" existe mas não está conectado
+
+PRIORIDADE MÉDIA (Melhoria recomendada):
+
+6. ⚠️ CONSULTA DE ÚLTIMO NÚMERO NÃO IMPLEMENTADA
+   - Doc recomenda usar ConsultaUltimoNumeroBico para preencher No.Bomba Inicial
+   - Atualmente é campo manual
+
+7. ⚠️ IdEQUIPAMENTO SÓ ENVIADO EM CASOS ESPECÍFICOS
+   - Atualmente só envia quando destinoTipo='M'
+   - Verificar com backend se sempre deve enviar
+
+
+====================================================================
+PARTE 8 - CHECKLIST DE IMPLEMENTAÇÃO (O QUE FAZER)
+====================================================================
+
+============================
+FASE 1 - CORREÇÕES CRÍTICAS
+============================
+
+[ ] 1.1. IMPLEMENTAR EDIÇÃO REAL
+    Arquivo: src/app/page/abastecimento-proprio-edicao/abastecimento-proprio-edicao.page.ts
+
+    Passos:
+    - No ngOnInit(), ler queryParams ou route state para pegar abastecimentoId
+    - Se houver ID, chamar API para buscar dados (criar método se necessário)
+    - Preencher todos os campos do formulário com valores retornados
+    - Diferenciar novo vs edição no método confirmar()
+    - Se backend exige, enviar ID do abastecimento no payload de edição
+
+[ ] 1.2. ADICIONAR CAMPOS FALTANTES NO PAYLOAD
+    Arquivo: src/app/page/abastecimento-proprio-edicao/abastecimento-proprio-edicao.page.ts
+    Método: confirmar()
+
+    Adicionar ao objeto params:
+    - TipoPrevAbast: this.tipoPrevAbast (se selecionado)
+    - AplicacaoPrevId: this.aplicacaoSelecionada (se selecionado)
+    - IdEtapa: this.etapaSelecionada (se selecionado)
+    - IdTanqueDestino: lógica baseada em destinoTipo (se destinoTipo<>'M', enviar o destino)
+
+[ ] 1.3. IMPLEMENTAR IdTanqueDestino
+    Arquivo: src/app/page/abastecimento-proprio-edicao/abastecimento-proprio-edicao.page.ts
+    Método: confirmar()
+
+    Lógica:
+    - Descobrir o destinoObj (já existe no código)
+    - Se destinoTipo<>'M' (ou seja, NÃO é equipamento):
+      -> Enviar IdTanqueDestino com o valor de destinoSelecionado
+    - Testar com backend para confirmar o nome correto do campo
+
+[ ] 1.4. ADICIONAR VALIDAÇÕES OBRIGATÓRIAS
+    Arquivo: src/app/page/abastecimento-proprio-edicao/abastecimento-proprio-edicao.page.ts
+    Método: confirmar()
+
+    Adicionar validações:
+    - if (!this.bicoSelecionado) { toast('Bico obrigatório'); return; }
+    - if (!this.destinoSelecionado) { toast('Destino obrigatório'); return; }
+    - if (!this.insumoSelecionado) { toast('Insumo obrigatório'); return; }
+
+============================
+FASE 2 - AJUSTES IMPORTANTES
+============================
+
+[ ] 2.1. CONECTAR OU REMOVER "HORA ABASTECIMENTO"
+    Arquivo: src/app/page/abastecimento-proprio-edicao/abastecimento-proprio-edicao.page.html
+
+    Opção A: Se hora deve ser enviada separadamente
+    - Criar variável: horaAbastecimento
+    - Conectar ngModel no input type="time"
+    - Combinar com data ao montar DataAbastecimento (ex: 2025-12-24T14:30:00)
+
+    Opção B: Se hora já está na data
+    - Remover o campo da UI
+
+[ ] 2.2. CONECTAR OU REMOVER "ODÔMETRO/HORÍMETRO ATUAL"
+    Arquivo: src/app/page/abastecimento-proprio-edicao/abastecimento-proprio-edicao.page.html
+
+    Opção A: Se são necessários
+    - Criar variáveis: odometroAtual, horimetroAtual
+    - Conectar ngModel
+    - Descobrir nome dos campos no backend e adicionar ao payload
+
+    Opção B: Se não são necessários
+    - Remover os campos da UI (manter só Odômetro e Horímetro de abastecimento)
+
+[ ] 2.3. IMPLEMENTAR ConsultaUltimoNumeroBico
+    Arquivo: src/app/services/abastecimento.service.ts
+
+    - Criar método: consultarUltimoNumeroBico(bombaId, bicoId)
+      -> GET /api/frotas/Abastecimentos/ConsultaUltimoNumeroBico
+      -> Retorna: { numeracao, abastecimentoData, abastecimentoCod, abastecimentoId }
+
+    Arquivo: src/app/page/abastecimento-proprio-edicao/abastecimento-proprio-edicao.page.ts
+
+    - Quando bomba e bico forem selecionados, chamar a API
+    - Auto-preencher this.numBombaInicial com o resultado + 1 (ou conforme regra de negócio)
+
+[ ] 2.4. REVISAR LÓGICA DE IdEquipamento
+    Arquivo: src/app/page/abastecimento-proprio-edicao/abastecimento-proprio-edicao.page.ts
+    Método: confirmar()
+
+    - Verificar com backend: IdEquipamento deve SEMPRE ser enviado ou só quando destino é equipamento?
+    - Atualmente só envia se destinoTipo='M' ou destinoSelecionado='01'
+    - Ajustar conforme retorno do backend
+
+============================
+FASE 3 - REFINAMENTOS
+============================
+
+[ ] 3.1. MELHORAR MENSAGENS DE ERRO
+    - Tornar toasts mais específicos
+    - Adicionar ícones diferentes (warning vs danger)
+
+[ ] 3.2. ADICIONAR LOADING STATES
+    - Mostrar spinner enquanto carrega combos
+    - Desabilitar botão CONFIRMAR durante gravação
+
+[ ] 3.3. CONFIRMAÇÃO AO SAIR
+    - Se formulário foi alterado e usuário tenta sair, mostrar confirmação
+
+[ ] 3.4. TRATAMENTO DE ERROS DA API
+    - Melhorar mensagens quando API retorna erro
+    - Mostrar detalhes do erro (se disponível)
+
+[ ] 3.5. CRIAR MÉTODO PARA BUSCAR ABASTECIMENTO POR ID
+    Arquivo: src/app/services/abastecimento.service.ts
+
+    - Se não existir método específico, criar:
+      consultarAbastecimentoProprioPorId(abastecimentoId: string)
+    - Ou ajustar consultarAbastecimentoProprio para aceitar ID como filtro
+
+
+====================================================================
+PARTE 9 - COMPARAÇÃO: ABASTECIMENTO PRÓPRIO vs ABASTECIMENTO POSTO
+====================================================================
+
+| Aspecto                    | Abastecimento Próprio (Tp=0) | Abastecimento Posto (Tp=1) |
+|----------------------------|------------------------------|----------------------------|
+| Origem do combustível      | Bomba/Tanque da empresa      | Posto externo (Fornecedor) |
+| Campos específicos         | Bomba, Bico, Destino         | Fornecedor, Voucher        |
+| Estoque                    | Comboio da empresa           | N/A                        |
+| Aplicação/Troca-Reposição  | SIM (campos novos)           | NÃO                        |
+| Controle numérico          | NumBomba Inicial/Final       | Número Controle Posto      |
+| Valor/Total                | NÃO (quantidade apenas)      | TotalAbastecimentoPosto    |
+| Frentista                  | SIM (colaborador interno)    | NÃO (ou opcional)          |
+| Empresa/Centro Despesa     | NÃO obrigatório              | SIM obrigatório            |
+| Bloco                      | SIM (opcional)               | SIM (obrigatório)          |
+
+OBSERVAÇÃO:
+O Abastecimento Próprio é mais focado no controle operacional (bomba, bico, destino, aplicação),
+enquanto o Abastecimento em Postos é mais focado no controle financeiro (empresa, centro despesa, valor).
+
+
+====================================================================
+PARTE 10 - PRÓXIMOS PASSOS RECOMENDADOS
+====================================================================
+
+SUGESTÃO DE ORDEM DE IMPLEMENTAÇÃO:
+
+1º) CORRIGIR PAYLOAD (mais rápido e crítico)
+    - Adicionar TipoPrevAbast ao payload
+    - Adicionar AplicacaoPrevId ao payload
+    - Adicionar IdEtapa ao payload
+    - Implementar lógica de IdTanqueDestino
+    Tempo estimado: 30-60 minutos
+
+2º) ADICIONAR VALIDAÇÕES
+    - Validar campos obrigatórios antes de enviar
+    Tempo estimado: 15-30 minutos
+
+3º) IMPLEMENTAR EDIÇÃO
+    - Ler ID da rota
+    - Buscar dados na API
+    - Preencher formulário
+    - Diferenciar novo vs edição
+    Tempo estimado: 2-3 horas
+
+4º) AJUSTAR CAMPOS "ATUAL" E "HORA"
+    - Decidir se mantém ou remove
+    - Implementar conforme decisão
+    Tempo estimado: 30-60 minutos
+
+5º) IMPLEMENTAR ConsultaUltimoNumeroBico
+    - Criar método no serviço
+    - Auto-preencher No.Bomba Inicial
+    Tempo estimado: 1 hora
+
+6º) REFINAMENTOS
+    - Melhorar UX, mensagens, loading
+    Tempo estimado: 2-4 horas
+
+TOTAL ESTIMADO: 6-12 horas de desenvolvimento
+
+
+====================================================================
+CONSIDERAÇÕES FINAIS
+====================================================================
+
+PONTOS POSITIVOS:
+✅ Estrutura bem organizada (3 telas separadas)
+✅ Integração com APIs bem feita
+✅ Lógica de dependências entre campos funcionando
+✅ Service centralizado e bem estruturado
+✅ Navegação entre telas OK
+✅ Maioria dos campos implementados
+
+PONTOS DE ATENÇÃO:
+⚠️ Tela diz "Edição" mas não edita (confunde usuário)
+⚠️ Campos selecionáveis mas não enviados (perda de dados)
+⚠️ Faltam validações importantes
+⚠️ Campos na UI sem função (Odômetro/Horímetro Atual)
+
+RISCO:
+- Se usuário tenta editar um abastecimento existente e grava, pode criar duplicata
+- Se usuário seleciona Aplicação/Troca-Reposição e grava, esses dados são perdidos
+
+RECOMENDAÇÃO:
+Priorizar correção do payload e validações (itens 1 e 2 acima) antes de outras melhorias,
+pois impactam na integridade dos dados gravados.
+
+
+====================================================================
+FIM DO DOCUMENTO
+====================================================================
+
+Última atualização: 24/12/2025
+Responsável: Análise automatizada do código vs documentação

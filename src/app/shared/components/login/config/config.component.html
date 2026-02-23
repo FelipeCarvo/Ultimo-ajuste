@@ -1,7 +1,7 @@
 <form [formGroup]="configForm" (ngSubmit)="sendParams()">
   <ion-item lines="none">
     <ion-icon name="git-compare-outline"  slot="start" class="iconColor" size="small"></ion-icon>
-    <ion-input formControlName="configParams" required type="text" placeholder="Parâmetros de configuração"> </ion-input>
+    <ion-input formControlName="configParams" required type="text" placeholder="Parametros de configurção"> </ion-input>
   </ion-item>
   <ion-button class="btn-login" type="submit" expand="block"[disabled]="configForm.invalid ||loadSendData">
     <ion-ripple-effect type="unbounded"></ion-ripple-effect>

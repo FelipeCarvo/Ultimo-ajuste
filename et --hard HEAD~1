@@ -1,0 +1,167 @@
+[33m5fd6c87[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Resolve conflitos de merge
+[33m7deab42[m Ajustes na documentação
+[33m5c96a5c[m Update README.md
+[33m60b257b[m Docu.
+[33m2cbbc1f[m[33m ([m[1;31morigin/testebeta[m[33m)[m Teste modulos OS, POSTOS, PROPRIO.
+[33mdcdaad8[m Versao atual.
+[33m133a548[m Ticket 520735: - Ajuste no input de quantidade a devolver na tela de Itens a Devolver para apresentar 0 como default.
+[33m7b168a7[m Ticket 520735: - Removido preenchimento automático do inut de quantidade a devolver na tela de Itens a Devolver.
+[33m9ca8259[m Ajustes na documentação
+[33m99018cf[m Ajustes na documentação
+[33m35f9d76[m Ajuste no Manual
+[33m0806dd5[m Merge branch 'main' of https://github.com/Poliview-Siecon/RequisicaoMobile
+[33md81a25e[m Ajuste no Manual
+[33m50cd624[m Ticket: 514822 Mensagem de erro quando o usuário não tinha permissão na alçada não estava aparecendo.
+[33m288f835[m Ticket: 514890 Correção de português
+[33mcd4feff[m Ticket: 514822 Comandos comentados para evitar chamar a API 2x. Na justificativa a tela chegava a travar.
+[33mab55b88[m 1.Ticket:514781 1.1. Cli. Poliview 1.2. Info: API web para Requisição com OS e Abastecimento
+[33mc43c009[m 1.Ticket:514781 1.1. Cli. Poliview 1.2. Info: API web para Requisição com OS e Abastecimento
+[33m7507f7f[m 1.Ticket:514781 1.1. Cli. Poliview 1.2. Info: API web para Requisição com OS e Abastecimento
+[33me60ef4b[m * 1.Ticket:514781 1.1. Cli. Poliview 1.2. Info: API web para Requisição com OS e Abastecimento/Inicio documentação
+[33mb7576da[m 1.Ticket:514781 1.1. Cli. Poliview 1.2. Info: API web para Requisição com OS e Abastecimento/Inicio documentação
+[33m135cf57[m 1.Ticket:514781 1.1. Cli. Poliview 1.2. Info: API web para Requisição com OS e Abastecimento/Inicio documentação
+[33m596950a[m Versao atual.
+[33m60f67e5[m Ticket 512855: - Atualização do capacitor; - Novo componente para evitar a sobreposição do botão de navegação do android.
+[33me393314[m Atualizando capacitor.
+[33m033de05[m Versao atual.
+[33m79c79e2[m Ticket 512531: - Atualizando icones.
+[33m409414a[m Nova versao
+[33meaa9f20[m Ticket: 504188 Lookup de insumos da baixa de estoque deve mostrar apenas insumos com estoque.
+[33m27cffb6[m Arquivo da versão
+[33m98c0fcd[m Corrigido cores quando o tema é escuro. Corrigido botão de excluir e editar quantidade na lista de itens. (Telas Modais) Tela de login: adicionada opção para voltar para a tela de configuração. 3 Casas decimais na quantidade em estoque.
+[33m82484f7[m Nova versão. Necessária descrição do motivo de usar a câmera
+[33m9841629[m Novo componente para qrCode
+[33m0aeaed2[m Nova versão
+[33md0b58ea[m Ticket: 501285 Faltou a tag de ion-content: a tela não faz scroll. Label nos inputs faz aparecer a palavra da label dentro do input.
+[33ma7efc71[m Nova versão
+[33m95d92e5[m Ticket: 501285 Atualização do nodejs Atualização do angular Atualização do Capacitor
+[33m82764ee[m Ticket: 501285 Quando a digitação de colaborador estiver desabilitada o sistema não pode desabilitar o componente, precisa deixar apenas invisível. Correção de data undefined que não funciona no date-fns.
+[33mecad207[m Ticket 495094: - Ajuste para permitir selecionar o colaborador  apenas através de QrCode (parâmetro de configuração) na tela de cadastro de reserva de equipamento e baixa de estoque.
+[33mfdd1cb6[m Versao atual
+[33m134fdf7[m Atualização do angular e capacitor.
+[33m35bdd62[m Ticket: 484759 Nova tela para devolução de itens.   - Opção para marcar como avariado.   - Mudanças no layout Opção na lookup para selecionar o primeiro registro Mudança na ordem dos campos da tela de pesquisa
+[33mad3a0a8[m Ticket: 482384     Novo parâmetro na Devolução para calcular corretamente o saldo.     Quantidade da devolução deve vir por padrão o valor requisitado para facilitar para o usuário.     Corrigido retorno da tela de devolução     Filtro por equipamento na busca por devoluções.
+[33mfe7e09d[m Chamada da tela que adiciona itens
+[33me1a201e[m Função de adicionar insumo na baixa de estoque
+[33m1504f87[m Correção das labels
+[33m56501c0[m Corrigindo padrões
+[33m7b7bb4a[m removendo item não utilizado
+[33m97c7d16[m Evento para notificar mudança do item. Mostrando quantidade máxima no estoque.
+[33md5f68cf[m Liberacao modificada e funcionando
+[33m2c7b089[m Ticket: 482384 Observable não estavam sendo completados.
+[33m73f26ba[m Correção do componente de lookup para não precisar carregar todos os registros em memória. No caso da leitura do qrcode isso era necessário para que ele funcionasse corretamente.
+[33mbbb6c75[m Componente de leitura de qrCode
+[33mb780afd[m ajuste
+[33m852999c[m Ajuste menu
+[33m5152489[m entrega do projeto
+[33mf80ac75[m filtro funcionários
+[33m047870a[m incluindo upper e trim na leitura do QRCode
+[33mffeb29b[m Ajuste URL
+[33m3ceb00c[m Update home.page.ts
+[33m213747f[m Entrega do APP
+[33mc6831e8[m Pull & Merge
+[33m791d9a4[m[33m ([m[1;33mtag: [m[1;33mV-2022-12[m[33m)[m Permissões no IOS
+[33m229b416[m Documentação para gerar apps
+[33mcf164f4[m Merge branch 'etapacompesquisa'
+[33md451e66[m Merge branch 'develop' into etapacompesquisa
+[33ma4b7887[m ajuste
+[33m853939d[m ajuste
+[33ma30e942[m Merge branch 'develop' into etapacompesquisa
+[33mdb0e3df[m ajuste
+[33m1262a4a[m Comentário para não esquecer o motivo de comentar a linha que causava o problema
+[33mc58fe9e[m Objeto de seleção de Etapa com pesquisa
+[33maa56b83[m ajuste
+[33m1386cfb[m ajustes
+[33m9758553[m ajustes
+[33m1a9f11a[m ajustes
+[33md249c61[m ajustes
+[33mce9e26f[m ajustes
+[33mc087dbf[m ajustes
+[33m03f6765[m ajustes
+[33m0965388[m ajuste_error_msg
+[33mced3e99[m ajustes
+[33m976affe[m ajustes
+[33m430259e[m ajuste
+[33m5ed1439[m Update README.md
+[33m06e6086[m Update README.md
+[33m647f4fb[m capacitor/status-bar
+[33m9e4dd1a[m capacitor/splash-screen
+[33mb7c1bc7[m capacitor/keyboard
+[33m7e0ac89[m capacitor/haptics
+[33m254b910[m capacitor/filesystem
+[33me9c0f68[m ajustes
+[33m3762896[m ajustes
+[33m292567d[m Update README.md
+[33m4223536[m ajustes
+[33m38990bc[m ajuste
+[33mc69d81f[m ajustes
+[33mab4defc[m Update README.md
+[33me490b97[m Update README.md
+[33m22bc2ff[m ajustes
+[33m622906c[m ajustes
+[33m4b55e41[m ajuste
+[33mc413b99[m ajuste
+[33m3225f82[m readme
+[33mcd9e60e[m merge
+[33mf47da93[m engibuild-angular
+[33m5d9f570[m novos_ajustes
+[33m79bbf5e[m insumos_error_msg
+[33mc58e2f2[m readme
+[33mdbe374a[m ajuste
+[33mc255466[m ajuste
+[33m7ed0b62[m ajuste
+[33mb27df42[m ajuste
+[33m8913a4b[m ajuste
+[33med60754[m ajuste
+[33ma0b804e[m ajustes
+[33m2d85bce[m ajustes
+[33me23b184[m ajustes
+[33m114cb91[m update_angular_eslint0plugin
+[33m259e02c[m ajustes
+[33m2f49fbb[m Update README.md
+[33m1554ca7[m Update README.md
+[33m17c3497[m Update README.md
+[33m376af84[m Update README.md
+[33mc5b1b44[m Update README.md
+[33mc30078b[m Update README.md
+[33m3605646[m Update README.md
+[33m6752f07[m ajustes
+[33mc8f435f[m lastCommit
+[33m54d7a08[m lastCommit
+[33m00609ef[m last_commit
+[33mebefe50[m ajustes
+[33m794845a[m final_version
+[33mdab3e60[m ajustes
+[33mfd9f9c4[m ajustes
+[33mbdb9455[m ajustes
+[33m4f86bc2[m ajustes
+[33mff3c3da[m ajustes
+[33m922defa[m ajustes
+[33m0fe714b[m ajustes
+[33m530182d[m ajustes
+[33m3089dca[m ajustes
+[33mc276258[m ajustes
+[33m9963cf7[m ajustes
+[33m79d06fe[m ajustes
+[33mae31632[m ajustes
+[33m2ae9f3e[m Ajustes
+[33m911dee5[m ajustes
+[33m60776ba[m save_code
+[33m8ef637a[m ajustes
+[33m737117f[m ajustes-finais
+[33me95490e[m ajustes
+[33m6db5b31[m ajustes
+[33m4c7570d[m ajuste
+[33m5225f1e[m ajustes
+[33m3c3b095[m merge
+[33m23a4022[m ajustes
+[33mbc1dc08[m merge
+[33m800d149[m merge
+[33m93d1ced[m ajustes
+[33m4cf1411[m ajuste
+[33m7a27c1d[m ultimos_ajustes
+[33ma540867[m merge
+[33m6c4bb13[m merge
+[33m2f6e3c5[m merge
+[33mca28aba[m ajustes
+[33m697deda

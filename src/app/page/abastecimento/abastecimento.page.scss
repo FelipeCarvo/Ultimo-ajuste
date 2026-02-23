@@ -1,0 +1,115 @@
+:host {
+  ion-content {
+    --background: #083244; // fundo azul escuro
+  }
+
+  --btn-green-start: #2ec46f;
+  --btn-green-end:   #1fb45e;
+}
+
+/* HEADER (igual às outras telas novas) */
+ion-header {
+  ion-toolbar {
+    --background: #083244;
+    --border-width: 0;
+    --border-color: transparent;
+  }
+
+  .logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 12px 0;
+
+    #logo-login {
+      height: 60px;
+      width: auto;
+    }
+  }
+}
+
+/* Wrapper dos botões – sobe o bloco inteiro */
+.buttons-wrapper {
+  padding: 24px 16px 32px;  /* top menor => fica mais perto do topo */
+}
+
+/* Coluna que contém os botões */
+.buttons-row {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;               /* espaço ENTRE os botões */
+}
+
+/* Botão verde padrão */
+.btnGreen {
+  --background: linear-gradient(90deg, var(--btn-green-start), var(--btn-green-end));
+  --background-activated: linear-gradient(90deg, #28b766, #1aa953);
+  --border-radius: 10px;
+  --box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+  --color: #ffffff;
+
+  width: 100%;
+  height: 48px;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.2px;
+  text-transform: none;
+
+  transition: transform 0.08s ease;
+}
+
+.btnGreen:active {
+  transform: translateY(1px);
+}
+
+/* Padding horizontal do grid do header */
+ion-header ion-row > ion-col {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+
+@media (max-width: 767px) {
+  ion-header ion-row > ion-col {
+    margin-top: 8px;
+  }
+}
+
+/* Caso tenha listas/cards nessa tela no futuro */
+ion-card,
+ion-item,
+ion-list {
+  --background: #0b3e52;
+  --ion-item-background: #0b3e52;
+  color: #e5f0f6;
+}
+.home-content {
+  --background: #083244; // mesmo fundo das outras telas de frotas
+}
+
+/* Container dos botões */
+.buttons-wrapper {
+  margin-top: 40px;      // sobe o bloco de botões
+  padding: 0 24px;
+}
+
+/* Colunas dos botões */
+.button-col {
+  padding: 0 6px;
+}
+
+/* Botões de Abastecimento (linha de cima) */
+.btn-abastecimento {
+  height: 72px;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+/* Espaço entre a linha de cima e o botão Voltar */
+.bottom-row {
+  margin-top: 16px;
+}
+
+/* Botão Voltar, se quiser um pouquinho diferente pode mexer aqui */
+.btn-voltar {
+  margin-top: 4px;
+}

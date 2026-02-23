@@ -1,0 +1,218 @@
+ALTERAÇÃO - ABASTECIMENTO EM POSTOS (APP)
+
+Data: 22/12/2025
+Escopo: Comparar a tela atual "Abastecimento em Postos - Edição" e fluxo de pesquisa com a documentação existente e registrar divergências + recomendações para ficar aderente.
+
+Fontes analisadas:
+- Documentação: Documentacao/Frt_ApiFrotas.md
+  - 1.12 Pesquisa Abastecimento Posto
+  - 1.13 Gravar Abastecimento Posto
+- Código (tela): src/app/page/abastecimento-postos-edicao/abastecimento-postos-edicao.page.html
+- Código (lógica/payload): src/app/page/abastecimento-postos-edicao/abastecimento-postos-edicao.page.ts
+- Código (pesquisa - filtros): src/app/page/abastecimento-postos/abastecimento-postos.page.html
+- Código (pesquisa - listagem): src/app/page/abastecimento-postos-pesquisa/abastecimento-postos-pesquisa.page.html
+
+
+====================================================================
+ALTERAÇÃO 1 - CHECKLIST (DOCUMENTAÇÃO x TELA) / CAMPOS DE GRAVAÇÃO
+====================================================================
+
+1) CAMPOS OBRIGATÓRIOS NA DOCUMENTAÇÃO (1.13) x IMPLEMENTAÇÃO
+
+Tabela (Doc -> UI -> Payload -> Status):
+
+| Documentação (campo)            | UI (existe?) | Payload (enviado?) | Status |
+|---------------------------------|-------------|--------------------|--------|
+| TpAbastecimento = 1             | Não (fixo)  | Sim (TpAbastecimento: 1) | OK |
+| DataAbastecimento (Dt.Retirada) | Sim         | Sim (DataAbastecimento: dtRetirada) | OK* |
+| IdFornecedor (Fornecedor)       | Sim         | Sim (IdFornecedor: fornecedor) | OK |
+| IdEquipamento (Equipamento)     | Sim         | Sim (IdEquipamento: equipamento) | OK |
+| IdEmprd (Empreendimento)        | Sim         | Sim (IdEmprd: empreendimento) | OK |
+| IdEmpresa (Empresa)             | Sim         | Sim (IdEmpresa: empresa) | OK |
+| IdCentroDespesa (Centro Despesa)| Sim         | Sim (IdCentroDespesa: centroDespesas) | OK |
+| IdEtapa (Etapa)                 | Sim         | Sim (IdEtapa: etapa) | OK |
+| IdInsumo (Insumo)               | Sim         | Sim (IdInsumo: insumo) | OK |
+| IdBloco (Bloco)                 | Sim         | Sim (IdBloco: bloco) | OK |
+| QtdInsumo (Qtd Sol./Ret.)       | Sim         | Sim (QtdInsumo: qtdRetirada ?? quantidadeSolicitada) | OK* |
+| TotalAbastecimentoPosto (Total) | Sim         | Sim (TotalAbastecimentoPosto: total) | OK |
+| Origem = 3                      | Não (fixo)  | Sim (Origem: 3) | OK |
+
+Observações sobre os itens "OK*":
+- DataAbastecimento: o campo de UI é Dt.Retirada e vai em DataAbastecimento. Está compatível com a doc, mas a tela se chama "Edição" e não carrega valores existentes (ver Alteração 3).
+- QtdInsumo: a doc descreve como "Quantidade Solicitada e Retirada" (mesma), e o código faz fallback (qtdRetirada ?? quantidadeSolicitada). Isso atende, mas gera ambiguidade na UI (duas entradas).
+
+
+2) CAMPOS NÃO OBRIGATÓRIOS NA DOCUMENTAÇÃO (1.13) x IMPLEMENTAÇÃO
+
+Tabela (Doc -> UI -> Payload -> Status):
+
+| Documentação (campo)                 | UI (existe?)         | Payload (enviado?) | Status |
+|--------------------------------------|----------------------|--------------------|--------|
+| Observacao (Observação)              | Sim                  | Sim (Observacao: observacao) | OK |
+| Odometro (Odômetro/Hodômetro)        | Sim (Hodômetro)      | Sim (Odometro: hodometro) | OK |
+| Horimetro (Horímetro)                | Sim                  | Sim (Horimetro: horimetro) | OK |
+| NumeroControlePosto (Nº Ctrl Posto)  | Sim (input existe)   | Sim (NumeroControlePosto: numeroVoucher) | PROBLEMA |
+| Retorno (checkbox default 1)         | Sim (checkbox existe)| Sim (Retorno: 1 fixo) | PROBLEMA |
+| Estoque (checkbox default 0)         | Sim (checkbox existe)| Sim (Estoque: 0 fixo) | PROBLEMA |
+
+PROBLEMAS identificados:
+- NumeroControlePosto:
+  - Na UI existe um input "Nº Ctrl Posto" mas ele NÃO está ligado a ngModel.
+  - No payload, NumeroControlePosto está sendo preenchido com "numeroVoucher" (campo "Número Voucher").
+  - Ou seja: hoje o app envia o número do voucher no campo de controle do posto (incompatível com a doc).
+
+- Retorno/Estoque:
+  - Existem checkboxes na UI, mas não há ngModel e nem ligação com o payload.
+  - O payload manda fixo Retorno=1 e Estoque=0. Isso até respeita o "default" da doc, mas impede o usuário de alterar.
+
+
+3) CAMPOS QUE EXISTEM NA UI MAS NÃO ESTÃO NA DOCUMENTAÇÃO (1.13)
+
+| Campo na UI                          | Existe no payload? | Status / Observação |
+|--------------------------------------|--------------------|---------------------|
+| Hor./Odôm. atual                     | Não (e está errado) | PROBLEMA: está com ngModel=observacao (duplica Observação) |
+| Número Voucher                        | Sim (errado)        | Está indo para NumeroControlePosto (ver acima) |
+| Pesquisa Número Voucher               | Não                 | Não usado no payload e não existe na doc |
+| Quantidade Solicitada                 | Indiretamente       | Só usada como fallback para QtdInsumo |
+| Valor Solicitado                      | Sim                 | Payload envia ValorSolicitado, mas doc não cita esse campo |
+| Foto                                  | Sim                 | Payload envia Foto (base64), doc não cita |
+
+
+====================================================================
+ALTERAÇÃO 2 - SUGESTÃO DE AJUSTES PARA FICAR IGUAL À DOCUMENTAÇÃO
+====================================================================
+
+Objetivo: deixar a tela e o payload aderentes ao que está em 1.13 (Gravar Abastecimento Posto).
+
+A) AJUSTES RECOMENDADOS (MÍNIMO NECESSÁRIO)
+
+A1) Corrigir NumeroControlePosto (Nº Ctrl Posto)
+- O campo "Nº Ctrl Posto" deve preencher NumeroControlePosto.
+- A doc diz que é opcional, mas se existir na UI deve funcionar.
+
+Recomendação:
+- Criar variável: numeroControlePosto (string/number conforme backend)
+- Ligar ngModel no input "Nº Ctrl Posto"
+- No payload: NumeroControlePosto: numeroControlePosto
+
+A2) Tratar Retorno e Estoque como campos do usuário (com default)
+- A doc descreve defaults (Retorno=1 checado; Estoque=0 não checado), mas a UI mostra checkboxes.
+
+Recomendação:
+- Criar variáveis booleanas ou 0/1:
+  - retorno = true (default)
+  - estoque = false (default)
+- Ligar ngModel nos ion-checkbox
+- No payload:
+  - Retorno: retorno ? 1 : 0
+  - Estoque: estoque ? 1 : 0
+
+A3) Remover ou corrigir "Hor./Odôm. atual"
+- Hoje este campo é um bug: está escrevendo em observacao.
+
+Recomendação (para aderir doc):
+- REMOVER o campo "Hor./Odôm. atual" da UI (não existe na doc)
+  OU
+- Se for obrigatório por regra de negócio, definir claramente o que significa e documentar no MD (mas isso foge do objetivo de "igual à doc atual").
+
+
+B) CAMPOS QUE DEVERIAM SER REMOVIDOS PARA FICAR IGUAL À DOCUMENTAÇÃO (1.13)
+
+B1) Remover "Pesquisa Número Voucher"
+- Não existe na doc de gravação.
+- Não alimenta payload.
+
+B2) Reavaliar / Remover "Número Voucher"
+- A doc não cita Voucher para o POST de gravação.
+- Hoje ele ainda causa erro lógico porque está sendo usado como NumeroControlePosto.
+
+Recomendação:
+- Se o voucher é necessário, deve ser incluído na documentação e no payload com o nome correto do backend.
+- Se NÃO é necessário para gravação (doc não pede), remover da UI.
+
+B3) Remover "Valor Solicitado" (ou documentar)
+- Não existe na doc.
+- Está indo no payload como ValorSolicitado.
+
+Recomendação para aderência:
+- Remover da UI e do payload.
+- Se backend exige, então o documento (MD) deve ser atualizado incluindo ValorSolicitado.
+
+B4) Remover "Foto" (ou documentar)
+- Foto não existe na doc 1.13.
+
+Recomendação para aderência:
+- Remover da UI e do payload.
+- Se for requisito, atualizar documentação descrevendo formato/limites (base64? lista de fotos? tamanho máximo?).
+
+B5) Reduzir ambiguidade de Quantidade
+- A doc diz: QtdInsumo = "Quantidade Solicitada e Retirada" (mesma).
+- Hoje existem 2 inputs: Quantidade Solicitada e Qtd. Retirada.
+
+Recomendação:
+- Manter apenas 1 campo de quantidade na UI (ex: "Quantidade") e mandar em QtdInsumo.
+- Se quiser manter os dois por UX, precisa regra clara e documentação (hoje é ambíguo).
+
+
+====================================================================
+ALTERAÇÃO 3 - PONTOS DE FLUXO (TELA SE CHAMA EDIÇÃO, MAS NÃO EDITA)
+====================================================================
+
+Problema:
+- A tela tem título "Edição" e existe rota com ":id".
+- Porém, o código não lê nem o parâmetro id e nem o state (item) para preencher o formulário.
+
+Impacto:
+- O usuário clica "VER DETALHES" e cai em uma tela vazia (ou com defaults), sem edição real.
+
+Recomendação (mínimo para ser "Edição"):
+- Ao abrir a página, ler o item passado em navigation state ou buscar pelo :id.
+- Preencher os campos com os valores atuais.
+- O payload de gravação deve incluir o identificador necessário para edição (se existir no backend), senão sempre vira “novo”.
+
+Obs.: A documentação atual (1.13) descreve parâmetros de criação/gravação, mas não está explícito se existe “editar” via mesmo endpoint e qual campo de ID deve ser enviado. Isso precisa ser validado.
+
+
+====================================================================
+ALTERAÇÃO 4 - PESQUISA: DOCUMENTAÇÃO (1.12) x UI ATUAL
+====================================================================
+
+Documentação 1.12 (Pesquisa Abastecimento Posto):
+- UI base: Fornecedor + Equipamento
+
+UI atual (abastecimento-postos.page.html):
+- Fornecedor
+- Equipamento
+- Data Inicial
+- Data Final
+- Número Voucher
+
+Status:
+- A UI atual tem mais filtros do que a documentação.
+
+Recomendação (para aderir 1.12):
+- Se o objetivo é ficar IGUAL à doc, remover Data Inicial, Data Final e Número Voucher.
+- Se estes filtros são necessários, atualizar a doc 1.12 incluindo todos.
+
+
+====================================================================
+RESUMO EXECUTIVO (O QUE ESTÁ ERRADO HOJE)
+====================================================================
+
+1) "Hor./Odôm. atual" está com bug (ngModel apontando para Observação).
+2) "Nº Ctrl Posto" existe mas não alimenta o payload.
+3) O payload manda NumeroControlePosto usando o campo "Número Voucher" (mistura de conceitos).
+4) Checkboxes Retorno/Estoque existem mas não controlam nada (payload fixo).
+5) Tela se chama "Edição" mas não carrega item para editar.
+6) Existem campos na UI (Voucher, Valor Solicitado, Foto, etc.) que não estão na documentação.
+
+
+====================================================================
+PRÓXIMO PASSO (COMBINADO)
+====================================================================
+
+Após você validar este relatório, a próxima etapa pode ser:
+1) Escolher um caminho:
+   - Caminho A: Ajustar a TELA/PAYLOAD para ficar igual à documentação atual.
+   - Caminho B: Atualizar a documentação para refletir a UI atual (incluindo voucher/valor/foto etc.).
+2) Implementar as mudanças escolhidas no código e testar o fluxo.

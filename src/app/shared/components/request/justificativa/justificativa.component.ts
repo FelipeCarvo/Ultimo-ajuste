@@ -19,11 +19,11 @@ export class JustificativaComponent implements OnInit {
     public loading: LoadingService,
     private alertServices: AlertServices,
     private toastController:ToastController,
-  ) {
-
+  ) { 
+    
   }
   ngAfterViewInit(){
-    //this.getJustifcativa()
+    this.getJustifcativa()
   }
   ngOnInit() {
    this.getJustifcativa()
@@ -33,7 +33,7 @@ export class JustificativaComponent implements OnInit {
     this.requestService.getJustifcativa(this.requisicaoId).subscribe((res:any) =>{
       this.load = true;
       this.justificativaList = res;
-
+   
       this.loading.dismiss();
     },async(error)=>{
       this.loading.dismiss();

@@ -1,0 +1,225 @@
+====================================================================
+PROBLEMA IDENTIFICADO - API ConsultaAbastecimento (26/12/2025)
+====================================================================
+
+RESUMO DO PROBLEMA:
+A API /api/frotas/Abastecimentos/ConsultaAbastecimento retorna dados PARCIAIS
+quando consultada, faltando IDs (GUIDs) essenciais para preencher o formulário
+de edição corretamente.
+
+====================================================================
+EVIDÊNCIAS (Logs do Console)
+====================================================================
+
+Ao clicar em "Ver Detalhes" de um abastecimento, a API retorna:
+
+✅ CAMPOS QUE VÊM DA API:
+- emprdCod: 100 (código numérico do empreendimento)
+- emprDesc: "CONDOMIO EDIFICIO MODELO"
+- codEquipamento: "RE01"
+- modelo: "RETROESCAVADEIRA"
+- quantidade: 777
+- fornecedorId: "62741214-a57a-49af-9851-dd759d29b549" (GUID ✓)
+- equipamentoId: "802792e5-9c95-4a27-b98c-eab39b6003d6" (GUID ✓)
+- insumoId: "8bb13450-ff35-4d10-bb40-d61019b45126" (GUID ✓)
+- entidade: 1 (código numérico da empresa)
+
+❌ CAMPOS QUE NÃO VÊM DA API:
+- empresaId (GUID) - só vem "entidade: 1" (código numérico)
+- empreendimentoId (GUID) - só vem "emprdCod: 100" (código numérico)
+- etapaId (GUID)
+- blocoId (GUID)
+- centroDespesaId (GUID)
+
+====================================================================
+IMPACTO NO FORMULÁRIO DE EDIÇÃO
+====================================================================
+
+Campos que ficam VAZIOS ao abrir "Ver Detalhes":
+1. ❌ Empresa - campo fica vazio (não consegue resolver o GUID a partir do código numérico)
+2. ❌ Centro de Despesas - campo fica vazio
+3. ❌ Etapa - campo fica vazio
+4. ❌ Bloco - campo fica vazio
+
+Campos que FUNCIONAM:
+1. ✅ Fornecedor - vem o GUID correto
+2. ✅ Equipamento - vem o GUID correto
+3. ✅ Insumo - vem o GUID correto
+4. ✅ Empreendimento - consegue resolver o GUID a partir do código numérico
+
+====================================================================
+CAUSA RAIZ
+====================================================================
+
+A API de CONSULTA (/api/frotas/Abastecimentos/ConsultaAbastecimento)
+retorna apenas:
+- IDs completos: fornecedorId, equipamentoId, insumoId
+- Códigos numéricos: emprdCod, entidade
+- Descrições: emprDesc, codEquipamento, modelo
+
+A API de GRAVAÇÃO (/api/frotas/Abastecimentos/GravaAbastecimento)
+EXIGE os seguintes GUIDs:
+- IdEmpresa (GUID)
+- IdEmprd (GUID)
+- IdCentroDespesa (GUID)
+- IdEtapa (GUID)
+- IdBloco (GUID)
+
+Ou seja: INCOMPATIBILIDADE entre o que a API de consulta retorna e
+o que a API de gravação exige.
+
+====================================================================
+DOCUMENTAÇÃO DA API (Frt_ApiFrotas.md)
+====================================================================
+
+Segundo a documentação (seção 1.2 - ConsultaAbastecimento), o retorno
+esperado é:
+
+```json
+{
+  "emprdCod": 0,
+  "emprDesc": "string",
+  "codEquipamento": "string",
+  "modelo": "string",
+  "quantidade": 0,
+  "valorTotal": 0,
+  "entidade": 0,               // ❌ Código numérico, não GUID
+  "insumoCdg": "string",
+  "insumoDesc": "string",
+  "dataAbastecimento": "2025-10-20T16:36:26.777Z",
+  "identificador": "string",
+  "localAbastecimento": "string",
+  "responsavelCod": "string",
+  "responsavelNome": "string",
+  "placa": "string",
+  "odometro": 0,
+  "numVoucher": 0,
+  "numRetornoPosto": 0,
+  "numeroCartao": "string",
+  "horimetro": 0,
+  "fornecedorRazao": "string",
+  "tpAbastecimento": 0,
+  "codAbastecimentoExterno": "string",
+  "abastecimentoId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "dataCadastro": "2025-10-20T16:36:26.777Z",
+  "equipamentoId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "insumoId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "comboioBombaCdg": "string",
+  "comboioBombaDescr": "string",
+  "comboioBombaId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "bicoCdg": 0,
+  "bicoDescr": "string",
+  "bicoId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "fornecedorId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "responsavelId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+}
+```
+
+CONFIRMADO: A documentação NÃO inclui os campos necessários:
+- empresaId / entidadeId ❌
+- empreendimentoId / emprdId ❌
+- etapaId ❌
+- blocoId ❌
+- centroDespesaId / planoContasDespesaId ❌
+
+====================================================================
+SOLUÇÕES POSSÍVEIS
+====================================================================
+
+SOLUÇÃO 1: BACKEND - Adicionar campos na API de Consulta (RECOMENDADO)
+-----------------------------------------------------------------------
+Pedir para o backend adicionar os seguintes campos no retorno de
+/api/frotas/Abastecimentos/ConsultaAbastecimento:
+
++ "empresaId": "GUID",                    // ID da empresa
++ "empreendimentoId": "GUID",             // ID do empreendimento
++ "etapaId": "GUID",                      // ID da etapa
++ "blocoId": "GUID",                      // ID do bloco
++ "centroDespesaId": "GUID",              // ID do centro de despesas
++ "planoContasDespesaId": "GUID"          // Alternativa para centro
+
+Isso permitiria que o formulário de edição carregasse TODOS os campos
+corretamente.
+
+SOLUÇÃO 2: FRONTEND - Permitir seleção manual dos campos faltantes
+-------------------------------------------------------------------
+Manter o código atual que:
+1. Carrega o que vier da API
+2. Deixa campos vazios quando os IDs não vierem
+3. Permite que o usuário selecione manualmente:
+   - Empresa
+   - Centro de Despesas
+   - Etapa
+   - Bloco
+
+⚠️ PROBLEMA: O usuário perde informação ao editar. Não sabe quais eram
+os valores originais desses campos.
+
+SOLUÇÃO 3: FRONTEND - Buscar IDs via lookups reversos
+------------------------------------------------------
+Tentar resolver os GUIDs a partir dos códigos/descrições:
+- entidade: 1 → buscar empresaId no lookup de empresas
+- emprdCod: 100 → buscar empreendimentoId no lookup (JÁ IMPLEMENTADO ✓)
+
+⚠️ LIMITAÇÃO: Não funciona para etapa, bloco e centro de despesas
+porque não temos códigos/descrições para fazer a busca reversa.
+
+====================================================================
+SOLUÇÃO IMPLEMENTADA (26/12/2025)
+====================================================================
+
+Foi implementado:
+1. ✅ Logs detalhados para identificar campos faltantes
+2. ✅ Resolução de empreendimentoId a partir de emprdCod (lookup reverso)
+3. ✅ Resolução de empresaId a partir de entidade (código numérico)
+4. ✅ Carregamento de listas para permitir seleção manual dos campos vazios
+5. ✅ Mensagens de debug claras indicando quais campos não vieram da API
+
+Campos que o usuário precisa selecionar manualmente ao editar:
+- Centro de Despesas
+- Etapa
+- Bloco
+
+====================================================================
+RECOMENDAÇÃO FINAL
+====================================================================
+
+**SOLUÇÃO 1 (Backend)** é a mais adequada porque:
+- Mantém a integridade dos dados
+- Usuário vê exatamente como o abastecimento foi gravado
+- Evita perda de informação na edição
+- Segue o princípio REST: API de consulta deve retornar todos os dados
+  necessários para reproduzir o estado completo do recurso
+
+**PRÓXIMO PASSO:**
+Solicitar ao time de backend a inclusão dos campos faltantes na API
+ConsultaAbastecimento, especialmente para TpAbastecimento = 1 (Postos).
+
+====================================================================
+LOGS DE EVIDÊNCIA (Console)
+====================================================================
+
+📋 [EDICAO] Campos importantes: {
+  empresaId: undefined,           // ❌
+  centroDespesaId: undefined,     // ❌
+  etapaId: undefined,             // ❌
+  blocoId: undefined,             // ❌
+  empreendimentoId: undefined,    // ❌
+  emprdCod: 100,                  // ✅
+  entidade: 1                     // ✅
+}
+
+⚠️ [PREENCHER] Etapa não encontrada nos dados
+⚠️ [PREENCHER] Bloco não encontrado nos dados
+⚠️ [PREENCHER] Centro de Despesas não encontrado nos dados
+
+✅ [PREENCHER] Preenchimento concluído. Estado atual: {
+  fornecedor: '62741214-a57a-49af-9851-dd759d29b549',
+  equipamento: '802792e5-9c95-4a27-b98c-eab39b6003d6',
+  empresa: 1,                      // ⚠️ Código numérico, não GUID
+  empreendimento: '8ff60057-89c9-4e76-92e6-b119d4d891b6', // ✅ Resolvido
+  centroDespesas: null,            // ❌
+  etapa: null,                     // ❌
+  bloco: null,                     // ❌
+  insumo: '8bb13450-ff35-4d10-bb40-d61019b45126'
+}

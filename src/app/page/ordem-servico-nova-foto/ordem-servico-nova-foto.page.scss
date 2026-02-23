@@ -1,0 +1,185 @@
+/* HEADER igual às outras telas */
+.os-header,
+.os-header ion-toolbar {
+  --background: #f4f6f9 !important;
+  background: #f4f6f9 !important;
+  color: #2d6fb1;
+  --border-width: 0;
+}
+
+.os-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px 4px;
+}
+
+.os-header-spacer {
+  width: 24px;
+}
+
+.os-back-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  align-items: center;
+
+  img {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.os-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d6fb1;
+}
+
+/* Fundo */
+.os-content {
+  --background: #f4f6f9;
+}
+
+/* CENTRALIZAÇÃO REAL */
+.os-page {
+  display: flex;
+  justify-content: center;
+  padding: 20px 16px 28px;
+}
+
+/* CARD MAIOR IGUAL OUTRAS TELAS */
+.os-card {
+  width: 100%;
+  max-width: 520px;                 /* ← AQUI aumenta de verdade */
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.06);
+  padding: 24px 24px 30px;
+}
+
+
+
+/* Inputs */
+.os-field {
+  margin-top: 16px;
+}
+
+.os-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2d6fb1;
+}
+
+.os-textarea {
+  --background: #f9fbff;
+  --padding-start: 10px;
+  --padding-end: 10px;
+  --padding-top: 10px;
+  border-radius: 8px;
+  border: 1px solid #dde5f2;
+  font-size: 13px;
+}
+
+/* Botão de procurar foto */
+.os-picker-btn {
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  background: #e4edf9;
+  color: #2d6fb1;
+  font-weight: 600;
+  font-size: 13px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+/* Botão confirmar */
+.os-actions {
+  margin-top: 20px;
+}
+
+.os-primary-btn {
+  width: 100%;
+  border: none;
+  border-radius: 22px;
+  padding: 10px;
+  background: #e4f1ff;
+  color: #2d6fb1;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.8px;
+}
+
+/* Preview da foto (substitui estilos inline) */
+.os-photo-box {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 12px;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f9f9f9;
+}
+.os-photo-img {
+  max-width: 90%;
+  max-height: 160px;     /* ← imagem bem maior */
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+
+.os-photo-placeholder {
+  color: #aaa;
+}
+/* ===================================================== */
+/* 🔥 ESTILO DO ACTION SHEET (CARD CÂMERA / GALERIA) */
+/* ===================================================== */
+
+.os-photo-sheet {
+  --background: transparent;
+}
+
+/* caixa branca arredondada */
+.os-photo-sheet .action-sheet-group {
+  border-radius: 18px 18px 0 0;
+  background: #ffffff;
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.08);
+  padding-bottom: 10px;
+}
+
+/* título */
+.os-photo-sheet .action-sheet-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #2d6fb1;
+  text-align: center;
+  padding: 14px 16px 6px;
+}
+
+/* botões */
+.os-photo-sheet .action-sheet-button {
+  font-size: 15px;
+  font-weight: 500;
+  color: #2c3e50;
+  padding: 14px 18px;
+}
+
+/* ícones */
+.os-photo-sheet .action-sheet-icon {
+  color: #2d6fb1;
+  font-size: 20px;
+}
+
+/* botão cancelar separado */
+.os-photo-sheet .action-sheet-group-cancel {
+  margin-top: 8px;
+  border-radius: 14px;
+  background: #ffffff;
+}

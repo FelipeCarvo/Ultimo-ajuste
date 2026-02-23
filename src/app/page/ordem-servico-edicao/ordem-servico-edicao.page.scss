@@ -1,0 +1,410 @@
+/* ================= HEADER ================= */
+
+.os-header,
+.os-header ion-toolbar {
+  --background: #f4f6f9 !important;
+  background: #f4f6f9 !important;
+  color: #2d6fb1;
+  --border-width: 0;
+}
+
+.os-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px 10px;
+}
+
+.os-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d6fb1;
+}
+
+.os-content {
+  --background: #f4f6f9;
+}
+
+/* ================= CARD ================= */
+
+.os-page {
+  display: flex;
+  justify-content: center;
+  padding: 12px 12px 80px;
+}
+
+.os-card {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 7px 16px rgba(0, 0, 0, 0.08);
+  padding: 18px 18px 24px;
+}
+
+/* ================= CAMPOS ================= */
+
+.os-field {
+  position: relative;
+  width: 100%;
+  margin-bottom: 16px;
+  overflow: visible;
+}
+
+.os-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2d6fb1;
+}
+
+/* INPUT padrão */
+
+.os-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+
+  border: 1px solid #d6dbe1;
+  border-radius: 12px;
+  background: #ffffff;
+
+  font-size: 14px;
+  color: #2c3e50;
+
+  box-sizing: border-box;
+}
+
+/* TEXTAREA */
+
+.os-textarea-native {
+  width: 100%;
+  min-height: 90px;
+  padding: 10px 12px;
+
+  border: 1px solid #dde5f2;
+  border-radius: 12px;
+  background: #ffffff;
+
+  font-size: 14px;
+  color: #2c3e50;
+
+  resize: none;
+  outline: none;
+}
+
+.os-textarea-native:focus {
+  border: 2px solid #000;
+}
+
+/* ================= INPUT WRAPPER (X limpar) ================= */
+
+.os-input-wrapper {
+  position: relative;
+}
+
+.os-clear-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: #9aa7b2;
+  cursor: pointer;
+}
+
+/* ================= AUTOCOMPLETE ================= */
+
+:host ::ng-deep app-autocomplete {
+  display: block;
+  width: 100%;
+}
+
+:host ::ng-deep app-autocomplete input {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+
+  border: 1px solid #d6dbe1;
+  border-radius: 12px;
+  background: #ffffff;
+
+  font-size: 14px;
+  color: #2c3e50;
+}
+
+:host ::ng-deep app-autocomplete .os-select-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+
+  max-height: 240px;
+  overflow-y: auto;
+
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+
+  padding: 6px 0;
+  z-index: 9999;
+}
+
+:host ::ng-deep app-autocomplete .os-select-option {
+  padding: 14px 18px;
+  font-size: 14px;
+  color: #000 !important;
+  cursor: pointer;
+}
+
+:host ::ng-deep app-autocomplete .os-select-option:hover {
+  background: #f4f6f9;
+}
+
+/* ================= DATAS ================= */
+
+.os-group-inline {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.os-group-half {
+  flex: 1;
+}
+
+/* caixa clicável da data */
+.os-date-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  height: 44px;
+  padding: 0 12px;
+
+  border-radius: 12px;
+  border: 1px solid #dde5f2;
+  background: #ffffff;
+
+  font-size: 14px;
+  color: #b0bdd5;
+  cursor: pointer;
+}
+
+/* quando tem valor selecionado */
+.os-date-field.has-value {
+  color: #2c3e50;
+}
+
+/* texto da data */
+.os-date-value {
+  flex: 1;
+}
+
+/* ícones à direita */
+.os-date-icons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ícones */
+.os-date-icons ion-icon {
+  font-size: 18px;
+  color: #a0b2cf;
+}
+
+
+/* ================= BOTÕES ================= */
+
+.os-actions-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.os-confirm-btn {
+  width: 100%;
+  border-radius: 22px;
+  padding: 10px;
+  background: #2d6fb1;
+  color: #fff;
+  font-weight: 700;
+  border: none;
+}
+
+.os-attach-photo-btn {
+  width: 100%;
+  border-radius: 22px;
+  padding: 10px;
+  background: transparent;
+  color: #2d6fb1;
+  border: 1px solid #2d6fb1;
+}
+
+.os-attach-photo-btn.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ================= FOTOS ================= */
+
+.os-photo-grid {
+  border: 1px solid #dde5f2;
+  background: #f9fbff;
+  border-radius: 8px;
+  padding: 10px;
+
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.os-photo-thumb {
+  width: 100%;
+  height: 78px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #dde5f2;
+}
+
+.os-photo-empty {
+  border: 1px dashed #dde5f2;
+  background: #f9fbff;
+  border-radius: 8px;
+
+  padding: 12px;
+  font-size: 13px;
+  color: #7a8ba8;
+
+  text-align: center;
+}
+
+
+
+
+.numero-os-disabled {
+  --color: #9aa3af;          // texto cinza
+  --placeholder-color: #cbd5e1;
+  --highlight-color-focused: transparent; // remove linha verde
+  --border-color: #e5e7eb;
+
+  opacity: 0.9;
+  font-weight: 600;
+
+    font-weight: 600;
+
+  /* 👇 espaço interno à esquerda do número */
+  --padding-start: 12px;
+}
+
+/* remove qualquer foco visual do Ionic */
+.numero-os-disabled.ion-focused {
+  --highlight-color-focused: transparent;
+}
+
+/* remove cursor de texto */
+.numero-os-disabled input {
+  pointer-events: none;
+}
+
+
+
+.btn-anexar-foto {
+  margin-top: 10px;
+  height: 44px;
+
+ --border-radius: 24px;
+  --background: #e9f1ff;
+  --color: #3b6fb6;
+  --border-width: 0;
+
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+
+  box-shadow: none;
+  opacity: 1;
+}
+
+
+/* ===== MODAL FOTO PADRÃO ===== */
+
+.os-foto-modal::part(content) {
+  border-radius: 20px;
+}
+
+/* fundo igual às outras telas */
+.os-foto-modal-content {
+  --background: #f4f6f9;
+
+  display: flex;
+  justify-content: center;
+
+  align-items: flex-start;
+  padding-top: 80px;
+  padding-bottom: 40px;
+}
+
+/* card centralizado */
+.os-foto-modal-card {
+  width: 90%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+  padding: 20px 18px 22px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* imagem maior */
+.os-foto-modal-img {
+  width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+/* botão principal azul padrão */
+.os-primary-btn {
+  width: 100%;
+  border: none;
+  border-radius: 24px;
+  padding: 12px;
+
+  background: linear-gradient(135deg, #4c8dff, #2d6fb1);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* botão secundário igual padrão do app */
+.os-secondary-btn {
+  width: 100%;
+  border: none;
+  border-radius: 24px;
+  padding: 12px;
+
+  background: #e4f1ff;
+  color: #2d6fb1;
+  font-weight: 600;
+}
+/* Remove qualquer highlight verde padrão do Ionic */
+ion-input {
+  --highlight-color-focused: transparent;
+  --highlight-color-valid: transparent;
+  --highlight-color-invalid: transparent;
+}
+
+/* Deixa o foco igual aos outros campos do sistema */
+ion-input.ion-focused {
+  border: 2px solid #000 !important;
+  border-radius: 12px;
+}

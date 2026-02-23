@@ -5,7 +5,7 @@
   "scripts": {
     "ng": "ng",
     "Gcp": "cd src/App/components && ng generate component",
-    "start": "ng serve -- --proxy-config ./proxy.config.json",
+    "start": "ng serve --proxy-config ./proxy.config.json",
     "build": "ng build",
     "generate_apk:ios": "npm run build && ionic cap sync ios && npm run resources:ios && ionic cap open ios",
     "generate_apk:android": "npm run build && ionic cap sync android && npm run resources:android && cd android && ./gradlew assembleDebug",
@@ -52,6 +52,7 @@
     "sharp": "^0.30.2",
     "signature_pad": "^4.1.6",
     "tslib": "^2.2.0",
+    "winston": "^3.19.0",
     "yarn": "^1.22.22",
     "zone.js": "~0.15.0"
   },
@@ -61,7 +62,7 @@
     "@angular-eslint/eslint-plugin": "19",
     "@angular-eslint/eslint-plugin-template": "19",
     "@angular-eslint/template-parser": "19",
-    "@angular/cli": "^19.1.6",
+    "@angular/cli": "19.2.19",
     "@angular/compiler": "^19.1.5",
     "@angular/compiler-cli": "^19.1.5",
     "@angular/language-service": "^19.1.5",

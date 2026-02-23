@@ -1,0 +1,36 @@
+<div class="os-autocomplete" (click)="abrirDropdown()">
+
+  <input
+    #inputRef
+    type="text"
+    class="os-input"
+    [(ngModel)]="textoBusca"
+    (focus)="abrirDropdown()"
+    (input)="filtrar()"
+    (blur)="fecharComDelay()"
+    [placeholder]="placeholder"
+  />
+
+  <!-- BOTÃO LIMPAR -->
+  <button
+    *ngIf="textoBusca"
+    class="clear-btn"
+    (click)="limpar(); $event.stopPropagation()"
+  >
+    ✕
+  </button>
+
+  <!-- LISTA -->
+  <div class="dropdown" *ngIf="aberto && listaFiltrada.length">
+
+    <div
+      class="item"
+      *ngFor="let item of listaFiltrada"
+      [class.selected]="isSelecionado(item)"
+      (mousedown)="selecionar(item)"
+    >
+      {{ getDescricao(item) }}
+    </div>
+
+  </div>
+</div>

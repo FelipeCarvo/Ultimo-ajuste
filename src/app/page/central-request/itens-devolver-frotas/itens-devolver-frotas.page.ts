@@ -60,8 +60,7 @@ export class ItensDevolverFrotasPage implements OnInit,OnDestroy {
     this.rquestService.getItensParaDevolver(filtro).subscribe((res: any) => {
       this.load = true;
       this.itens = res.map(item => {
-        //item.saldoQuantidadeEntregar = item.saldoQuantidadeDevolver;
-        item.saldoQuantidadeEntregar = 0;
+        item.saldoQuantidadeEntregar = item.saldoQuantidadeDevolver;
         item.devolucaoObservacao = '';
         item.devolucaoComAvaria = false;
         return item;

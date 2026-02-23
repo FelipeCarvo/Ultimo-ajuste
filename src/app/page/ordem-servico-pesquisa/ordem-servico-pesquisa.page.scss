@@ -1,0 +1,152 @@
+/* Ajuste para garantir contraste e visibilidade dos textos dos cards */
+.os-card-label {
+  color: #222 !important;
+  font-weight: 600;
+}
+
+.os-card-value {
+  color: #222 !important;
+  font-weight: 500;
+}
+/* HEADER padrão das outras telas */
+.os-header,
+.os-header ion-toolbar {
+  --background: #f4f6f9 !important;
+  background: #f4f6f9 !important;
+  color: #2d6fb1;
+  --border-width: 0;
+}
+
+.os-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+}
+
+.os-header-spacer {
+  width: 24px;
+}
+
+.os-back-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  align-items: center;
+
+  img {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+.os-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #2d6fb1;
+  text-align: center;
+}
+
+/* Fundo da página */
+.os-content {
+  --background: #f4f6f9;
+}
+
+.os-page {
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* CARD — agora maior, parecido com o print */
+.os-card {
+  width: 100%;
+  max-width: 500px;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 7px 16px rgba(0, 0, 0, 0.08);
+  padding: 18px 20px;
+  margin-bottom: 18px;
+}
+
+/* Cabeçalho do card */
+.os-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.os-card-os {
+  font-size: 13px;
+  font-weight: 700;
+  color: #333;
+}
+
+.os-card-status {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2d6fb1;
+}
+
+/* Corpo do card */
+.os-card-body {
+  font-size: 13px;
+  color: #444;
+  line-height: 1.35;
+}
+
+.os-line {
+  margin-bottom: 4px;
+}
+
+.os-label {
+  font-weight: 700;
+}
+
+.os-value {
+  margin-left: 4px;
+}
+
+/* Linha de datas */
+.os-dates-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.os-date-block {
+  width: 48%;
+  font-size: 12px;
+}
+
+/* Rodapé do card */
+.os-card-footer {
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
+}
+
+.os-details-btn {
+  width: 100%;
+  max-width: 260px;
+  border: none;
+  border-radius: 22px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #2d6fb1;
+  background: #e4f1ff;
+}
+
+/* Mensagem de vazio */
+.os-empty {
+  text-align: center;
+  font-size: 14px;
+  color: #7a8ba8;
+  margin-top: 20px;
+}

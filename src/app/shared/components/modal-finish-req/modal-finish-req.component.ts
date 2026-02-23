@@ -129,7 +129,7 @@ export class ModalFinishReqComponent implements OnInit {
     await this.openErrorToast('Requisição finalizada com sucesso')
     },async(err) =>{
       this.sendLoading = false;
-      await this.openErrorToast(err)
+      await this.openErrorToast(err.Mensagem)
     });
     //this.hasFinish = !this.hasFinish
   }

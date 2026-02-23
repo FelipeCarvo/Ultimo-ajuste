@@ -36,7 +36,7 @@ export class InsumoComponent implements AfterViewInit {
   ){
   }
   ngAfterViewInit(){
-    //this.initApp();
+    this.initApp();
   }
   ngOnInit(): void {
     this.initApp();

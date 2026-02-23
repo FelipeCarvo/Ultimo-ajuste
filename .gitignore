@@ -42,3 +42,9 @@ resources/ios/splash
 resources/windows/icon
 resources/windows/splash
 /binario
+
+
+node_modules/
+.yarn/
+.angular/
+certGoogle/

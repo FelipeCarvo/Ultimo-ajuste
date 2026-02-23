@@ -1,0 +1,136 @@
+/* HEADER igual às telas de OS */
+.os-header,
+.os-header ion-toolbar {
+  --background: #f4f6f9 !important;
+  background: #f4f6f9 !important;
+  color: #2d6fb1;
+  --border-width: 0;
+}
+
+.os-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px 6px;
+}
+
+.os-header-spacer {
+  width: 24px;
+}
+
+.os-back-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  align-items: center;
+
+  img {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.os-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d6fb1;
+}
+
+/* Fundo da página */
+.os-content {
+  --background: #f4f6f9;
+}
+
+.os-page {
+  padding: 12px;
+}
+
+/* Card de resultado – mesmo “tamanho visual” da OS Pesquisa */
+.os-card {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 7px 16px rgba(0, 0, 0, 0.08);
+  padding: 18px 16px 22px;
+  margin-bottom: 14px;
+
+  width: 100%;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Cabeçalho do card */
+.os-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.os-card-os {
+  font-size: 12px;
+  font-weight: 700;
+  color: #333;
+}
+
+.os-card-status {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2d6fb1;
+}
+
+/* Corpo do card */
+.os-card-body {
+  font-size: 14px;
+  color: #444;
+}
+
+.os-line {
+  margin-bottom: 4px;
+}
+
+.os-label {
+  font-weight: 700;
+}
+
+.os-value {
+  margin-left: 4px;
+}
+
+/* Rodapé do card */
+.os-card-footer {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Botão VER DETALHES – igual ao da OS Pesquisa (mais largo e “pill”) */
+.os-details-btn {
+  /* se for ion-button */
+  --background: #e4f1ff;
+  --border-radius: 22px;
+  --color: #2d6fb1;
+
+  /* fallback se for <button> normal */
+  background: #e4f1ff;
+  color: #2d6fb1;
+  border: none;
+  border-radius: 22px;
+
+  width: 70%;
+  max-width: 260px;
+  height: 36px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* Mensagem quando não tiver dados */
+.os-empty {
+  text-align: center;
+  font-size: 13px;
+  color: #7a8ba8;
+  margin-top: 20px;
+}
