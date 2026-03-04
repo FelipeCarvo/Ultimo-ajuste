@@ -14,7 +14,7 @@ import { CalendarPopoverComponent } from '../../components/calendar-popover/cale
 })
 export class OrdemServicoPage implements OnInit {
 
-  // 🔹 FILTRO
+  // FILTRO
   filtro = {
     numeroOs: '',
     empreendimento: '',
@@ -30,13 +30,13 @@ export class OrdemServicoPage implements OnInit {
 
   resultados: any[] = [];
 
-  // 🔹 LISTAS AUTOCOMPLETE
+  // LISTAS AUTOCOMPLETE
   equipamentosLista: any[] = [];
   empreendimentosLista: any[] = [];
   causasLista: any[] = [];
   manutentoresLista: any[] = [];
 
-  // 🔹 STATUS
+  // STATUS
   statusLista = [
     { valor: 1, descricao: 'Aberto' },
     { valor: 2, descricao: 'Em andamento' },
@@ -44,7 +44,7 @@ export class OrdemServicoPage implements OnInit {
     { valor: 4, descricao: 'Cancelado' }
   ];
 
-  // 🔹 CAMPOS DE DATA (USADO NO HTML)
+  // CAMPOS DE DATA (USADO NO HTML)
   camposData: {
     key: 'dataAberturaInicial' |
          'dataAberturaFinal' |
@@ -64,12 +64,12 @@ export class OrdemServicoPage implements OnInit {
     private ordemService: OrdemServicoService
   ) {}
 
-  // 🔹 INIT
+  // INIT
   ngOnInit() {
     this.carregarCombos();
   }
 
-  // 🔹 CARREGAR COMBOS
+  // CARREGAR COMBOS
   private carregarCombos() {
 
     this.ordemService.listarEmpreendimentos().subscribe({
@@ -100,7 +100,7 @@ export class OrdemServicoPage implements OnInit {
     });
   }
 
-  // 🔹 NAVEGAÇÃO
+  // NAVEGAÇÃO
   onBack() {
     this.router.navigate(['/tabs/frotas-home']);
   }
@@ -109,21 +109,10 @@ export class OrdemServicoPage implements OnInit {
     this.router.navigate(['/tabs/ordem-servico-edicao']);
   }
 
-  // 🔹 AUTOCOMPLETE
+  // AUTOCOMPLETE
   onEquipamentoSelecionado(item: any) {
     this.filtro.equipamento = item?.id || '';
   }
-
-  /*
-  onEmpreendimentoSelecionado(item: any) {
-    this.filtro.empreendimento =
-  item?.id ||
-  item?.empreendimentoId ||
-  item?.emprdId ||
-  item?.codigo ||
-  '';
-  }
-*/
 
 onEmpreendimentoSelecionado(item: any) {
   this.filtro.empreendimento = item?.id || '';
@@ -191,7 +180,7 @@ pesquisar() {
   this.router.navigate(['/tabs/ordem-servico-pesquisa'], {
     queryParams: {
       numeroOs: this.filtro.numeroOs,
-      empreendimento: this.filtro.empreendimento, // já é GUID
+      empreendimento: this.filtro.empreendimento, 
       equipamento: this.filtro.equipamento,
       causaIntervencao: this.filtro.causaIntervencao,
       manutentor: this.filtro.manutentor,

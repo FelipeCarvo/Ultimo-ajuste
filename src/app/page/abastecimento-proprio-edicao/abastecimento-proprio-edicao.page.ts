@@ -4,7 +4,6 @@ import { PopoverController, ToastController } from '@ionic/angular';
 import { format, parseISO } from 'date-fns';
 import { CalendarPopoverComponent } from '../../components/calendar-popover/calendar-popover.component';
 import { AbastecimentoService } from '../../services/abastecimento.service';
-import { EtapaService } from '../../services/etapa.service';
 import { InsumoService } from '../../services/insumo.service';
 
 type IonicChangeEvent<T = unknown> = CustomEvent<{ value: T }>;
@@ -34,13 +33,29 @@ type DestinoDto = {
   destinoDesc?: string;
   destinoid?: string;
 };
-
+//fazer a chamada dele
 type EtapaDto = { id: string; descricao: string };
 type InsumoDto = { insumoId: string; insumoDescr: string };
 type AplicacaoDto = { aplicacaoId: string; aplicacaoDescr: string };
 type MotoristaOperadorDto = { fornId: string; colaboradorNome: string };
 type ColaboradorFrentistaDto = { id: string; descricao: string };
+type TipoPrevAbastValor = 1 | 2;
 
+type CamposPersistidosLocal = {
+  tipoPrevAbast: TipoPrevAbastValor | null;
+  blocoSelecionado: string | null;
+  blocoDescricao?: string | null;
+  etapaSelecionada: string | null;
+  etapaDescricao?: string | null;
+  aplicacaoSelecionada: string | null;
+  aplicacaoDescricao?: string | null;
+  horimetroAtual?: number | null;
+  odometroAtual?: number | null;
+  atualizadoEm: string;
+};
+
+
+//
 type BlocoDto = {
   id?: string | number;
   blocoId?: string;
@@ -58,6 +73,8 @@ type BlocoDto = {
   styleUrls: ['./abastecimento-proprio-edicao.page.scss'],
 })
 export class AbastecimentoProprioEdicaoPage implements OnInit {
+  private readonly cacheCamposKey = 'abastecimento_proprio_campos_cache_v1';
+
   // Novos campos para exibição completa
   public fornecedorRazao: string | null = null;
   public placa: string | null = null;
@@ -72,103 +89,210 @@ export class AbastecimentoProprioEdicaoPage implements OnInit {
   public frentistaId: string | null = null;
   public emprdCod: number | null = null;
   public emprdId: string | null = null;
-  // Funções de mudança de campos para o template HTML
-    onBombaChange(event: Event) {
-      const value = (event as CustomEvent).detail?.value;
-      const bombaId = value !== null && value !== undefined && String(value).trim() !== '' ? String(value) : null;
-      this.bombaSelecionada = bombaId;
-      this.bicoSelecionado = null;
-      this.bicos = [];
-      this.destinoSelecionado = null;
-      this.destinos = [];
-      this.insumoSelecionado = null;
-      this.insumos = [];
-      if (this.bombaSelecionada) {
-        this.carregarEmpreendimentoPorBomba(this.bombaSelecionada);
-        this.abastecimentoService.listarBicos(this.bombaSelecionada).subscribe({
-          next: (bicos) => {
-            this.bicos = bicos || [];
-            //
-          },
-            error: () => {
-            //
-          },
-        });
-        this.abastecimentoService.listarDestinos(this.bombaSelecionada).subscribe({
-          next: (destinos) => {
-            this.destinos = destinos || [];
-            //
-          },
-            error: () => {
-            //
-          },
-        });
-        this.abastecimentoService.listarInsumosComboio(this.bombaSelecionada).subscribe({
-          next: (insumos) => {
-            this.insumos = insumos || [];
-            //
-          },
-            error: () => {
-            //
-          },
-        });
-      } else {
-        this.empreendimentos = [];
-      }
-    }
 
-    onBicoChange(event: Event) {
-      const value = (event as CustomEvent).detail?.value;
-      this.bicoSelecionado = value !== null && value !== undefined && String(value).trim() !== '' ? String(value) : null;
-      //
-    }
+// =====================================================
+//  FUNÇÕES DE MUDANÇA DE CAMPOS (COM AUTOCOMPLETE)
+// =====================================================
 
-    onDestinoChange(event: Event) {
-      const value = (event as CustomEvent).detail?.value;
-      this.destinoSelecionado = value !== null && value !== undefined && String(value).trim() !== '' ? String(value) : null;
-      //
-    }
+// =======================
+// BOMBA
+// =======================
 
-    onEtapaChange(event: Event) {
-      const value = (event as CustomEvent).detail?.value;
-      this.etapaSelecionada = String(value ?? '');
-      //
-    }
+onBombaChange(value: string | null) {
+  console.log(' [SELECT] Bomba MUDOU:', value);
+  const bombaId = value ? String(value) : null;
 
-    onInsumoChange(event: Event) {
-      const value = (event as CustomEvent).detail?.value;
-      this.insumoSelecionado = String(value ?? '');
-      //
-      // Limpar seleções anteriores
-      this.etapaSelecionada = null;
-      this.etapas = [];
-      this.aplicacaoSelecionada = null;
-      this.aplicacoes = [];
-      this.aplicacaoHabilitada = false;
-      this.tipoPrevAbast = null;
-      // Carregar etapas e aplicações
-      this.carregarEtapas();
-      this.carregarAplicacoes();
-    }
+  this.bombaSelecionada = bombaId;
+  console.log(' [SELECT] bombaSelecionada DEFINIDA:', this.bombaSelecionada);
 
+  // Limpa dependentes
+  this.bicoSelecionado = null;
+  this.bicos = [];
+
+  this.destinoSelecionado = null;
+  this.destinos = [];
+
+  this.insumoSelecionado = null;
+  this.insumos = [];
+
+  this.empreendimentoSelecionado = null;
+  this.empreendimentos = [];
+
+  if (!bombaId) return;
+
+  // Consulta bomba para pegar Emprd
+  this.abastecimentoService.consultarBomba(bombaId).subscribe({
+  next: (bombas: any[]) => {
+
+  const bomba = bombas?.[0]; // pega o primeiro item
+  const emprdId = bomba?.empreendimentoId;
+
+  this.emprdId = emprdId ? String(emprdId) : null;
+
+  if (emprdId) {
+    this.carregarEmpreendimentoPorBomba(emprdId);
+  }
+      //Carrega dependências
+      this.carregarBicos(bombaId);
+      this.carregarDestinos(bombaId);
+      this.carregarInsumos(bombaId);
+
+    },
+    error: () => {
+      this.toast('Erro ao consultar bomba', 'danger');
+    }
+  });
+}
+
+/* DAPTADOR AUTOCOMPLETE BOMBA */
+selecionarBomba(item: any) {
+  const bombaId = item?.id ?? null;
+  this.onBombaChange(bombaId);
+}
+// =======================
+// BICO
+// =======================
+
+onBicoChange(value: string | null) {
+  console.log(' [SELECT] Bico MUDOU:', value);
+  this.bicoSelecionado = value ? String(value) : null;
+  console.log(' [SELECT] bicoSelecionado DEFINIDO:', this.bicoSelecionado);
+
+  this.carregarUltimoNumeroBico(); // chama automaticamente
+}
+
+/* ADAPTADOR AUTOCOMPLETE BICO */
+selecionarBico(item: any) {
+  this.onBicoChange(item?.id ?? null);
+}
+/*  ADAPTADOR AUTOCOMPLETE EQUIPAMENTO */
+selecionarEquipamento(item: any) {
+  const equipamentoId = item?.id ?? null;
+  this.onEquipamentoChange(equipamentoId);
+}
+// =======================
+// DESTINO
+// =======================
+onDestinoChange(value: string | null) {
+
+  console.log(' [SELECT] Destino MUDOU:', value);
+  this.destinoSelecionado = value ? String(value) : null;
+  console.log(' [SELECT] destinoSelecionado DEFINIDO:', this.destinoSelecionado);
+  this.destinoTravado = false;
+
+  if (!this.destinoSelecionado) return;
+
+  const destinoObj = this.destinos.find(
+    d => String(d.id) === String(this.destinoSelecionado)
+  );
+
+  if (!destinoObj) return;
+
+  //  Se NÃO for destino tipo Equipamento
+  if (destinoObj.destinoTipo !== 'M') {
+    this.equipamentoSelecionado = null;
+  }
+}
+
+/* ADAPTADOR AUTOCOMPLETE DESTINO */
+selecionarDestino(item: any) {
+  const destinoId = item?.id ?? null;
+  this.onDestinoChange(destinoId);
+}
+// =======================
+// ETAPA
+// =======================
+
+onEtapaChange(value: string | null) {
+  console.log(' [SELECT] Etapa MUDOU:', value);
+  this.etapaSelecionada = value ? String(value) : null;
+  console.log(' [SELECT] etapaSelecionada DEFINIDA:', this.etapaSelecionada);
+}
+
+/* ADAPTADOR AUTOCOMPLETE ETAPA */
+selecionarEtapa(item: any) {
+  console.log(' [SELECT] Etapa SELECIONADA (autocomplete):', item);
+  this.onEtapaChange(item?.id ?? null);
+}
+
+// =======================
+// INSUMO
+// =======================
+
+onInsumoChange(value: string | null) {
+  console.log(' [SELECT] Insumo MUDOU:', value);
+  this.insumoSelecionado = value ? String(value) : null;
+  console.log(' [SELECT] insumoSelecionado DEFINIDO:', this.insumoSelecionado);
+  this.etapaSelecionada = null;
+  this.etapas = [];
+  this.aplicacaoSelecionada = null;
+  this.aplicacoes = [];
+  this.aplicacaoHabilitada = false;
+  this.tipoPrevAbast = null;
+
+  this.carregarEtapas();
+  this.carregarAplicacoes();
+}
+/* ADAPTADOR AUTOCOMPLETE EMPREENDIMENTO */
+selecionarEmpreendimento(item: any) {
+  const empreendimentoId = item?.id ?? null;
+  this.onEmpreendimentoChange(empreendimentoId);
+}
+/* ADAPTADOR AUTOCOMPLETE INSUMO */
+selecionarInsumo(item: any) {
+  this.onInsumoChange(item?.id ?? null);
+
+}
+/*  ADAPTADOR AUTOCOMPLETE TROCA/REPOSIÇÃO */
+selecionarTipoPrevAbast(item: any) {
+  console.log(' [SELECT] Troca/Reposição SELECIONADO:', item);
+  const valor = Number(item?.id);
+  this.tipoPrevAbast = (valor === 1 || valor === 2)
+    ? (valor as TipoPrevAbastValor)
+    : null;
+  console.log(' [SELECT] tipoPrevAbast DEFINIDO:', this.tipoPrevAbast);
+}
+/* ADAPTADOR AUTOCOMPLETE APLICAÇÃO */
+aplicacaoSelecionada: any = null;
+
+selecionarAplicacao(item: any) {
+  console.log(' [SELECT] Aplicação SELECIONADA:', item);
+   this.aplicacaoSelecionada = item?.id ?? null;
+  console.log(' [SELECT] aplicacaoSelecionada DEFINIDA:', this.aplicacaoSelecionada);
+}
+/* ADAPTADOR AUTOCOMPLETE MOTORISTA */
+selecionarMotoristaOperador(item: any) {
+  console.log(' [SELECT] Motorista/Operador SELECIONADO:', item);
+  this.motoristaOperadorSelecionado = item?.id ?? item?.fornId ?? null;
+  console.log('[SELECT] motoristaOperadorSelecionado DEFINIDO:', this.motoristaOperadorSelecionado);
+}
+/* ADAPTADOR AUTOCOMPLETE FRENTISTA */
+selecionarColaboradorFrentista(item: any) {
+  console.log(' [SELECT] Colaborador/Frentista SELECIONADO:', item);
+  this.colaboradorFrentistaSelecionado = item?.id ?? null;
+  console.log(' [SELECT] colaboradorFrentistaSelecionado DEFINIDO:', this.colaboradorFrentistaSelecionado);
+}
+/* ADAPTADOR AUTOCOMPLETE BLOCO */
+selecionarBloco(item: any) {
+  console.log(' [SELECT] Bloco SELECIONADO:', item);
+  this.blocoSelecionado = item?.id ?? item?.blocoId ?? item?.BlocoId ?? item?.unidadeId ?? null;
+  console.log(' [SELECT] blocoSelecionado DEFINIDO:', this.blocoSelecionado);
+}
     onMotoristaOperadorChange(event: Event) {
       const value = (event as CustomEvent).detail?.value;
       this.motoristaOperadorSelecionado = value as typeof this.motoristaOperadorSelecionado;
-      //
       this.logPayloadPreview();
     }
 
     onColaboradorFrentistaChange(event: Event) {
       const value = (event as CustomEvent).detail?.value;
       this.colaboradorFrentistaSelecionado = String(value ?? '');
-      //
       this.logPayloadPreview();
     }
 
     onBlocoChange(event: Event) {
       const value = (event as CustomEvent).detail?.value;
       this.blocoSelecionado = String(value ?? '');
-      //
     }
   // Blocos para select
   blocos: BlocoDto[] = [];
@@ -180,27 +304,32 @@ export class AbastecimentoProprioEdicaoPage implements OnInit {
 
   // Motoristas/Operadores
   motoristasOperadores: MotoristaOperadorDto[] = [];
-  motoristaOperadorSelecionado: string | { fornId: string } | null = null;
+  motoristaOperadorSelecionado: string | null = null;
 
-  tipoPrevAbast: string | null = null;
-  aplicacaoSelecionada: string | null = null;
-  aplicacoes: AplicacaoDto[] = [];
+tipoPrevAbast: TipoPrevAbastValor | null = null;
+
+tiposPrevAbast = [
+  { id: 1, descricao: 'Troca' },
+  { id: 2, descricao: 'Reposição' }
+];
+  //aplicacaoSelecionada: string | null = null;
+  aplicacoes: any[] = [];
   aplicacaoHabilitada = false;
-  insumos: InsumoDto[] = [];
+  insumos: any[] = [];
   insumoSelecionado: string | null = null;
-  etapas: EtapaDto[] = [];
+  etapas: { id: string; descricao: string }[] = [];
   etapaSelecionada: string | null = null;
   empreendimentos: EmpreendimentoDto[] = [];
   empreendimentoSelecionado: string | null = null;
   data: string | null = null;
-  bombas: BombaDto[] = [];
+  bombas: { id: string; descricao: string }[] = [];
   equipamentos: EquipamentoDto[] = [];
   bombaSelecionada: string | null = null;
   equipamentoSelecionado: string | null = null;
   destinoSelecionado: string | null = null;
   bicoSelecionado: string | null = null;
-  bicos: BicoDto[] = [];
-  destinos: DestinoDto[] = [];
+  bicos: any[] = [];
+  destinos: any[] = [];
   quantidade: number | null = null;
   numBombaInicial: number | null = null;
   numBombaFinal: number | null = null;
@@ -212,25 +341,26 @@ export class AbastecimentoProprioEdicaoPage implements OnInit {
   horaAbastecimento: string | null = null;
   carregando = false;
 
+
   // ID do abastecimento para edição
   abastecimentoId: string | null = null;
   // Dados do abastecimento para edição
   dadosAbastecimento: any = null;
+
+  destinoTravado = false;
 
   constructor(
     private router: Router,
     private route: ActivatedRoute,
     private popoverCtrl: PopoverController,
     private abastecimentoService: AbastecimentoService,
-    private etapaService: EtapaService,
     private insumoService: InsumoService,
     private toastCtrl: ToastController
-  ) {
+  )
+  {
     // Captura os dados passados via state (só funciona no construtor)
     const navigation = this.router.getCurrentNavigation();
     this.dadosAbastecimento = navigation?.extras?.state?.['abastecimento'];
-
-    //
   }
 
   private async toast(message: string, color: 'success' | 'warning' | 'danger' = 'success') {
@@ -244,22 +374,21 @@ export class AbastecimentoProprioEdicaoPage implements OnInit {
     await toast.present();
   }
 
-  ngOnInit() {
-    // Apenas carrega listas base, sem preencher formulário
-    this.carregarBombas();
-    this.carregarMotoristasOperadores();
-    this.carregarColaboradoresFrentista();
-    this.carregarEmpreendimentos();
-    this.abastecimentoService.listarEquipamentos().subscribe({
-      next: (eqps) => {
-        this.equipamentos = eqps || [];
-        //
-      },
-        error: () => {
-        //
-      },
-    });
+ngOnInit() {
+  this.carregarBombas();
+  this.carregarMotoristasOperadores();
+  this.carregarColaboradoresFrentista();
+  this.carregarEquipamentos();
+
+  if (!this.abastecimentoId) {
+    const hoje = new Date();
+    this.data = hoje.toISOString().split('T')[0];
   }
+}
+    limparData(event: Event) {
+      event.stopPropagation();
+      this.data = null;
+    }
 
   // Carrega todos os empreendimentos disponíveis
   private carregarEmpreendimentos() {
@@ -289,86 +418,126 @@ export class AbastecimentoProprioEdicaoPage implements OnInit {
   private paramMapSubscription: any;
 
   ionViewWillEnter() {
-    // Cancela o subscribe anterior, se houver
-    if (this.paramMapSubscription) {
-      this.paramMapSubscription.unsubscribe();
-    }
-    // Sempre que abrir, zera dados antigos
-    this.limparFormulario();
-    this.dadosAbastecimento = null;
-    this.abastecimentoId = null;
+  if (this.paramMapSubscription) {
+    this.paramMapSubscription.unsubscribe();
+  }
 
-    // Escuta mudanças no paramMap para atualizar o formulário ao trocar o ID
-    this.paramMapSubscription = this.route.paramMap.subscribe(params => {
-      const id = params.get('id');
-      if (id) {
-        this.abastecimentoId = id;
-        // Limpa antes de preencher
-        this.limparFormulario();
-        // Carrega listas dependentes ANTES de preencher o formulário
-        this.carregarBombas();
-        this.abastecimentoService.listarEquipamentos().subscribe({
-          next: (eqps) => {
-            this.equipamentos = eqps || [];
-            this.abastecimentoService.consultarAbastecimentoProprioPorId(id).subscribe({
+  this.paramMapSubscription = this.route.paramMap.subscribe(params => {
+
+    const id = params.get('id');
+
+    // LIMPA SEMPRE PRIMEIRO
+    this.limparFormulario();
+
+    if (id) {
+      // ===============================
+      //  MODO EDIÇÃO
+      // ===============================
+      this.abastecimentoId = id;
+
+      this.carregarBombas();
+
+      this.abastecimentoService.listarEquipamentos().subscribe({
+        next: (eqps) => {
+          this.equipamentos = eqps || [];
+
+          this.abastecimentoService
+            .consultarAbastecimentoProprioPorId(id)
+            .subscribe({
               next: (res: any) => {
                 const dados = Array.isArray(res) ? res[0] : res;
+
                 if (dados) {
-                  // Log detalhado para depuração: comparar com a pesquisa
-                  // ...removido log de debug...
-                  // Carrega listas dependentes da bomba selecionada
+
                   const bombaId = dados.comboioBombaId;
                   const empreendimentoId = dados.emprdId;
                   const insumoId = dados.insumoId;
+
                   const promises: Promise<any>[] = [];
+
                   if (bombaId) {
                     promises.push(
-                      this.abastecimentoService.listarBicos(bombaId).toPromise().then(bicos => { this.bicos = bicos || []; })
-                    );
-                    promises.push(
-                      this.abastecimentoService.listarDestinos(bombaId).toPromise().then(destinos => { this.destinos = destinos || []; })
-                    );
-                    promises.push(
-                      this.abastecimentoService.listarInsumosComboio(bombaId).toPromise().then(insumos => { this.insumos = insumos || []; })
-                    );
-                  }
-                  if (empreendimentoId && insumoId) {
-                    // ...removido log de debug...
-                    promises.push(
-                      this.etapaService.listarEtapas(empreendimentoId, insumoId).toPromise().then(etapas => { this.etapas = etapas || []; })
-                    );
-                    promises.push(
-                      this.abastecimentoService.listarBlocosPorEmpreendimento(empreendimentoId, insumoId).toPromise().then(blocos => {
-                        // ...removido log de debug...
-                        this.blocos = blocos || [];
+                      this.abastecimentoService.listarBicos(bombaId)
+                        .toPromise()
+                        .then(bicos => {
+                        this.bicos = (bicos || []).map(b => ({
+                          id: b.bicoId,
+                          descricao: b.bicoDescricao
+                        }));
                       })
                     );
-                  } else {
-                    // ...removido log de warning...
+
+                    promises.push(
+                      this.abastecimentoService.listarDestinos(bombaId)
+                        .toPromise()
+                        .then((destinos: any) => {
+                          this.destinos = (destinos || []).map((d: any) => ({
+                            id: d.destino,
+                            descricao: d.destinoDesc,
+                            destinoTipo: d.destinoTipo,
+                            destinoId: d.destinoId ?? d.destinoid,
+                            emprdId: d.emprdId,
+                            emprdCod: d.emprdCod
+                          }));
+                        })
+                    );
+
+                    promises.push(
+                      this.abastecimentoService.listarInsumosComboio(bombaId)
+                        .toPromise()
+                        .then((insumos: any) => {
+                          this.insumos = (insumos || []).map((i: any) => ({
+                            id: i.insumoId,
+                            descricao: i.insumoDescr,
+                            insumoDescr: i.insumoDescr
+                          }));
+                        })
+                    );
                   }
-                  // Aguarda todas as listas carregarem antes de preencher o formulário
-                  Promise.all(promises).then(() => {
-                    this.preencherFormularioComDados(dados);
-                    // Força recarregar blocos após preencher dados (corrige select de blocos)
-                    if (this.empreendimentoSelecionado && this.insumoSelecionado) {
-                      this.carregarBlocosPorEmpreendimento(this.empreendimentoSelecionado);
-                    }
-                  });
+
+                  if (empreendimentoId) {
+                    promises.push(
+                      this.abastecimentoService
+                        .listarEtapas({
+                          empreendimentoId: String(empreendimentoId),
+                          pesquisa: '',
+                          mostrarDI: true
+                        })
+                        .toPromise()
+                        .then((etapas: any) => {
+
+                          this.etapas = (etapas || []).map(e => ({
+                            id: String(e.id),
+                            descricao: e.descricao || e.nome
+                          }));
+
+                        })
+                    );
+
+                  }
+                Promise.all(promises).then(() => {
+
+                  this.preencherFormularioComDados(dados);
+                });
                 }
               },
               error: () => {
                 this.limparFormulario();
               }
             });
-          },
-          error: () => {}
-        });
-      } else {
-        // Sem id: modo novo, limpa tudo
-        this.limparFormulario();
-      }
-    });
-  }
+        }
+      });
+
+    } else {
+
+      this.abastecimentoId = null;
+
+      const hoje = new Date();
+      this.data = hoje.toISOString().split('T')[0];
+    }
+
+  });
+}
 
   ngOnDestroy() {
     if (this.paramMapSubscription) {
@@ -388,12 +557,188 @@ export class AbastecimentoProprioEdicaoPage implements OnInit {
     return undefined;
   }
 
+  private extrairLista<T = any>(response: any): T[] {
+    if (typeof response === 'string') {
+      try {
+        const parsed = JSON.parse(response);
+        return this.extrairLista<T>(parsed);
+      } catch {
+        return [];
+      }
+    }
+
+    if (Array.isArray(response)) {
+      return response as T[];
+    }
+
+    if (response && typeof response === 'object') {
+      const candidatos = [
+        response.items,
+        response.data,
+        response.result,
+        response.resultado,
+        response.value,
+        response.values,
+        response.lista,
+        response.$values,
+        response.registros,
+        response.itens
+      ];
+
+      const lista = candidatos.find(Array.isArray);
+      if (Array.isArray(lista)) {
+        return lista as T[];
+      }
+
+      const valores = Object.values(response);
+      if (valores.length && valores.every((item) => typeof item === 'object' && item !== null)) {
+        return valores as T[];
+      }
+    }
+
+    return [];
+  }
+
+  private obterCacheCampos(): Record<string, CamposPersistidosLocal> {
+    try {
+      const bruto = localStorage.getItem(this.cacheCamposKey);
+      if (!bruto) return {};
+      const parsed = JSON.parse(bruto);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private salvarCacheCampos(abastecimentoId: string): void {
+    if (!abastecimentoId) return;
+
+    const blocoAtual = this.blocos.find(b => String(b.id) === String(this.blocoSelecionado));
+    const etapaAtual = this.etapas.find(e => String(e.id) === String(this.etapaSelecionada));
+    const aplicacaoAtual = this.aplicacoes.find(a => String(a.id) === String(this.aplicacaoSelecionada));
+
+    const registro: CamposPersistidosLocal = {
+      tipoPrevAbast: this.tipoPrevAbast,
+      blocoSelecionado: this.blocoSelecionado,
+      blocoDescricao: blocoAtual?.descricao ?? null,
+      etapaSelecionada: this.etapaSelecionada,
+      etapaDescricao: etapaAtual?.descricao ?? null,
+      aplicacaoSelecionada: this.aplicacaoSelecionada,
+      aplicacaoDescricao: aplicacaoAtual?.descricao ?? null,
+      horimetroAtual: this.horimetroAtual,
+      odometroAtual: this.odometroAtual,
+      atualizadoEm: new Date().toISOString()
+    };
+
+    const cache = this.obterCacheCampos();
+    cache[String(abastecimentoId)] = registro;
+    localStorage.setItem(this.cacheCamposKey, JSON.stringify(cache));
+
+    console.log('[DEBUG] cache local salvo para abastecimento:', abastecimentoId, registro);
+  }
+
+  private aplicarCacheCampos(abastecimentoId: string): void {
+    if (!abastecimentoId) return;
+
+    const cache = this.obterCacheCampos();
+    const registro = cache[String(abastecimentoId)];
+    if (!registro) return;
+
+    if (!this.tipoPrevAbast && registro.tipoPrevAbast) {
+      this.tipoPrevAbast = registro.tipoPrevAbast;
+    }
+
+    if (!this.blocoSelecionado && registro.blocoSelecionado) {
+      this.blocoSelecionado = registro.blocoSelecionado;
+      if (!this.blocos.some(b => String(b.id) === String(registro.blocoSelecionado))) {
+        this.blocos = [
+          ...this.blocos,
+          {
+            id: registro.blocoSelecionado,
+            descricao: registro.blocoDescricao || 'Bloco (cache local)'
+          }
+        ];
+      }
+    }
+
+    if (!this.etapaSelecionada && registro.etapaSelecionada) {
+      this.etapaSelecionada = registro.etapaSelecionada;
+      if (!this.etapas.some(e => String(e.id) === String(registro.etapaSelecionada))) {
+        this.etapas = [
+          ...this.etapas,
+          {
+            id: registro.etapaSelecionada,
+            descricao: registro.etapaDescricao || 'Etapa (cache local)'
+          }
+        ];
+      }
+    }
+
+    if (!this.aplicacaoSelecionada && registro.aplicacaoSelecionada) {
+      this.aplicacaoSelecionada = registro.aplicacaoSelecionada;
+      if (!this.aplicacoes.some(a => String(a.id) === String(registro.aplicacaoSelecionada))) {
+        this.aplicacoes = [
+          ...this.aplicacoes,
+          {
+            id: registro.aplicacaoSelecionada,
+            descricao: registro.aplicacaoDescricao || 'Aplicação (cache local)'
+          }
+        ];
+      }
+      this.aplicacaoHabilitada = true;
+    }
+
+    // Restaurar horimetroAtual e odometroAtual se não vieram do backend
+    if (this.horimetroAtual == null && registro.horimetroAtual != null) {
+      this.horimetroAtual = registro.horimetroAtual;
+      console.log('[DEBUG]  HorimetroAtual restaurado do cache:', this.horimetroAtual);
+    }
+
+    if (this.odometroAtual == null && registro.odometroAtual != null) {
+      this.odometroAtual = registro.odometroAtual;
+      console.log('[DEBUG]  OdometroAtual restaurado do cache:', this.odometroAtual);
+    }
+
+    console.log('[DEBUG] cache local aplicado para abastecimento:', abastecimentoId, registro);
+  }
+
   private preencherFormularioComDados(dados: any) {
-    // Exemplo de uso do método adaptado do abastecimento de postos
-    // Corrige: sempre preencher o ID do abastecimento para garantir update
+    console.log('[DEBUG] preencherFormularioComDados RAW:', dados);
+    console.log('[DEBUG] OBJETO COMPLETO stringificado:', JSON.stringify(dados, null, 2));
     this.abastecimentoId = this.getItemValue(dados, ['abastecimentoId', 'IdAbastecimento', 'idAbastecimento']);
     const guidZerado = '00000000-0000-0000-0000-000000000000';
-    // Equipamento
+
+    const bombaRaw = this.getItemValue(dados, ['comboioBombaId', 'bombaId', 'idBomba', 'IdTanqueOrigem']);
+    this.bombaSelecionada = (bombaRaw && bombaRaw !== guidZerado) ? String(bombaRaw) : null;
+
+    const bicoRaw = this.getItemValue(dados, ['bicoId', 'idBico', 'IdBico']);
+    this.bicoSelecionado = (bicoRaw && bicoRaw !== guidZerado) ? String(bicoRaw) : null;
+
+    const insumoRaw = this.getItemValue(dados, ['insumoId', 'idInsumo', 'IdInsumo']);
+    this.insumoSelecionado = (insumoRaw && insumoRaw !== guidZerado) ? String(insumoRaw) : null;
+
+    if (this.bicoSelecionado && !this.bicos.find(b => String(b.id) === String(this.bicoSelecionado))) {
+      this.bicos = [
+        ...this.bicos,
+        {
+          id: this.bicoSelecionado,
+          descricao: this.getItemValue(dados, ['bicoDescricao', 'descBico']) || 'Bico carregado'
+        }
+      ];
+    }
+
+    if (this.insumoSelecionado && !this.insumos.find(i => String(i.id) === String(this.insumoSelecionado))) {
+      const insumoDescr = this.getItemValue(dados, ['insumoDescr', 'descricaoInsumo']) || 'Insumo carregado';
+      this.insumos = [
+        ...this.insumos,
+        {
+          id: this.insumoSelecionado,
+          descricao: insumoDescr,
+          insumoDescr
+        }
+      ];
+    }
+
     const equipamentoRaw = this.getItemValue(dados, ['equipamentoId', 'idEquipamento', 'IdEquipamento']);
     if (equipamentoRaw && equipamentoRaw !== guidZerado) {
       if (!this.equipamentos.find(e => String(e.id) === String(equipamentoRaw))) {
@@ -401,19 +746,16 @@ export class AbastecimentoProprioEdicaoPage implements OnInit {
           ...this.equipamentos,
           { id: equipamentoRaw, descricao: dados.modelo || 'Equipamento carregado' }
         ];
-        // ...removido log de warning...
       }
-      this.equipamentoSelecionado = equipamentoRaw;
+      this.equipamentoSelecionado = String(equipamentoRaw);
     } else {
       this.equipamentoSelecionado = null;
     }
-    // Empreendimento
+
     const empreendimentoRaw = this.getItemValue(dados, ['emprdId', 'empreendimentoId', 'idEmpreendimento']);
     const empreendimentoCod = this.getItemValue(dados, ['emprdCod', 'codigoEmpreendimento', 'codEmpreendimento']);
     if (empreendimentoRaw && empreendimentoRaw !== guidZerado) {
-      // Garante que o empreendimento está na lista
       if (!this.empreendimentos.find(e => String(e.id) === String(empreendimentoRaw))) {
-        // Adiciona manualmente se não estiver, incluindo o código numérico
         this.empreendimentos = [
           ...this.empreendimentos,
           {
@@ -422,69 +764,169 @@ export class AbastecimentoProprioEdicaoPage implements OnInit {
             emprdCod: empreendimentoCod || dados.emprdCod || null
           }
         ];
-        // ...removido log de warning...
       }
-      this.empreendimentoSelecionado = empreendimentoRaw;
+      this.empreendimentoSelecionado = String(empreendimentoRaw);
+      this.emprdId = this.empreendimentoSelecionado;
+      this.emprdCod = empreendimentoCod ? Number(empreendimentoCod) : null;
     } else {
       this.empreendimentoSelecionado = null;
     }
-    // Bomba
-    const bombaRaw = this.getItemValue(dados, ['comboioBombaId', 'bombaId', 'idBomba']);
-    this.bombaSelecionada = (bombaRaw && bombaRaw !== guidZerado) ? bombaRaw : null;
-    // Bico
-    const bicoRaw = this.getItemValue(dados, ['bicoId', 'idBico', 'BicoId']);
-    this.bicoSelecionado = (bicoRaw && bicoRaw !== guidZerado) ? bicoRaw : null;
-    // Insumo
-    const insumoRaw = this.getItemValue(dados, ['insumoId', 'idInsumo', 'InsumoId']);
-    this.insumoSelecionado = (insumoRaw && insumoRaw !== guidZerado) ? insumoRaw : null;
-    // Etapa
-    const etapaRaw = this.getItemValue(dados, ['etapaId', 'idEtapa', 'EtapaId']);
-    this.etapaSelecionada = (etapaRaw && etapaRaw !== guidZerado) ? etapaRaw : null;
-    // Bloco
-    const blocoRaw = this.getItemValue(dados, ['blocoId', 'idBloco', 'BlocoId', 'blocoCod']);
+
+    const etapaRaw = this.getItemValue(dados, [
+      'etapaId',
+      'idEtapa',
+      'EtapaId',
+      'IdEtapa',
+      'etapa',
+      'etapaID',
+      'etapaCod',
+      'EtapaCod',
+      'etapaCdg',
+      'codigoEtapa'
+    ]);
+    if (etapaRaw && etapaRaw !== guidZerado) {
+      this.etapaSelecionada = String(etapaRaw);
+
+      if (!this.etapas.find(e => String(e.id) === String(this.etapaSelecionada))) {
+        this.etapas = [
+          ...this.etapas,
+          {
+            id: this.etapaSelecionada,
+            descricao: this.getItemValue(dados, ['etapaDescr', 'descricaoEtapa', 'etapaDescricao', 'nomeEtapa']) || 'Etapa carregada'
+          }
+        ];
+      }
+    } else {
+      this.etapaSelecionada = null;
+    }
+
+    const blocoRaw = this.getItemValue(dados, [
+      'blocoId',
+      'idBloco',
+      'BlocoId',
+      'blocoCod',
+      'BlocoCod',
+      'unidadeId',
+      'UnidadeId',
+      'idUnidade',
+      'unidadeCod',
+      'UnidadeCod'
+    ]);
     if (blocoRaw && blocoRaw !== guidZerado) {
       if (!this.blocos.find(b => String(b.id) === String(blocoRaw) || String((b as any).blocoCod) === String(blocoRaw))) {
         this.blocos = [
           ...this.blocos,
-          { id: blocoRaw, nomeBloco: dados.blocoDescricao || 'Bloco carregado' }
+          { id: blocoRaw, descricao: dados.blocoDescricao || 'Bloco carregado' }
         ];
-        // ...removido log de warning...
       }
       this.blocoSelecionado = String(blocoRaw);
     } else {
       this.blocoSelecionado = null;
     }
-    // Colaborador/Frentista
+
     const frentistaRaw = this.getItemValue(dados, ['frentistaId', 'idFrentista', 'FrentistaId']);
-    this.colaboradorFrentistaSelecionado = (frentistaRaw && frentistaRaw !== guidZerado) ? frentistaRaw : null;
-    // Motorista/Operador
+    this.colaboradorFrentistaSelecionado = (frentistaRaw && frentistaRaw !== guidZerado) ? String(frentistaRaw) : null;
+
     const operadorRaw = this.getItemValue(dados, ['responsavelId', 'operadorSolicitanteId']);
-    this.motoristaOperadorSelecionado = (operadorRaw && operadorRaw !== guidZerado) ? operadorRaw : null;
-    // Aplicação
-    const aplicacaoRaw = this.getItemValue(dados, ['aplicacaoId', 'idAplicacao', 'AplicacaoId']);
-    this.aplicacaoSelecionada = (aplicacaoRaw && aplicacaoRaw !== guidZerado) ? aplicacaoRaw : null;
-    // Destino
-    this.destinoSelecionado = this.getItemValue(dados, ['destino']);
-    // Troca/Reposição
-    this.tipoPrevAbast = this.getItemValue(dados, ['tipoPrevAbast']);
-    // Quantidade
-    this.quantidade = this.getItemValue(dados, ['quantidade', 'qtdInsumo']);
-    // Horímetro/Odômetro
-    this.horimetro = this.getItemValue(dados, ['horimetro']);
-    this.odometro = this.getItemValue(dados, ['odometro']);
-    this.horimetroAtual = this.getItemValue(dados, ['horimetroAtual']);
-    this.odometroAtual = this.getItemValue(dados, ['odometroAtual']);
-    // Bombas iniciais/finais
+    this.motoristaOperadorSelecionado = (operadorRaw && operadorRaw !== guidZerado) ? String(operadorRaw) : null;
+
+    const aplicacaoRaw = this.getItemValue(dados, [
+      'aplicacaoId',
+      'idAplicacao',
+      'AplicacaoId',
+      'AplicacaoPrevId',
+      'aplicacaoPrevId',
+      'idAplicacaoPrev',
+      'aplicacaoID',
+      'aplicacaoCod',
+      'AplicacaoCod'
+    ]);
+    this.aplicacaoSelecionada = (aplicacaoRaw && aplicacaoRaw !== guidZerado) ? String(aplicacaoRaw) : null;
+
+    const destinoRaw = this.getItemValue(dados, ['destino', 'TpDestino']);
+    this.destinoSelecionado = (destinoRaw && destinoRaw !== guidZerado) ? String(destinoRaw) : null;
+
+    if (this.destinoSelecionado && !this.destinos.find(d => String(d.id) === String(this.destinoSelecionado))) {
+      this.destinos = [
+        ...this.destinos,
+        {
+          id: this.destinoSelecionado,
+          descricao: this.getItemValue(dados, ['destinoDesc', 'descricaoDestino']) || 'Destino carregado',
+          destinoTipo: this.getItemValue(dados, ['destinoTipo'])
+        }
+      ];
+    }
+
+    const tipo = this.getItemValue(dados, [
+      'tipoPrevAbast',
+      'TipoPrevAbast',
+      'tpPrevAbast',
+      'TpPrevAbast',
+      'tpTrocaReposicao',
+      'TpTrocaReposicao',
+      'trocaReposicaoId',
+      'TrocaReposicaoId',
+      'tipoPrevAbastecimento',
+      'TipoPrevAbastecimento',
+      'tipoPrevAbastDesc',
+      'trocaReposicao',
+      'trocaReposicaoDesc'
+    ]);
+    const tipoNormalizado = String(tipo ?? '').trim().toUpperCase();
+    const tipoNumero = Number(tipo);
+
+    if (
+      tipoNormalizado === 'T' ||
+      tipoNormalizado.includes('TROCA') ||
+      tipoNumero === 0 ||
+      tipoNumero === 1
+    ) {
+      this.tipoPrevAbast = 1;
+    } else if (
+      tipoNormalizado === 'R' ||
+      tipoNormalizado.includes('REPOS') ||
+      tipoNumero === 2
+    ) {
+      this.tipoPrevAbast = 2;
+    } else {
+      this.tipoPrevAbast = null;
+    }
+
+    this.quantidade = this.getItemValue(dados, ['quantidade', 'qtdInsumo', 'QtdInsumo']);
+
+    console.log('[DEBUG] Valores no RAW dados:', {
+      horimetro: dados['horimetro'] || dados['Horimetro'] || dados['horiMetro'],
+      odometro: dados['odometro'] || dados['Odometro'],
+      horimetroAtual: dados['horimetroAtual'] || dados['HorimetroAtual'] || dados['horiMetroAtual'],
+      odometroAtual: dados['odometroAtual'] || dados['OdometroAtual'] || dados['hodometroAtual']
+    });
+
+    // Buscar TODOS os campos que contenham "horimetro" ou "odometro"
+    console.log('[DEBUG] BUSCA por campos com "horimetro":', Object.keys(dados).filter(k => k.toLowerCase().includes('horim')));
+    console.log('[DEBUG] BUSCA por campos com "odometro":', Object.keys(dados).filter(k => k.toLowerCase().includes('odomet') || k.toLowerCase().includes('hodomet')));
+
+    this.horimetro = this.getItemValue(dados, ['horimetro', 'Horimetro', 'horiMetro']);
+    this.odometro = this.getItemValue(dados, ['odometro', 'Odometro']);
+    this.horimetroAtual = this.getItemValue(dados, ['horimetroAtual', 'HorimetroAtual', 'horiMetroAtual']);
+    this.odometroAtual = this.getItemValue(dados, ['odometroAtual', 'OdometroAtual', 'hodometroAtual']);
+
+    console.log('[DEBUG] Valores APÓS getItemValue:', {
+      horimetro: this.horimetro,
+      odometro: this.odometro,
+      horimetroAtual: this.horimetroAtual,
+      odometroAtual: this.odometroAtual
+    });
+
     this.numBombaInicial = this.getItemValue(dados, ['numBombaInicial', 'bombaInicial', 'numBicoInicial']);
     this.numBombaFinal = this.getItemValue(dados, ['numBombaFinal', 'bombaFinal', 'numBicoFinal']);
-    // Observação
-    this.observacao = this.getItemValue(dados, ['observacao']) || '';
-    // Datas
+
+    this.observacao = this.getItemValue(dados, ['observacao', 'Observacao', 'obs']) || '';
+
     if (dados.dataAbastecimento) {
       this.data = String(dados.dataAbastecimento).split('T')[0];
     }
-    this.horaAbastecimento = this.getItemValue(dados, ['horaAbastecimento']);
-    // Campos extras
+    this.horaAbastecimento = this.getItemValue(dados, ['horaAbastecimento', 'HoraAbastecimento']);
+
     this.fornecedorRazao = this.getItemValue(dados, ['fornecedorRazao']);
     this.placa = this.getItemValue(dados, ['placa']);
     this.modelo = this.getItemValue(dados, ['modelo']);
@@ -494,16 +936,31 @@ export class AbastecimentoProprioEdicaoPage implements OnInit {
     this.emprDesc = this.getItemValue(dados, ['emprDesc']);
     this.frentistaCod = this.getItemValue(dados, ['frentistaCod']);
     this.frentistalNome = this.getItemValue(dados, ['frentistalNome']);
-    this.frentistaId = (frentistaRaw && frentistaRaw !== guidZerado) ? frentistaRaw : null;
-    this.emprdCod = this.getItemValue(dados, ['emprdCod']);
-    this.emprdId = (empreendimentoRaw && empreendimentoRaw !== guidZerado) ? empreendimentoRaw : null;
-    // Dependências (listas) podem ser carregadas como já feito antes
-    // ...
-    // Log para depuração
-    // ...removido log de preenchimento...
-    // fechamento correto da função
-  }
+    this.frentistaId = (frentistaRaw && frentistaRaw !== guidZerado) ? String(frentistaRaw) : null;
 
+    if (this.aplicacaoSelecionada && !this.aplicacoes.find(a => String(a.id) === String(this.aplicacaoSelecionada))) {
+      this.aplicacoes = [
+        ...this.aplicacoes,
+        {
+          id: this.aplicacaoSelecionada,
+          descricao: this.getItemValue(dados, ['aplicacaoDescr', 'descricaoAplicacao']) || 'Aplicação carregada'
+        }
+      ];
+    }
+    this.aplicacaoHabilitada = this.aplicacoes.length > 0 || !!this.aplicacaoSelecionada;
+
+    if (this.abastecimentoId) {
+      this.aplicarCacheCampos(String(this.abastecimentoId));
+    }
+
+    if (this.empreendimentoSelecionado) {
+      this.onEmpreendimentoChange(this.empreendimentoSelecionado, false);
+    }
+
+    if (this.equipamentoSelecionado && this.insumoSelecionado) {
+      this.carregarAplicacoes();
+    }
+  }
   /**
    * Limpa todos os campos do formulário para criar um novo abastecimento
    */
@@ -548,23 +1005,76 @@ export class AbastecimentoProprioEdicaoPage implements OnInit {
 
     //
   }
+private carregarBlocosPorEmpreendimento(empreendimentoId: string) {
 
-  private carregarBlocosPorEmpreendimento(empreendimentoId: string) {
-    // Só carrega blocos se empreendimento e insumo estiverem preenchidos
-    if (!empreendimentoId || !this.insumoSelecionado) {
-      this.blocos = [];
-      return;
+  if (!empreendimentoId) {
+    this.blocos = [];
+    return;
+  }
+
+  const blocoSelecionadoAtual = this.blocoSelecionado;
+  const blocosAnteriores = [...this.blocos];
+
+  const aplicarListaBlocos = (res: any): boolean => {
+    const lista = this.extrairLista<any>(res);
+
+    this.blocos = lista
+      .map((b: any) => ({
+        id: b.id ?? b.unidadeId ?? b.blocoId ?? b.BlocoId ?? b.valor,
+        descricao: b.descricao ?? b.nome ?? b.nomeBloco ?? b.label
+      }))
+      .filter((b: any) => !!b.id);
+
+    if (
+      blocoSelecionadoAtual &&
+      !this.blocos.some(b => String(b.id) === String(blocoSelecionadoAtual))
+    ) {
+      const blocoAnterior = blocosAnteriores.find(
+        b => String(b.id) === String(blocoSelecionadoAtual)
+      );
+
+      if (blocoAnterior) {
+        this.blocos = [...this.blocos, blocoAnterior];
+      }
     }
-    this.abastecimentoService.listarBlocosPorEmpreendimento(empreendimentoId, this.insumoSelecionado).subscribe({
-      next: (blocos) => {
-        this.blocos = blocos || [];
+
+    return this.blocos.length > 0;
+  };
+
+  this.abastecimentoService
+    .listarBlocos(empreendimentoId, '', blocoSelecionadoAtual ?? '')
+    .subscribe({
+      next: (resBlocos: any) => {
+        aplicarListaBlocos(resBlocos);
       },
       error: () => {
         this.blocos = [];
-      },
+      }
     });
-  }
+}
+private testarEmpreendimentosComBlocos(): void {
 
+  console.log("TESTANDO EMPREENDIMENTOS...");
+
+  this.empreendimentos.forEach(emp => {
+
+    this.abastecimentoService
+      .listarBlocosProprio(emp.id as string)
+      .subscribe((res: any) => {
+
+        const lista = Array.isArray(res) ? res : [];
+
+        if (lista.length > 0) {
+          console.log(" TEM BLOCOS:", emp.descricao, emp.id, lista);
+        } else {
+          console.log(" SEM BLOCOS:", emp.descricao);
+        }
+
+      });
+
+  });
+
+}
 
   private carregarColaboradoresFrentista() {
     this.abastecimentoService.listarColaboradoresFrentista().subscribe({
@@ -578,121 +1088,442 @@ export class AbastecimentoProprioEdicaoPage implements OnInit {
   private carregarMotoristasOperadores() {
     this.abastecimentoService.listarColaboradoresMotoristaOperador().subscribe({
       next: (colabs) => {
-        this.motoristasOperadores = colabs || [];
+        this.motoristasOperadores = (colabs || []).map((c: any) => ({
+          ...c,
+          id: c.id ?? c.fornId,
+          colaboradorNome: c.colaboradorNome ?? c.descricao ?? c.nome
+        }));
       },
       error: () => {},
     });
   }
 
+private carregarEmpreendimentoPorBomba(emprdId: string) {
 
 
-  private carregarEmpreendimentoPorBomba(bombaId: string) {
-    const bomba = this.bombas.find(b => b.bombaId === bombaId);
-    if (bomba && bomba.empreendimentoId) {
-      this.abastecimentoService.listarEmpreendimentos().subscribe({
-        next: (emps) => {
-          this.empreendimentos = (emps || []).filter(e => e.id === bomba.empreendimentoId);
-        },
-        error: () => {},
-      });
-    } else {
-      this.empreendimentos = [];
-    }
+
+  if (!emprdId) {
+    this.empreendimentos = [];
+    this.empreendimentoSelecionado = null;
+    return;
   }
 
-  onEmpreendimentoChange(event: IonicChangeEvent) {
-    this.empreendimentoSelecionado = String(event.detail.value ?? '');
-    // Limpar seleções dependentes
-    this.etapaSelecionada = null;
-    this.etapas = [];
-    this.blocos = [];
-    this.blocoSelecionado = null;
-    // Carregar blocos
-    this.carregarBlocosPorEmpreendimento(this.empreendimentoSelecionado);
-    // ✨ NOVO: Se já tiver insumo selecionado, recarregar etapas automaticamente
-    if (this.insumoSelecionado && this.empreendimentoSelecionado) {
-      //
-      this.carregarEtapas();
-    }
-  }
+  this.abastecimentoService
+    .listarEmpreendimentos(emprdId)
+    .subscribe({
+      next: (emps: any[]) => {
 
+        this.empreendimentos = (emps || []).map(e => ({
+          id: String(e.id),
+          descricao: e.descricao || e.nome,
+          emprdCod: Number(e.codigo)
+        }));
 
+        console.log("Empreendimentos retorno API:", emps);
 
+        const empreendimentoDaBomba = this.empreendimentos.find(
+          e => String(e.id) === String(emprdId)
+        );
 
-
-
-
-
-
-
-
-
-
-  onEquipamentoChange(event: IonicChangeEvent) {
-    this.equipamentoSelecionado = String(event.detail.value ?? '');
-    // ...existing code...
-  }
-
-
-
-  // ✨ Método auxiliar para carregar etapas
-  private carregarEtapas() {
-    // ⚠️ IMPORTANTE: Etapas só carregam se EMPREENDIMENTO estiver selecionado
-    if (!this.empreendimentoSelecionado) {
-      //
-      return;
-    }
-
-    if (!this.insumoSelecionado) {
-      //
-      return;
-    }
-
-    //
-
-    this.etapaService.listarEtapas(this.empreendimentoSelecionado, this.insumoSelecionado).subscribe({
-      next: (etapas) => {
-        this.etapas = etapas || [];
-        //
-        if (this.etapas.length === 0) {
-          //
+        if (empreendimentoDaBomba) {
+          this.onEmpreendimentoChange(String(empreendimentoDaBomba.id));
         } else {
-          //
+          this.empreendimentoSelecionado = null;
         }
-      },
-      error: () => {},
-    });
-  }
 
-  // ✨ Método auxiliar para carregar aplicações
-  private carregarAplicacoes() {
-    if (!this.equipamentoSelecionado || !this.insumoSelecionado) {
-      //
-      return;
-    }
-
-    //
-
-    this.abastecimentoService.consultarAplicacaoPrevEquipInsumo(this.equipamentoSelecionado, this.insumoSelecionado).subscribe({
-      next: (aplics) => {
-        this.aplicacoes = aplics || [];
-        this.aplicacaoHabilitada = this.aplicacoes.length > 0;
-
-        //
-        if (this.aplicacoes.length === 0) {
-          //
-        } else {
-          //
-        }
       },
       error: () => {
-        //
-        this.aplicacaoHabilitada = false;
-        this.aplicacoes = [];
-      },
+        this.empreendimentos = [];
+        this.empreendimentoSelecionado = null;
+      }
     });
+}
+private carregarDestinos(bombaId: string) {
+
+  this.abastecimentoService.listarDestinos(bombaId).subscribe({
+    next: (destinosApi: any[]) => {
+
+      this.destinos = (destinosApi || []).map(d => ({
+        id: d.destino,
+        descricao: d.destinoDesc,
+        destinoTipo: d.destinoTipo,
+        destinoId: d.destinoid
+      }));
+
+       this.aplicarRegraEquipamentoDestino();
+    },
+    error: () => {
+      this.destinos = [];
+      console.log("DESTINOS CARREGADOS:", this.destinos);
+    },
+  });
+}
+
+
+private aplicarRegraEquipamentoDestino() {
+
+  if (!this.equipamentoSelecionado) return;
+  if (!this.destinos?.length) return;
+
+  const destinoEquip = this.destinos.find(d => {
+    const tipo = String(d.destinoTipo || '')
+      .trim()
+      .toUpperCase();
+
+    return tipo === 'M';
+  });
+
+  if (!destinoEquip) {
+    console.log("Não encontrou destino tipo M");
+    return;
   }
 
+  console.log(" Destino encontrado:", destinoEquip);
+
+  this.destinoSelecionado = destinoEquip.id;
+}
+
+
+private carregarInsumos(bombaId: string) {
+
+  if (!bombaId) {
+    this.insumos = [];
+    return;
+  }
+
+  this.abastecimentoService
+    .listarInsumosComboio(bombaId)
+    .subscribe({
+      next: (insumos: any[]) => {
+
+        this.insumos = (insumos || []).map(i => ({
+          id: i.insumoId ?? i.id ?? i.InsumoId,
+          descricao: i.insumoDescr ?? i.descricao ?? i.nome,
+          insumoDescr: i.insumoDescr ?? i.descricao ?? i.nome
+        }));
+
+      },
+      error: () => {
+        this.insumos = [];
+      }
+    });
+}
+
+private carregarUltimoNumeroBico() {
+
+  console.log("Chamando ultimo numero bico");
+  console.log("Bomba:", this.bombaSelecionada);
+  console.log("Bico:", this.bicoSelecionado);
+
+  if (!this.bombaSelecionada || !this.bicoSelecionado) {
+    return;
+  }
+
+  this.abastecimentoService
+    .consultarUltimoNumeroBico(
+      this.bombaSelecionada,
+      this.bicoSelecionado
+    )
+.subscribe({
+  next: (retorno: any) => {
+    console.log("RETORNO API:", retorno);
+
+    this.numBombaInicial = retorno?.[0]?.numeracao ?? 0;
+  },
+  error: () => {
+    console.error('Erro ao consultar último número do bico');
+  }
+});
+}
+
+onEmpreendimentoChange(value: string | null, resetDependentes: boolean = true) {
+
+  console.log(' [SELECT] Empreendimento MUDOU:', value);
+  this.empreendimentoSelecionado = value ? String(value) : null;
+
+  //  NOVO: capturar o emprdCod do empreendimento selecionado
+  const encontrado = this.empreendimentos.find(
+    e => String(e.id) === String(this.empreendimentoSelecionado)
+  );
+
+ this.emprdCod = encontrado?.emprdCod ?? null;
+
+  console.log(' [SELECT] empreendimentoSelecionado DEFINIDO:', this.empreendimentoSelecionado);
+  console.log(' [SELECT] emprdCod CAPTURADO:', this.emprdCod);
+
+  if (resetDependentes) {
+    this.etapaSelecionada = null;
+    this.blocoSelecionado = null;
+    this.etapas = [];
+    this.blocos = [];
+  }
+
+  if (!this.empreendimentoSelecionado) {
+    this.etapas = [];
+    this.blocos = [];
+    return;
+  }
+
+  // Carrega Etapas
+  this.carregarEtapas();
+
+  //  Agora vai enviar o emprdCod correto
+if (this.empreendimentoSelecionado) {
+  this.carregarBlocosPorEmpreendimento(this.empreendimentoSelecionado);
+}
+}
+
+onEquipamentoChange(value: string | null) {
+
+  console.log(' [SELECT] Equipamento MUDOU:', value);
+  this.equipamentoSelecionado = value ? String(value) : null;
+  console.log(' [SELECT] equipamentoSelecionado DEFINIDO:', this.equipamentoSelecionado);
+
+  this.carregarAplicacoes();
+
+  if (!this.equipamentoSelecionado) {
+    return;
+  }
+
+  //  Se destinos já estiverem carregados, aplica agora
+  if (this.destinos && this.destinos.length > 0) {
+    this.aplicarRegraEquipamentoDestino();
+  }
+}
+
+
+  // Método auxiliar para carregar etapas
+private carregarEtapas() {
+
+  if (!this.empreendimentoSelecionado) {
+    this.etapas = [];
+    return;
+  }
+
+  const etapaSelecionadaAtual = this.etapaSelecionada;
+  const etapasAnteriores = [...this.etapas];
+
+  const aplicarListaEtapas = (response: any): boolean => {
+    const lista = this.extrairLista<any>(response);
+
+    this.etapas = lista
+      .map(e => {
+        const idRaw = e?.id ?? e?.Id ?? e?.etapaId ?? e?.IdEtapa ?? e?.idEtapa ?? e?.etapaID ?? e?.etapaCdg ?? e?.etapaCod ?? e?.value ?? e?.valor ?? e?.codigo ?? e?.cod;
+        const descricao = e?.descricao ?? e?.Descricao ?? e?.nome ?? e?.label ?? e?.etapaDescr ?? e?.EtapaDescr ?? e?.descr ?? '';
+        return {
+          id: idRaw !== null && typeof idRaw !== 'undefined' ? String(idRaw) : '',
+          descricao
+        };
+      })
+      .filter(e => !!e.id && e.id !== '' && !!String(e.descricao ?? '').trim());
+
+    console.log('[DEBUG] carregarEtapas retorno bruto:', response);
+    console.log('[DEBUG] carregarEtapas mapeado:', this.etapas);
+
+    if (
+      etapaSelecionadaAtual &&
+      !this.etapas.some(e => String(e.id) === String(etapaSelecionadaAtual))
+    ) {
+      const etapaAnterior = etapasAnteriores.find(
+        e => String(e.id) === String(etapaSelecionadaAtual)
+      );
+      if (etapaAnterior) {
+        this.etapas = [...this.etapas, etapaAnterior];
+      }
+    }
+
+    return this.etapas.length > 0;
+  };
+
+  const consultarEtapas = (
+    empreendimentoId: string,
+    insumoId: string | null,
+    emprdCod: string | number | null,
+    tentativa: string,
+    onDone: (ok: boolean) => void
+  ) => {
+    console.log(`[DEBUG] carregarEtapas TENTATIVA ${tentativa}:`, {
+      empreendimentoId,
+      insumoId,
+      emprdCod
+    });
+
+    this.abastecimentoService
+      .listarEtapas({
+        empreendimentoId,
+        pesquisa: '',
+        mostrarDI: true,
+        insumoId: insumoId ?? undefined,
+        emprdCod: emprdCod ?? undefined
+      })
+      .subscribe({
+        next: (response: any) => {
+          console.log(`[DEBUG] carregarEtapas TENTATIVA ${tentativa} RESPONSE:`, response);
+          const ok = aplicarListaEtapas(response);
+          console.log(`[DEBUG] carregarEtapas TENTATIVA ${tentativa} SUCESSO:`, ok);
+          onDone(ok);
+        },
+        error: (err) => {
+          console.error(`[DEBUG] carregarEtapas TENTATIVA ${tentativa} ERRO:`, err);
+          console.error('[DEBUG] Status:', err.status, 'Message:', err.message);
+          onDone(false);
+        }
+      });
+  };
+
+  const empreendimentoId = String(this.empreendimentoSelecionado);
+  const insumoId = this.insumoSelecionado;
+  const empreendimentoCod = this.emprdCod !== null && typeof this.emprdCod !== 'undefined'
+    ? this.emprdCod
+    : null;
+
+  console.log('[DEBUG] carregarEtapas INICIANDO com:', {
+    empreendimentoId,
+    insumoId,
+    empreendimentoCod
+  });
+
+  // Tentativa 1: Apenas GUID do empreendimento
+  consultarEtapas(empreendimentoId, null, null, '1 (só GUID)', (okBase) => {
+    if (okBase) {
+      console.log('[DEBUG] carregarEtapas SUCESSO na tentativa 1');
+      return;
+    }
+
+    // Tentativa 2: GUID + insumoId
+    consultarEtapas(empreendimentoId, insumoId, null, '2 (GUID + insumo)', (okComInsumo) => {
+      if (okComInsumo) {
+        console.log('[DEBUG] carregarEtapas SUCESSO na tentativa 2');
+        return;
+      }
+
+      if (empreendimentoCod === null) {
+        console.warn('[DEBUG] carregarEtapas SEM emprdCod, desistindo');
+        if (this.etapaSelecionada && !this.etapas.some(e => String(e.id) === String(this.etapaSelecionada))) {
+          this.etapas = [
+            ...this.etapas,
+            { id: String(this.etapaSelecionada), descricao: 'Etapa (seleção salva)' }
+          ];
+        }
+        return;
+      }
+
+      // Tentativa 3: GUID + insumoId + código numérico (fallback para APIs legadas)
+      consultarEtapas(empreendimentoId, insumoId, empreendimentoCod, '3 (GUID + insumo + COD)', (okComCod) => {
+        if (okComCod) {
+          console.log('[DEBUG] carregarEtapas SUCESSO na tentativa 3');
+        } else {
+          console.warn('[DEBUG] carregarEtapas FALHOU em todas as tentativas');
+          if (this.etapaSelecionada && !this.etapas.some(e => String(e.id) === String(this.etapaSelecionada))) {
+            this.etapas = [
+              ...this.etapas,
+              { id: String(this.etapaSelecionada), descricao: 'Etapa (seleção salva)' }
+            ];
+          }
+        }
+      });
+    });
+  });
+}
+private carregarAplicacoes() {
+
+  const aplicacaoSelecionadaAtual = this.aplicacaoSelecionada;
+  const aplicacoesAnteriores = [...this.aplicacoes];
+
+  if (!this.equipamentoSelecionado || !this.insumoSelecionado) {
+    this.aplicacoes = [];
+    this.aplicacaoHabilitada = false;
+    if (!this.abastecimentoId) {
+      this.aplicacaoSelecionada = null;
+      this.tipoPrevAbast = null;
+    } else if (this.aplicacaoSelecionada) {
+      this.aplicacoes = [
+        {
+          id: this.aplicacaoSelecionada,
+          descricao: 'Aplicação (seleção salva)'
+        }
+      ];
+      this.aplicacaoHabilitada = true;
+    }
+    return;
+  }
+
+  this.abastecimentoService
+    .consultarAplicacaoPrev(
+      this.equipamentoSelecionado,
+      this.insumoSelecionado
+    )
+    .subscribe({
+      next: (res: any) => {
+
+        const lista = this.extrairLista<any>(res);
+
+        console.log('[DEBUG] carregarAplicacoes retorno bruto:', res);
+
+        this.aplicacoes = lista
+          .map((a: any) => {
+            const idRaw = a.aplicacaoId ?? a.AplicacaoId ?? a.aplicacaoID ?? a.idAplicacao ?? a.aplicacaoCdg ?? a.codigo ?? a.cod ?? a.id ?? a.value ?? a.valor;
+            const descricao = a.aplicacaoDescr ?? a.aplicacaoDesc ?? a.AplicacaoDescr ?? a.descricao ?? a.nome ?? a.label ?? '';
+            return {
+              id: idRaw !== null && typeof idRaw !== 'undefined' ? String(idRaw) : '',
+              descricao
+            };
+          })
+          .filter((a: any) => !!a.id && !!String(a.descricao ?? '').trim());
+
+        if (
+          aplicacaoSelecionadaAtual &&
+          !this.aplicacoes.some(a => String(a.id) === String(aplicacaoSelecionadaAtual))
+        ) {
+          const aplicacaoAnterior = aplicacoesAnteriores.find(
+            a => String(a.id) === String(aplicacaoSelecionadaAtual)
+          );
+          if (aplicacaoAnterior) {
+            this.aplicacoes = [...this.aplicacoes, aplicacaoAnterior];
+          }
+        }
+
+        this.aplicacaoHabilitada = this.aplicacoes.length > 0 || !!this.aplicacaoSelecionada;
+        console.log('[DEBUG] carregarAplicacoes mapeado:', this.aplicacoes);
+
+        if (this.aplicacaoSelecionada && !this.aplicacoes.some(a => String(a.id) === String(this.aplicacaoSelecionada))) {
+          this.aplicacoes = [
+            ...this.aplicacoes,
+            {
+              id: this.aplicacaoSelecionada,
+              descricao: 'Aplicação (seleção salva)'
+            }
+          ];
+          this.aplicacaoHabilitada = true;
+        }
+
+        if (!this.aplicacaoHabilitada) {
+          if (!this.abastecimentoId) {
+            this.aplicacaoSelecionada = null;
+            this.tipoPrevAbast = null;
+          }
+        }
+      },
+      error: (err) => {
+        console.log('[DEBUG] carregarAplicacoes erro:', err);
+        this.aplicacoes = [];
+        this.aplicacaoHabilitada = false;
+        if (this.aplicacaoSelecionada) {
+          this.aplicacoes = [
+            {
+              id: this.aplicacaoSelecionada,
+              descricao: 'Aplicação (seleção salva)'
+            }
+          ];
+          this.aplicacaoHabilitada = true;
+        }
+        if (!this.abastecimentoId) {
+          this.aplicacaoSelecionada = null;
+          this.tipoPrevAbast = null;
+        }
+      }
+    });
+}
 
 
   onBack() {
@@ -716,10 +1547,10 @@ export class AbastecimentoProprioEdicaoPage implements OnInit {
       // Validar se a data não é futura
       const dataSelecionada = new Date(data.date);
       const hoje = new Date();
-      hoje.setHours(23, 59, 59, 999); // Permite até o final do dia de hoje
+      hoje.setHours(23, 59, 59, 999);
 
       if (dataSelecionada > hoje) {
-        this.toast('⚠️ Data não pode ser futura!', 'warning');
+        this.toast('Data não pode ser futura!', 'warning');
   }
 
       this.data = data.date;
@@ -757,242 +1588,287 @@ export class AbastecimentoProprioEdicaoPage implements OnInit {
     }
   }
 
+// PADRONIZA LISTAS PARA O AUTOCOMPLETE
+private padronizarLista(lista: any[], idField: string, descField: string) {
+  return (lista || []).map(item => ({
+    id: item?.[idField],
+    descricao: item?.[descField]
+  }));
+}
   private carregarBombas() {
     this.abastecimentoService.listarBombas().subscribe({
       next: (bombas) => {
-        this.bombas = bombas || [];
-      },
-      error: () => {},
-    });
-  }
-
-
-
-
-
-
-
-  private carregarEquipamentos() {
-    this.abastecimentoService.listarEquipamentos().subscribe({
-      next: (eqps) => {
-        this.equipamentos = eqps || [];
-      },
-      error: () => {},
-    });
-  }
-
-  onQuantidadeChange(event: Event) {
-    const ce = event as CustomEvent<{ value?: unknown }>;
-    const value = ce.detail?.value ?? (event.target as HTMLInputElement | null)?.value ?? null;
-    this.quantidade = value !== null && value !== '' ? Number(value) : null;
-    // ...removido log de quantidade...
-    this.logPayloadPreview();
-  }
-
-  onNumBombaInicialChange(event: Event) {
-    const ce = event as CustomEvent<{ value?: unknown }>;
-    const value = ce.detail?.value ?? (event.target as HTMLInputElement | null)?.value ?? null;
-    this.numBombaInicial = value !== null && value !== '' ? Number(value) : null;
-    // ...removido log de bomba inicial...
-    this.logPayloadPreview();
-  }
-
-  onNumBombaFinalChange(event: Event) {
-    const ce = event as CustomEvent<{ value?: unknown }>;
-    const value = ce.detail?.value ?? (event.target as HTMLInputElement | null)?.value ?? null;
-    this.numBombaFinal = value !== null && value !== '' ? Number(value) : null;
-    // ...removido log de bomba final...
-    this.logPayloadPreview();
-  }
-
-  confirmar() {
-
-    // Validação extra: se for edição, o ID deve estar presente
-    const isEdicao = !!this.abastecimentoId;
-    if (isEdicao && !this.abastecimentoId) {
-      this.toast('Erro interno: ID do abastecimento não encontrado para edição!', 'danger');
-      // ...removido log de erro...
-      return;
-    }
-    if (isEdicao) {
-      // ...removido log de edição...
-    }
-
-    // Validações de campos obrigatórios (conforme doc 1.11)
-    if (!this.data) {
-      this.toast('⚠️ Data obrigatória', 'warning');
-      return;
-    }
-
-    // Validar se a data não é futura
-    const dataSelecionada = new Date(this.data);
-    const hoje = new Date();
-    hoje.setHours(23, 59, 59, 999);
-
-    if (dataSelecionada > hoje) {
-      this.toast('⚠️ Data não pode ser futura!', 'warning');
-      return;
-    }
-
-
-    if (!this.bombaSelecionada) {
-      this.toast('⚠️ Origem/Tanque obrigatória', 'warning');
-      return;
-    }
-
-    if (!this.bicoSelecionado) {
-      this.toast('⚠️ Bico obrigatório', 'warning');
-      return;
-    }
-
-    if (!this.destinoSelecionado) {
-      this.toast('⚠️ Destino obrigatório', 'warning');
-      return;
-    }
-
-    if (!this.insumoSelecionado) {
-      this.toast('⚠️ Insumo obrigatório', 'warning');
-      return;
-    }
-
-    if (this.quantidade == null || this.quantidade <= 0) {
-      this.toast('⚠️ Quantidade inválida', 'warning');
-      return;
-    }
-
-    // Formatar data para ISO (ex: 2025-12-15T02:29:00)
-    const d = new Date(this.data ?? new Date());
-    const pad2 = (n: number) => n.toString().padStart(2, '0');
-
-    const dataFormatada =
-      `${d.getFullYear()}-` +
-      `${pad2(d.getMonth() + 1)}-` +
-      `${pad2(d.getDate())}T` +
-      `${pad2(d.getHours())}:` +
-      `${pad2(d.getMinutes())}:` +
-      `${pad2(d.getSeconds())}`;
-
-    // Monta horaAbastecimento no formato HH:mm:ss
-    let horaAbastecimentoFormatada = this.horaAbastecimento;
-    if (horaAbastecimentoFormatada && horaAbastecimentoFormatada.length === 5) {
-      // Se vier só HH:mm, completa com :00
-      horaAbastecimentoFormatada += ':00';
-    }
-
-    // Montar objeto de params para query string
-    let operadorId = undefined;
-    // Adiciona IdAbastecimento se estiver editando (já definido acima)
-    if (this.motoristaOperadorSelecionado) {
-      if (typeof this.motoristaOperadorSelecionado === 'string') {
-        operadorId = this.motoristaOperadorSelecionado;
-      } else if (
-        typeof this.motoristaOperadorSelecionado === 'object' &&
-        this.motoristaOperadorSelecionado &&
-        'fornId' in this.motoristaOperadorSelecionado &&
-        (this.motoristaOperadorSelecionado as any).fornId
-      ) {
-        operadorId = (this.motoristaOperadorSelecionado as any).fornId;
-      }
-    }
-    // Descobre o tipo do destino selecionado
-    const destinoObj = (this.destinos ?? []).find(d => d.destino === this.destinoSelecionado);
-    const guidZerado = '00000000-0000-0000-0000-000000000000';
-    // Log da lista de empreendimentos para depuração
-    if (this.empreendimentos) {
-      // ...removido log de debug...
-    }
-    // Resolve IdEmprd para o valor que o backend espera (código numérico)
-    // Sempre enviar o GUID do empreendimento (emprdId) para o backend
-    let idEmprdFinal: string | undefined = undefined;
-    if (this.empreendimentoSelecionado && this.empreendimentos && Array.isArray(this.empreendimentos)) {
-      const encontrado = this.empreendimentos.find(e =>
-        String(e.id) === String(this.empreendimentoSelecionado) ||
-        String((e as any).emprdId) === String(this.empreendimentoSelecionado) ||
-        String((e as any).guid) === String(this.empreendimentoSelecionado)
+      this.bombas = this.padronizarLista(
+        bombas,
+        'bombaId',
+        'bombaDescricao'
       );
-      if (encontrado && encontrado.id) {
-        idEmprdFinal = String(encontrado.id);
-      } else if (this.emprdId) {
-        idEmprdFinal = String(this.emprdId);
-        // ...removido log de warning...
-      } else {
-        // ...removido log de erro...
-      }
-    } else if (this.emprdId) {
-      idEmprdFinal = String(this.emprdId);
-      // ...removido log de warning...
-    }
-    // Resolve IdBloco para o valor que o backend espera (código ou GUID)
-    let idBlocoFinal = this.blocoSelecionado;
-    if (this.blocoSelecionado && this.blocos && Array.isArray(this.blocos)) {
-      const blocoEncontrado = this.blocos.find(b => String(b.id) === String(this.blocoSelecionado));
-      if (blocoEncontrado && (blocoEncontrado as any).blocoCod) {
-        idBlocoFinal = (blocoEncontrado as any).blocoCod;
-      }
-    }
-    // Log detalhado do valor de observação antes do envio
-    // ...removido log de debug...
-    const params: Record<string, unknown> = {
-      DataAbastecimento: dataFormatada || undefined,
-      horaAbastecimento: horaAbastecimentoFormatada || undefined,
-      TpAbastecimento: 0,
-      TpDestino: this.destinoSelecionado ?? undefined,
-      IdTanqueOrigem: this.bombaSelecionada ?? undefined,
-      IdBico: this.bicoSelecionado ?? undefined,
-      IdInsumo: this.insumoSelecionado ?? undefined,
-      QtdInsumo: this.quantidade != null ? Number(this.quantidade) : undefined,
-      Origem: 3,
-      Horimetro: this.horimetro != null ? Number(this.horimetro) : undefined,
-      Odometro: this.odometro != null ? Number(this.odometro) : undefined,
-      NumBicoInicial: this.numBombaInicial != null ? Number(this.numBombaInicial) : undefined,
-      NumBicoFinal: this.numBombaFinal != null ? Number(this.numBombaFinal) : undefined,
-      Observacao: this.observacao ?? undefined,
-      IdBloco: idBlocoFinal ?? undefined,
-      OperadorSolicitanteId: operadorId,
-      FrentistaId: this.colaboradorFrentistaSelecionado ?? undefined,
-      IdEmprd: idEmprdFinal ?? undefined,
-      IdEtapa: this.etapaSelecionada ?? undefined,
-      // Campos novos conforme doc 1.11
-      TipoPrevAbast: this.tipoPrevAbast ?? undefined,
-      AplicacaoPrevId: this.aplicacaoSelecionada ?? undefined,
-      // Alinhar nome do campo para garantir compatibilidade
-      ...(isEdicao ? { IdAbastecimento: this.abastecimentoId } : {}),
-    };
-    if (isEdicao) {
-      // ...removido log de edição/erro...
-    }
-
-    // Regra: nunca enviar IdEquipamento e IdTanqueDestino juntos!
-    if (destinoObj && destinoObj.destinoTipo === 'M') {
-      params.IdEquipamento = this.equipamentoSelecionado;
-      delete params.IdTanqueDestino;
-    } else {
-      if (destinoObj && destinoObj.destinoid && destinoObj.destinoid !== guidZerado) {
-        params.IdTanqueDestino = destinoObj.destinoid;
-      } else {
-        delete params.IdTanqueDestino;
-      }
-      delete params.IdEquipamento;
-    }
-
-    Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
-    // Log dos dados enviados para API
-    // ...removido log de payload...
-
-    this.carregando = true;
-    this.abastecimentoService.gravarAbastecimento(params).subscribe({
-      next: (res) => {
-        this.carregando = false;
-        this.toast('✅ Abastecimento gravado! ID: ' + (typeof res === 'string' ? res.substring(0, 8) : 'OK'), 'success');
-        setTimeout(() => {
-          this.router.navigate(['/tabs/abastecimento-proprio-pesquisa']);
-        }, 1500);
       },
-      error: (err) => {
-        this.carregando = false;
-        this.toast('Erro ao salvar abastecimento. Veja o console para detalhes.', 'danger');
-      },
+      error: () => {},
     });
   }
+
+  private carregarBicos(bombaId: string) {
+
+  if (!bombaId) {
+    this.bicos = [];
+    return;
+  }
+
+  this.abastecimentoService.listarBicos(bombaId).subscribe({
+    next: (bicos: any[]) => {
+      this.bicos = (bicos || []).map(b => ({
+        id: b.bicoId,
+        codigo: b.bicoCdg,
+        descricao: b.bicoDescricao
+      }));
+    },
+    error: () => {
+      this.bicos = [];
+    }
+  });
+}
+private carregarEquipamentos() {
+  this.abastecimentoService.listarEquipamentosMobile().subscribe({
+    next: (eqps: any[]) => {
+      this.equipamentos = eqps.map(e => ({
+        id: e.id,
+        descricao: e.descricao
+      }));
+    },
+    error: () => {},
+  });
+
 }
 
+
+
+onQuantidadeChange(event: Event) {
+  const value = (event.target as HTMLInputElement).value;
+  this.quantidade = value ? Number(value) : null;
+}
+
+onNumBombaInicialChange(event: Event) {
+  const value = (event.target as HTMLInputElement).value;
+  this.numBombaInicial = value ? Number(value) : null;
+}
+
+onNumBombaFinalChange(event: Event) {
+  const value = (event.target as HTMLInputElement).value;
+  this.numBombaFinal = value ? Number(value) : null;
+}
+onHoraChange(event: Event) {
+  const value = (event.target as HTMLInputElement).value;
+  this.horaAbastecimento = value || null;
+}
+onObservacaoChange(event: Event) {
+  const value = (event.target as HTMLTextAreaElement).value;
+  this.observacao = value || '';
+}
+
+onAplicacaoChange(event: any) {
+  this.aplicacaoSelecionada = event?.id ?? null;
+}
+  confirmar() {
+
+  const isEdicao = !!this.abastecimentoId;
+
+  if (isEdicao && !this.abastecimentoId) {
+    this.toast('Erro interno: ID do abastecimento não encontrado para edição!', 'danger');
+    return;
+  }
+
+  if (!this.data) {
+    this.toast(' Data obrigatória', 'warning');
+    return;
+  }
+
+  const dataSelecionada = new Date(this.data);
+  const hoje = new Date();
+  hoje.setHours(23, 59, 59, 999);
+
+  if (dataSelecionada > hoje) {
+    this.toast('Data não pode ser futura!', 'warning');
+    return;
+  }
+
+  if (!this.bombaSelecionada) {
+    this.toast('Origem/Tanque obrigatória', 'warning');
+    return;
+  }
+
+  if (!this.bicoSelecionado) {
+    this.toast('Bico obrigatório', 'warning');
+    return;
+  }
+
+  if (!this.destinoSelecionado) {
+    this.toast('Destino obrigatório', 'warning');
+    return;
+  }
+
+  if (!this.insumoSelecionado) {
+    this.toast('Insumo obrigatório', 'warning');
+    return;
+  }
+
+  if (this.quantidade == null || this.quantidade <= 0) {
+    this.toast('Quantidade inválida', 'warning');
+    return;
+  }
+
+  if (this.odometro == null || this.odometro <= 0) {
+    this.toast('Odômetro obrigatório', 'warning');
+    return;
+  }
+
+// ------------------ DATA FORMATADA (SEM UTC) ------------------
+
+const dataBase = this.data.split('T')[0]; // yyyy-MM-dd
+const dataFormatada = `${dataBase}T00:00:00`;
+
+  // ------------------ OPERADOR ------------------
+
+  let operadorId: string | undefined;
+
+  if (this.motoristaOperadorSelecionado) {
+    if (typeof this.motoristaOperadorSelecionado === 'string') {
+      operadorId = this.motoristaOperadorSelecionado;
+    } else if (
+      typeof this.motoristaOperadorSelecionado === 'object' &&
+      'fornId' in this.motoristaOperadorSelecionado
+    ) {
+      operadorId = (this.motoristaOperadorSelecionado as any).fornId;
+    }
+  }
+
+  // ------------------ DESTINO ------------------
+
+  const destinoObj = (this.destinos ?? []).find(
+    d => d.id === this.destinoSelecionado
+  );
+
+  if (!destinoObj) {
+    this.toast('Destino inválido', 'warning');
+    return;
+  }
+
+// ------------------ EMPREENDIMENTO ------------------
+
+const guidZerado = '00000000-0000-0000-0000-000000000000';
+const idEmprdFinal: string | undefined =
+  (this.empreendimentoSelecionado && this.empreendimentoSelecionado !== guidZerado)
+    ? this.empreendimentoSelecionado
+    : (this.emprdId && this.emprdId !== guidZerado ? this.emprdId : undefined);
+
+// ------------------ BLOCO ------------------
+
+const idBlocoFinal: string | undefined =
+  this.blocoSelecionado || undefined;
+
+console.log("SALVANDO IdEmprd:", idEmprdFinal);
+console.log("SALVANDO IdBloco:", idBlocoFinal);
+
+if (!idEmprdFinal) {
+  this.toast('Empreendimento obrigatório', 'warning');
+  return;
+}
+
+// backend está exigindo
+if (!this.tipoPrevAbast) {
+  this.toast('Troca / Reposição obrigatória', 'warning');
+  return;
+}
+
+
+// ---------------- PARAMS ----------------
+
+const params: Record<string, unknown> = {
+  TpAbastecimento: 0,
+  DataAbastecimento: dataFormatada,
+  TpDestino: this.destinoSelecionado ?? undefined,
+  IdTanqueOrigem: this.bombaSelecionada,
+  IdBico: this.bicoSelecionado,
+  IdInsumo: this.insumoSelecionado,
+  QtdInsumo: Number(this.quantidade),
+  Origem: 3,
+  IdEmprd: idEmprdFinal,
+  IdEtapa: this.etapaSelecionada ?? undefined,
+  IdBloco: idBlocoFinal,
+  Odometro: this.odometro ?? undefined,
+  OdometroAtual: this.odometroAtual ?? undefined,
+  Horimetro: this.horimetro ?? undefined,
+  HorimetroAtual: this.horimetroAtual ?? undefined,
+  horaAbastecimento: this.horaAbastecimento ?? undefined,
+  NumBicoInicial: this.numBombaInicial ?? undefined,
+  NumBicoFinal: this.numBombaFinal ?? undefined,
+  Observacao: (this.observacao ?? '').trim() || undefined,
+  OperadorSolicitanteId: operadorId ?? undefined,
+  FrentistaId: this.colaboradorFrentistaSelecionado ?? undefined,
+  TipoPrevAbast: this.tipoPrevAbast ?? undefined,
+  IdAplicacaoPrev: this.aplicacaoSelecionada ?? undefined,
+  // Se for edição, inclui IdAbastecimento
+  ...(this.abastecimentoId ? { IdAbastecimento: this.abastecimentoId } : {})
+};
+
+console.log('[DEBUG] Medições sendo SALVAS:', {
+  odometro: this.odometro,
+  odometroAtual: this.odometroAtual,
+  horimetro: this.horimetro,
+  horimetroAtual: this.horimetroAtual
+});
+
+
+  // ------------------ REGRA DESTINO ------------------
+
+  if (destinoObj.destinoTipo === 'M') {
+    // Equipamento
+    params.IdEquipamento = this.equipamentoSelecionado;
+  } else {
+    // Tanque / Comboio / etc
+    params.IdTanqueDestino = destinoObj.destinoId;
+  }
+
+  // Remove undefined
+  Object.keys(params).forEach(
+    key => params[key] === undefined && delete params[key]
+  );
+
+  // ------------------ ENVIO ------------------
+
+  this.carregando = true;
+
+  console.log("AplicacaoSelecionada:", this.aplicacaoSelecionada);
+
+console.log("PAYLOAD FINAL:", params);
+
+  this.abastecimentoService.gravarAbastecimento(params)
+  .subscribe({
+    next: (res) => {
+      this.carregando = false;
+
+      const idParaCache = this.abastecimentoId || (typeof res === 'string' ? String(res) : null);
+      if (idParaCache) {
+        this.salvarCacheCampos(idParaCache);
+      }
+
+      this.toast(
+        'Abastecimento gravado! ID: ' +
+        (typeof res === 'string' ? res.substring(0, 8) : 'OK'),
+        'success'
+      );
+
+      setTimeout(() => {
+        this.router.navigate(['/tabs/abastecimento-proprio-pesquisa']);
+      }, 1500);
+    },
+    error: () => {
+      this.carregando = false;
+      this.toast(
+        'Erro ao salvar abastecimento. Veja o console para detalhes.',
+        'danger'
+      );
+    },
+  });
+}
+}

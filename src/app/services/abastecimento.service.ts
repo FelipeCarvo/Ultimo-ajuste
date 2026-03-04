@@ -36,6 +36,8 @@ export type EquipamentoLookup = LookupItem & {
   modelo?: string;
 };
 
+
+
 export type EmpresaLookup = LookupItem & {
   descricao?: string;
 };
@@ -148,6 +150,12 @@ export interface AbastecimentoConsulta {
   // Outros
   entidade?: number;
   codAbastecimentoExterno?: string;
+
+  // Destino
+  destino?: string;
+  destinoTipo?: string;
+  destinoDesc?: string;
+  destinoid?: string;
 }
 
 @Injectable({
@@ -215,47 +223,48 @@ export class AbastecimentoService {
     // Normalização pode ser feita no componente que consome, se necessário
   }
 
-  listarBlocosPorEmpreendimento(empreendimentoId: string, requisito?: string) {
-    // Só envia se empreendimentoId for válido (não null, não vazio, não GUID zerado)
-    const guidZerado = '00000000-0000-0000-0000-000000000000';
-    if (!empreendimentoId || empreendimentoId === guidZerado) {
-      // Retorna Observable de array vazio
-      return this.api.of([]);
-    }
-    const body: Record<string, unknown> = { empreendimentoId, requisito: requisito ?? '' };
-    return this.api.post<LookupItem[]>('/api/cadastros/Lookups/Blocos', body);
+listarBlocosPosto(
+  empreendimentoId: string,
+  requisito?: string,
+  aplicacaoId?: string
+) {
+
+  const body: Record<string, unknown> = {
+    empreendimentoId
+  };
+
+  if (requisito) {
+    body['requisito'] = requisito;
   }
 
-  listarUnidadesPorBloco(blocoId: string) {
-    return this.api.post<LookupItem[]>('/api/cadastros/Lookups/Unidades', { blocoId });
+  if (aplicacaoId) {
+    body['aplicacaoId'] = aplicacaoId;
   }
 
-  listarColaboradoresFrentista() {
-    return this.api.post<ColaboradorFrentistaDto[]>('/api/cadastros/Lookups/Pessoas', { tipoPessoa: 'Funcionário' });
-  }
+  return this.api.post<LookupItem[]>(
+    '/api/cadastros/Lookups/Blocos',
+    body
+  );
+}
 
-  // Fornecedores (Lookup correto)
-  listarFornecedores(pesquisa: string = '', valorSelecionado: string = '') {
-    return this.api.post<LookupItem[]>(
-      '/api/cadastros/Lookups/Pessoas',
-      {
-        pesquisa,
-        valorSelecionado,
-        tipoPessoa: 'Fornecedor'
-      }
-    );
-  }
 
   listarColaboradoresMotoristaOperador() {
-    return this.api.get<MotoristaOperadorDto[]>('/api/frotas/OrdensServico/ConsultaColaborador', { Classificacao: 1 });
+    return this.api.get<MotoristaOperadorDto[]>
+    ('/api/frotas/OrdensServico/ConsultaColaborador', { Classificacao: 1 });
   }
 
-  consultarAplicacaoPrevEquipInsumo(equipamentoId: string, insumoId: string) {
-    return this.api.get<AplicacaoDto[]>(
-      '/api/frotas/Abastecimentos/ConsultaAplicacaoPrevEquipInsumo',
-      { equipamentoId, insumoId }
-    );
-  }
+consultarAplicacaoPrev(equipamentoId: string, insumoId: string) {
+  const params = {
+    EquipamentoId: equipamentoId,
+    InsumoId: insumoId
+  };
+  console.log('[DEBUG] consultarAplicacaoPrev enviando:', params);
+
+  return this.api.get<any[]>(
+    '/api/frotas/Abastecimentos/ConsultaAplicacaoPrevEquipInsumo',
+    params
+  );
+}
 
   listarInsumosComboio(bombaId: string) {
     return this.api.get<InsumoDto[]>(
@@ -264,9 +273,20 @@ export class AbastecimentoService {
     );
   }
 
-  listarEmpreendimentos() {
-    return this.api.post<LookupItem[]>('/api/cadastros/Lookups/Empreendimentos', {});
+
+listarEmpreendimentos(emprdId?: string) {
+
+  const body: any = {};
+
+  if (emprdId) {
+    body.emprdId = emprdId;
   }
+
+  return this.api.post<LookupItem[]>(
+    '/api/cadastros/Lookups/Empreendimentos',
+    body
+  );
+}
 
   // Equipamentos (Mobile) - conforme documentação do Abastecimento Posto
   listarEquipamentosMobile() {
@@ -277,10 +297,23 @@ export class AbastecimentoService {
     return this.api.get<BombaDto[]>('/api/frotas/Abastecimentos/ConsultaBomba');
   }
 
+consultarBomba(bombaId: string) {
+  return this.api.get<BombaDto[]>(
+    `/api/frotas/Abastecimentos/ConsultaBomba?Id=${bombaId}`
+  );
+}
+
   listarEquipamentos() {
     return this.api.post<EquipamentoDto[]>('/api/frotas/Lookups/Equipamentos', {});
   }
-
+listarColaboradoresFrentista() {
+  return this.api.post<any[]>(
+    '/api/cadastros/Lookups/Pessoas',
+    {
+      tipoPessoa: 'Funcionário'
+    }
+  );
+}
   // Consulta de abastecimento próprio (tela de pesquisa)
   consultarAbastecimentoProprio(filtros: {
     origemTanque?: string;
@@ -320,8 +353,16 @@ export class AbastecimentoService {
       map((res: any) => {
         const norm = normalizeNulls(res);
         if (Array.isArray(norm)) {
-          // Garante que só retorna o registro com o ID solicitado
-          return norm.find((item: any) => item.abastecimentoId === abastecimentoId) || norm[0] || null;
+          const alvo = String(abastecimentoId || '').toLowerCase();
+          return norm.find((item: any) => {
+            const itemId = String(
+              item?.abastecimentoId ??
+              item?.AbastecimentoId ??
+              item?.idAbastecimento ??
+              ''
+            ).toLowerCase();
+            return itemId === alvo;
+          }) || norm[0] || null;
         }
         return norm;
       })
@@ -369,80 +410,35 @@ export class AbastecimentoService {
 
     // Remover duplicidade de AbastecimentoId/abastecimentoId
     if ('abastecimentoId' in payload && 'AbastecimentoId' in payload) {
-      // Se ambos existem, prioriza AbastecimentoId (padrão backend)
       delete payload['abastecimentoId'];
     }
 
-    // Garante que só um dos campos será enviado nos params
-    const params: Record<string, unknown> = {};
-    const keys = [
-      // Campos comuns
-      'TpAbastecimento',
-      'DataAbastecimento',
-      'Origem',
-      // Campos de Abastecimento Próprio
-      'TpDestino',
-      'IdTanqueOrigem',
-      'IdBico',
-      'IdTanqueDestino',
-      'IdInsumo',
-      'QtdInsumo',
-      'IdEquipamento',
-      'IdEmprd',
-      'IdEtapa',
-      'IdBloco',
-      'Odometro',
-      'Horimetro',
-      'NumBicoInicial',
-      'NumBicoFinal',
-      'OperadorSolicitanteId',
-      'FrentistaId',
-      'TipoPrevAbast',
-      'AplicacaoPrevId',
-      'Observacao',
-      // Campos de Abastecimento Posto
-      'IdFornecedor',
-      'IdEmpresa',
-      'IdCentroDespesa',
-      'TotalAbastecimentoPosto',
-      'NumeroControlePosto',
-      'Retorno',
-      'Estoque',
-      // Adiciona só um dos campos de ID se existir
-      ('AbastecimentoId' in payload ? 'AbastecimentoId' : ('abastecimentoId' in payload ? 'abastecimentoId' : null)),
-      // Adiciona IdAbastecimento se existir (para garantir compatibilidade com backend)
-      ('IdAbastecimento' in payload ? 'IdAbastecimento' : null),
-    ].filter(Boolean);
-
-    for (const k of keys) {
-      if (!k) continue;
-      const v = payload?.[k];
-      if (v !== null && typeof v !== 'undefined') {
-        params[k] = v;
+    // Monta a query string manualmente
+    const params = new URLSearchParams();
+    Object.keys(payload).forEach(key => {
+      const value = payload[key];
+      if (value !== null && typeof value !== 'undefined') {
+        params.append(key, String(value));
       }
-    }
-
-    return this.api.post('/api/frotas/Abastecimentos/GravaAbastecimento', payload, params);
+    });
+    const url = `/api/frotas/Abastecimentos/GravaAbastecimento?${params.toString()}`;
+    // Envia como POST sem corpo, só com query string
+    return this.api.post(url, null);
   }
 
   // Bicos (referente à bomba)
-  listarBicos(bombaId: string) {
-    // ConsultaBico espera o parâmetro Id (bombaId)
-    return this.api.get<BicoDto[]>(
-      '/api/frotas/Abastecimentos/ConsultaBico',
-      { Id: bombaId }
-    );
-  }
-
+listarBicos(bombaId: string) {
+  return this.api.get<BicoDto[]>(
+    `/api/frotas/Abastecimentos/ConsultaBico?Id=${bombaId}`
+  );
+}
   // Destinos (referente à bomba)
-  listarDestinos(bombaId: string) {
-    // ConsultaDestinoAbastecimentos espera o parâmetro bombaId
-    return this.api.get<DestinoDto[]>(
-      '/api/frotas/Abastecimentos/ConsultaDestinoAbastecimentos',
-      { bombaId }
-    );
-  }
-
+listarDestinos(bombaId: string) {
+  // ConsultaDestinoAbastecimentos espera o parâmetro bombaId
+  return this.api.get<any[]>(
+    `/api/frotas/Abastecimentos/ConsultaDestinoAbastecimentos?bombaId=${bombaId}`
+  );
+}
   // Centro de Despesas (Plano de Contas)
   listarCentrosDespesas(
     pesquisa: string = '',
@@ -474,25 +470,38 @@ export class AbastecimentoService {
   }
 
   // Etapas (por empreendimento)
-  listarEtapas(params: {
-    empreendimentoId: string;
-    pesquisa?: string;
-    valorSelecionado?: string;
-    mostrarDI?: boolean;
-    insumoId?: string;
-  }) {
-    const body: Record<string, unknown> = {
-      pesquisa: params.pesquisa || '',
-      valorSelecionado: params.valorSelecionado || '',
-      empreendimentoId: params.empreendimentoId,
-      mostrarDI: params.mostrarDI || false
-    };
-    if (params.insumoId) body['insumoId'] = params.insumoId;
-    return this.api.post<LookupItem[]>(
-      '/api/orcamentos/Lookups/Etapas',
-      body
-    );
+listarEtapas(params: {
+  empreendimentoId: string;
+  pesquisa?: string;
+  valorSelecionado?: string;
+  mostrarDI?: boolean;
+  insumoId?: string;
+  emprdCod?: string | number;  // Código numérico do empreendimento (fallback)
+}) {
+  const body: Record<string, unknown> = {
+    pesquisa: params.pesquisa || '',
+    valorSelecionado: params.valorSelecionado || '',
+    empreendimentoId: params.empreendimentoId,
+    mostrarDI: typeof params.mostrarDI !== 'undefined' ? params.mostrarDI : true,
+    requisito: false  // Campo obrigatório pela API
+  };
+
+  // Fallback legado opcional
+  if (params.emprdCod !== undefined && params.emprdCod !== null) {
+    body['emprdCod'] = params.emprdCod;
+    console.log('[DEBUG] listarEtapas COM emprdCod:', params.emprdCod);
   }
+
+  if (params.insumoId) {
+    body['insumoId'] = params.insumoId;
+  }
+  console.log('[DEBUG] listarEtapas BODY COMPLETO:', JSON.stringify(body, null, 2));
+
+  return this.api.post<any[]>(
+    '/api/orcamentos/Lookups/Etapas',
+    body
+  );
+}
 
   // Insumos (por empreendimento, apenas de abastecimento)
   listarInsumos(empreendimentoId: string, pesquisa: string = '', valorSelecionado: string = '') {
@@ -507,7 +516,22 @@ export class AbastecimentoService {
       body
     );
   }
+consultarUltimoNumeroBico(bombaId: string, bicoId: string) {
+  return this.api.get<number>(
+    `/api/frotas/Abastecimentos/ConsultaUltimoNumeroBico?bombaId=${bombaId}&bicoId=${bicoId}`
+  );
+}
 
+listarFornecedores(pesquisa: string = '', valorSelecionado: string = '') {
+  return this.api.post<any[]>(
+    '/api/cadastros/Lookups/Pessoas',
+    {
+      pesquisa,
+      valorSelecionado,
+      tipoPessoa: 'Fornecedor'
+    }
+  );
+}
   // Blocos (por empreendimento)
   listarBlocos(empreendimentoId: string, pesquisa: string = '', valorSelecionado: string = '') {
     const body: Record<string, unknown> = {
@@ -520,4 +544,18 @@ export class AbastecimentoService {
       body
     );
   }
+
+  // Blocos (por empreendimento) - Abastecimento Próprio/Legado
+listarBlocosProprio(empreendimentoId: string) {
+  return this.api.post(
+    '/api/cadastros/Lookups/Unidades',
+    {
+
+   empreendimentoId: empreendimentoId,
+   pesquisa: "",
+   valorSelecionado: ""
+
+    }
+  );
+}
 }

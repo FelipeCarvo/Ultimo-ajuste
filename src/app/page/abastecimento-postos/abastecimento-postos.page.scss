@@ -80,7 +80,7 @@
 }
 
 /* ============================= */
-/* 🎯 INPUT PADRÃO DO SISTEMA */
+/*  INPUT PADRÃO DO SISTEMA */
 /* ============================= */
 
 .os-input {
@@ -101,12 +101,12 @@
   cursor: text;
 }
 
-/* 🔥 Foco padrão (igual Descrição da OS) */
+/* Foco padrão  */
 .os-input:focus {
   border: 2px solid #000000;
 }
 /* ============================= */
-/* 📅 CAMPO DE DATA PADRONIZADO */
+/* CAMPO DE DATA PADRONIZADO */
 /* ============================= */
 
 .os-date-input {
@@ -123,7 +123,7 @@
 /* Espaço interno para X + calendário */
 .os-date-input .os-input {
   --padding-start: 12px;
-  --padding-end: 72px; /* espaço para dois botões */
+  --padding-end: 72px;
    --background: #ffffff !important;
   background: #ffffff !important;
 
@@ -134,7 +134,7 @@
 }
 
 /* ============================= */
-/* 📅 BOTÃO CALENDÁRIO */
+/*  BOTÃO CALENDÁRIO */
 /* ============================= */
 
 .os-date-btn {
@@ -161,7 +161,7 @@
 }
 
 /* ============================= */
-/* ❌ BOTÃO LIMPAR DATA */
+/* BOTÃO LIMPAR DATA */
 /* ============================= */
 
 .os-date-clear {
@@ -193,7 +193,7 @@
 }
 
 /* ============================= */
-/* 🔵 BOTÃO PESQUISAR */
+/*  BOTÃO PESQUISAR */
 /* ============================= */
 
 .os-actions {

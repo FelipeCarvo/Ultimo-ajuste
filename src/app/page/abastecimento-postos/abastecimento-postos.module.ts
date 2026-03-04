@@ -7,7 +7,7 @@ import { AbastecimentoPostosPageRoutingModule } from './abastecimento-postos-rou
 import { AbastecimentoPostosPage } from './abastecimento-postos.page';
 import { CalendarPopoverComponentModule } from '../../components/calendar-popover/calendar-popover.module';
 
-// 🔥 ADICIONAR AQUI
+
 import { AutocompleteComponent } from '../../components/autocomplete/autocomplete.component';
 
 @NgModule({
@@ -17,8 +17,6 @@ import { AutocompleteComponent } from '../../components/autocomplete/autocomplet
     IonicModule,
     AbastecimentoPostosPageRoutingModule,
     CalendarPopoverComponentModule,
-
-    // 🔥 IMPORTAR STANDALONE AQUI
     AutocompleteComponent
   ],
   declarations: [AbastecimentoPostosPage]

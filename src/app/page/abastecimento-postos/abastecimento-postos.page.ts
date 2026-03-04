@@ -14,21 +14,21 @@ import { AbastecimentoService } from '../../services/abastecimento.service';
 export class AbastecimentoPostosPage implements OnInit {
 
   // ===============================
-  // 🔹 LISTAS DO AUTOCOMPLETE
+  // LISTAS DO AUTOCOMPLETE
   // ===============================
 
   fornecedoresLista: any[] = [];
   equipamentosLista: any[] = [];
 
   // ===============================
-  // 🔹 IDS SELECIONADOS
+  //  IDS SELECIONADOS
   // ===============================
 
   fornecedorId: string | null = null;
   equipamentoId: string | null = null;
 
   // ===============================
-  // 🔹 OUTROS CAMPOS
+  //  OUTROS CAMPOS
   // ===============================
 
   numeroVoucher = '';
@@ -43,7 +43,7 @@ export class AbastecimentoPostosPage implements OnInit {
   ) {}
 
   // ===============================
-  // 🔹 INIT
+  //  INIT
   // ===============================
 
   ngOnInit() {
@@ -51,12 +51,12 @@ export class AbastecimentoPostosPage implements OnInit {
   }
 
   // ===============================
-  // 🔹 CARREGAR LISTAS REAIS (API)
+  //  CARREGAR LISTAS REAIS (API)
   // ===============================
 
   carregarListas() {
 
-    // 🔥 FORNECEDORES (mesma API da edição)
+    //  FORNECEDORES (mesma API da edição)
     this.abastecimentoService.listarFornecedores().subscribe({
       next: dados => {
         this.fornecedoresLista = dados ?? [];
@@ -67,7 +67,7 @@ export class AbastecimentoPostosPage implements OnInit {
       }
     });
 
-    // 🔥 EQUIPAMENTOS (mesma API da edição)
+    // EQUIPAMENTOS (mesma API da edição)
     this.abastecimentoService.listarEquipamentosMobile().subscribe({
       next: dados => {
         this.equipamentosLista = dados ?? [];
@@ -81,7 +81,7 @@ export class AbastecimentoPostosPage implements OnInit {
   }
 
   // ===============================
-  // 🔹 EVENTOS AUTOCOMPLETE
+  //  EVENTOS AUTOCOMPLETE
   // ===============================
 
   onFornecedorSelecionado(item: any) {
@@ -93,7 +93,7 @@ export class AbastecimentoPostosPage implements OnInit {
   }
 
   // ===============================
-  // 🔹 HEADER
+  //  HEADER
   // ===============================
 
   onBack() {
@@ -101,7 +101,7 @@ export class AbastecimentoPostosPage implements OnInit {
   }
 
   // ===============================
-  // 🔹 CALENDÁRIO
+  //  CALENDÁRIO
   // ===============================
 
   async openCalendar(event: any, fieldName: 'dataInicial' | 'dataFinal') {
@@ -141,7 +141,7 @@ export class AbastecimentoPostosPage implements OnInit {
   }
 
   // ===============================
-  // 🔹 PESQUISAR
+  //  PESQUISAR
   // ===============================
 
   pesquisar() {
