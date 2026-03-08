@@ -1,0 +1,17 @@
+PATCH: Corrigir comparação de nome do Operador/Motorista
+
+ANTES (linha 1295):
+        // Se ainda não encontrou, tenta por nome exato
+        if (!motoristaEncontrado && osApi.colaboradorNome) {
+          motoristaEncontrado = this.motoristasLista.find(m => String(m.descricao).toUpperCase().trim() === String(osApi.colaboradorNome).toUpperCase().trim());
+        }
+
+DEPOIS:
+        // Se ainda não encontrou, tenta por nome (usando includes ao invés de igualdade exata)
+        if (!motoristaEncontrado && osApi.colaboradorNome) {
+          motoristaEncontrado = this.motoristasLista.find(m =>
+            String(m.descricao).toUpperCase().trim().includes(String(osApi.colaboradorNome).toUpperCase().trim())
+          );
+        }
+
+MOTIVO: Nomes retornados da API podem ser parciais (ex: "DIMAS SANTOS") enquanto na lista vêm completos (ex: "DIMAS SANTOS NETO"). Usar includes() permite encontrar correspondências de nomes parciais.

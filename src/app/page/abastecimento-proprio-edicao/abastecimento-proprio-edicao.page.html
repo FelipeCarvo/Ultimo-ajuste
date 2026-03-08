@@ -23,6 +23,7 @@
 
 <app-autocomplete
   [lista]="bombas"
+  placeholder="Selecione uma origem/tanque"
   campoDescricao="bombaDescricao"
   [valorSelecionado]="bombaSelecionada"
   (selecionado)="selecionarBomba($event)">
@@ -37,6 +38,7 @@
 
   <app-autocomplete
  [lista]="equipamentos"
+placeholder="Selecione um equipamento"
 campoDescricao="descricao"
 [valorSelecionado]="equipamentoSelecionado"
 (selecionado)="selecionarEquipamento($event)"
@@ -49,28 +51,22 @@ campoDescricao="descricao"
       <div class="abp-field">
   <label class="abp-label">Data do abastecimento</label>
 
-  <div class="abp-date-input" (click)="openCalendar($event)">
+  <div class="abp-date-input">
 <input
   type="text"
   class="os-input"
   readonly
   placeholder="dd/mm/aaaa"
   [value]="formatDate(data)"
+  (click)="openCalendar($event)"
 />
-
-    <!-- BOTÃO LIMPAR -->
-    <button
-      *ngIf="data"
-      type="button"
-      class="abp-date-clear"
-      (click)="limparData($event)">
-      ✕
-    </button>
 
     <!-- BOTÃO CALENDÁRIO -->
     <button
       type="button"
       class="abp-date-btn"
+      title="Selecionar data do abastecimento"
+      aria-label="Selecionar data do abastecimento"
       (click)="openCalendar($event)">
       <ion-icon name="calendar-outline"></ion-icon>
     </button>
@@ -83,6 +79,7 @@ campoDescricao="descricao"
           <label class="abp-label">Bomba / Bico</label>
           <app-autocomplete
             [lista]="bicos"
+            placeholder="Selecione um bico"
             campoDescricao="descricao"
             [valorSelecionado]="bicoSelecionado"
             (selecionado)="onBicoChange($event?.id)">
@@ -92,6 +89,7 @@ campoDescricao="descricao"
           <label class="abp-label">Destino</label>
             <app-autocomplete
               [lista]="destinos"
+              placeholder="Selecione um destino"
               campoDescricao="descricao"
               [valorSelecionado]="destinoSelecionado"
               [disabled]="destinoTravado"
@@ -106,6 +104,7 @@ campoDescricao="descricao"
           <label class="abp-label">Empreendimento</label>
         <app-autocomplete
           [lista]="empreendimentos"
+          placeholder="Selecione um empreendimento"
           campoDescricao="descricao"
           [valorSelecionado]="empreendimentoSelecionado"
           (selecionado)="selecionarEmpreendimento($event)">
@@ -117,6 +116,7 @@ campoDescricao="descricao"
           <label class="abp-label">Etapa</label>
           <app-autocomplete
               [lista]="etapas"
+              placeholder="Selecione uma etapa"
               campoDescricao="descricao"
               [valorSelecionado]="etapaSelecionada"
               (selecionado)="selecionarEtapa($event)">
@@ -132,6 +132,8 @@ campoDescricao="descricao"
     <input
       type="number"
       class="os-input"
+      title="Informe o odometro atual"
+      placeholder="Informe o odometro atual"
       [(ngModel)]="odometroAtual"
     />
   </div>
@@ -141,6 +143,8 @@ campoDescricao="descricao"
     <input
       type="number"
       class="os-input"
+      title="Informe o odometro do abastecimento"
+      placeholder="Informe o odometro do abastecimento"
       [(ngModel)]="odometro"
     />
   </div>
@@ -154,6 +158,8 @@ campoDescricao="descricao"
     <input
       type="number"
       class="os-input"
+      title="Informe o horimetro atual"
+      placeholder="Informe o horimetro atual"
       [(ngModel)]="horimetroAtual"
     />
   </div>
@@ -163,6 +169,8 @@ campoDescricao="descricao"
     <input
       type="number"
       class="os-input"
+      title="Informe o horimetro do abastecimento"
+      placeholder="Informe o horimetro do abastecimento"
       [(ngModel)]="horimetro"
     />
   </div>
@@ -174,6 +182,7 @@ campoDescricao="descricao"
 
 <app-autocomplete
   [lista]="insumos"
+  placeholder="Selecione um insumo"
   campoDescricao="insumoDescr"
   [valorSelecionado]="insumoSelecionado"
   (selecionado)="selecionarInsumo($event)">
@@ -189,7 +198,9 @@ campoDescricao="descricao"
 
     <app-autocomplete
       [lista]="tiposPrevAbast"
+      placeholder="Selecione um tipo"
       campoDescricao="descricao"
+      [disabled]="!aplicacaoHabilitada"
       [valorSelecionado]="tipoPrevAbast"
       (selecionado)="selecionarTipoPrevAbast($event)">
     </app-autocomplete>
@@ -200,6 +211,7 @@ campoDescricao="descricao"
 
 <app-autocomplete
   [lista]="aplicacoes"
+ placeholder="Selecione uma aplicacao"
  campoDescricao="descricao"
   [valorSelecionado]="aplicacaoSelecionada"
   [disabled]="!aplicacaoHabilitada"
@@ -216,6 +228,8 @@ campoDescricao="descricao"
     <input
       type="number"
       class="os-input"
+      title="Informe a quantidade abastecida"
+      placeholder="Informe a quantidade"
       [(ngModel)]="quantidade"
       (input)="onQuantidadeChange($event)"
     />
@@ -226,6 +240,8 @@ campoDescricao="descricao"
     <input
       type="number"
       class="os-input"
+      title="Informe o numero inicial da bomba"
+      placeholder="Informe o numero inicial"
       [(ngModel)]="numBombaInicial"
       (input)="onNumBombaInicialChange($event)"
     />
@@ -236,6 +252,8 @@ campoDescricao="descricao"
     <input
       type="number"
       class="os-input"
+      title="Informe o numero final da bomba"
+      placeholder="Informe o numero final"
       [(ngModel)]="numBombaFinal"
       (input)="onNumBombaFinalChange($event)"
     />
@@ -250,6 +268,7 @@ campoDescricao="descricao"
 
   <app-autocomplete
   [lista]="motoristasOperadores"
+  placeholder="Selecione um motorista/operador"
   campoDescricao="colaboradorNome"
   [valorSelecionado]="motoristaOperadorSelecionado"
   (selecionado)="selecionarMotoristaOperador($event)">
@@ -261,6 +280,7 @@ campoDescricao="descricao"
 
 <app-autocomplete
   [lista]="colaboradoresFrentista"
+  placeholder="Selecione um colaborador/frentista"
   campoDescricao="descricao"
   [valorSelecionado]="colaboradorFrentistaSelecionado"
   (selecionado)="colaboradorFrentistaSelecionado = $event?.id">
@@ -275,6 +295,8 @@ campoDescricao="descricao"
   <input
     type="time"
     class="os-input"
+    title="Informe a hora do abastecimento"
+    placeholder="Informe a hora"
     [(ngModel)]="horaAbastecimento"
     (input)="onHoraChange($event)"
   />
@@ -285,6 +307,7 @@ campoDescricao="descricao"
 
   <app-autocomplete
     [lista]="blocos"
+    placeholder="Selecione um bloco"
     campoDescricao="descricao"
     [valorSelecionado]="blocoSelecionado"
     (selecionado)="selecionarBloco($event)">
@@ -300,6 +323,8 @@ campoDescricao="descricao"
   <textarea
     class="os-input os-textarea"
     rows="3"
+    title="Informe a observacao do abastecimento"
+    placeholder="Informe a observacao"
     [(ngModel)]="observacao"
     (input)="onObservacaoChange($event)">
   </textarea>

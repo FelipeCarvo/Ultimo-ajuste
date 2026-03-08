@@ -138,6 +138,8 @@ ion-content.os-content {
 
 /* ===== DATA INPUT  ===== */
 
+/* ===== DATA INPUT ===== */
+
 .os-date-input {
   position: relative;
   width: 100%;
@@ -145,7 +147,7 @@ ion-content.os-content {
 
 /* INPUT */
 .os-date-display {
-  --padding-end: 80px; 
+  --padding-end: 80px; /* espaço real para X + calendário */
   cursor: pointer;
 
   /* remove azul ionic */
@@ -183,7 +185,7 @@ ion-content.os-content {
   justify-content: center;
 
   cursor: pointer;
-  z-index: 10; 
+  z-index: 10; /* ← ESSENCIAL */
 }
 
 .os-date-clear:hover {
@@ -208,7 +210,7 @@ ion-content.os-content {
   justify-content: center;
   padding: 0;
 
-  z-index: 10; 
+  z-index: 10; /* ← ESSENCIAL */
 }
 
 .os-date-btn ion-icon {

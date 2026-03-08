@@ -23,7 +23,7 @@
         <div class="os-line os-date">
           <span class="os-label">Data:</span>
           <span class="os-value">
-            {{ item.dataAbastecimento | date:'dd/MM/yyyy' }}
+            {{ formatarData(obterDataAbastecimento(item)) || '-' }}
           </span>
         </div>
 
@@ -31,18 +31,15 @@
         <div class="os-line">
           <span class="os-label">Origem/Tanque:</span>
           <span class="os-value">
-            {{ item.comboioBombaCdg || '' }}
-            <ng-container *ngIf="item.comboioBombaDescr">
-              - {{ item.comboioBombaDescr }}
-            </ng-container>
+            {{ formatarOrigemTanque(item) }}
           </span>
         </div>
 
         <!-- EMPREENDIMENTO -->
-        <div class="os-line" *ngIf="item.emprdCod">
+        <div class="os-line" *ngIf="formatarEmpreendimento(item)">
           <span class="os-label">Empreendimento:</span>
           <span class="os-value">
-            {{ item.emprdCod }} - {{ item.emprDesc }}
+            {{ formatarEmpreendimento(item) }}
           </span>
         </div>
 
@@ -50,13 +47,13 @@
         <div class="os-line">
           <span class="os-label">Destino:</span>
           <span class="os-value">
-            {{ item.destinoTipo }} - {{ item.destinoDesc }}
+            {{ formatarDestino(item) }}
           </span>
         </div>
 
         <!-- BLOCO EQUIPAMENTO -->
         <div class="os-equipamento-bloco"
-             *ngIf="item.destinoTipo === 'M'">
+             *ngIf="deveExibirBlocoEquipamento(item)">
 
           <div class="os-equipamento-titulo">
             Equipamento
@@ -65,22 +62,21 @@
           <div class="os-line">
             <span class="os-label">Código:</span>
             <span class="os-value">
-              {{ item.codEquipamento }}
+              {{ obterCodigoEquipamento(item) }}
             </span>
           </div>
 
           <div class="os-line">
             <span class="os-label">Descrição:</span>
             <span class="os-value">
-              {{ item.modelo }}
+              {{ obterDescricaoEquipamento(item) }}
             </span>
           </div>
 
-          <!-- Sempre mostra Placa -->
-          <div class="os-line">
+          <div class="os-line os-line-placa">
             <span class="os-label">Placa:</span>
             <span class="os-value">
-              {{ item.placa && item.placa.trim() && item.placa !== 'Sem placa' ? item.placa : '' }}
+              {{ obterPlaca(item) }}
             </span>
           </div>
 
@@ -99,14 +95,6 @@
           <span class="os-label">Insumo:</span>
           <span class="os-value">
             {{ item.insumoDesc }}
-          </span>
-        </div>
-
-        <!-- FORNECEDOR -->
-        <div class="os-line">
-          <span class="os-label">Fornecedor/Posto:</span>
-          <span class="os-value">
-            {{ item.fornecedorRazao && item.fornecedorRazao.trim() ? item.fornecedorRazao : 'Não informado' }}
           </span>
         </div>
 

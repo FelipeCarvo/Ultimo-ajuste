@@ -3,7 +3,8 @@ import { ApiService } from './api.service';
 import { Observable, catchError, throwError, tap } from 'rxjs';
 
 type ApiRecord = Record<string, unknown>;
-type QueryParams = Record<string, string | number | boolean>;
+type QueryParamValue = string | number | boolean | null | undefined;
+type QueryParams = Record<string, QueryParamValue>;
 
 export interface OrdemServicoApiItem extends ApiRecord {
   osCod?: number | string;
@@ -55,12 +56,31 @@ export class OrdemServicoService {
     return typeof message === 'string' ? message : '';
   }
 
+  private sanitizeQueryParams(params: QueryParams): Record<string, string | number | boolean> {
+    const sanitized: Record<string, string | number | boolean> = {};
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === null || value === undefined) return;
+
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed) return;
+        sanitized[key] = trimmed;
+        return;
+      }
+
+      sanitized[key] = value;
+    });
+
+    return sanitized;
+  }
+
   // =======================
   // 1) BUSCA / LISTAGEM DE OS
   // =======================
   // Buscar OS por número (a gente ainda não está usando esse na edição,
   // mas ele já fica pronto pra quando o back liberar)
-  buscarOSPorNumero(numeroOS: string): Observable<OrdemServicoApiItem[]> {
+  buscarOSPorNumero(): Observable<OrdemServicoApiItem[]> {
     // Método descontinuado: backend não aceita mais NumeroOs, use buscarOSPorId
     console.warn('buscarOSPorNumero está obsoleto. Use buscarOSPorId(osId: string)');
     return this.api.get<OrdemServicoApiItem[]>('/api/frotas/OrdensServico/ConsultaGeralOrdensServico', {}); // Retorna vazio
@@ -73,17 +93,25 @@ export class OrdemServicoService {
 
   // Pesquisa geral de OS (tela de pesquisa)
   consultarGeral(filtros: {
+    osCodigo?: string | number | null;
     osId?: string | null;
     empreendimentoId?: string | null;
     equipamentoId?: string | null;
+    causaIntervencaoId?: string | null;
+    manutentorId?: string | null;
     status?: string | null;
     dataInicial?: string | null;
     dataFinal?: string | null;
   }): Observable<OrdemServicoApiItem[]> {
     const params: QueryParams = {};
+    if (filtros.osCodigo !== null && filtros.osCodigo !== undefined && String(filtros.osCodigo).trim() !== '') {
+      params.OsCodigo = filtros.osCodigo;
+    }
     if (filtros.osId) params.OsId = filtros.osId;
     if (filtros.empreendimentoId) params.EmpreendimentoId = filtros.empreendimentoId;
     if (filtros.equipamentoId) params.EquipamentoId = filtros.equipamentoId;
+    if (filtros.causaIntervencaoId) params.CausaIntervencaoId = filtros.causaIntervencaoId;
+    if (filtros.manutentorId) params.ManutentorId = filtros.manutentorId;
     if (filtros.status) params.Status = filtros.status;
     if (filtros.dataInicial) params.DataInicial = filtros.dataInicial;
     if (filtros.dataFinal) params.DataFinal = filtros.dataFinal;
@@ -135,16 +163,17 @@ export class OrdemServicoService {
 
     public listarStatusOS(): Array<{ codigo: number; descricao: string }> {
       return [
-        { codigo: 1, descricao: 'Aberta' },
-        { codigo: 2, descricao: 'Em andamento' },
-        { codigo: 3, descricao: 'Finalizada' },
-        { codigo: 4, descricao: 'Cancelada' }
+        { codigo: 0, descricao: 'Aberta' },
+        { codigo: 1, descricao: 'Serviço Iniciado' },
+        { codigo: 2, descricao: 'Serviço Concluído' },
+        { codigo: 3, descricao: 'Fechada' },
+        { codigo: 4, descricao: 'Reprov./Cancelada' }
       ];
     }
 
   gravarOrdem(params: QueryParams): Observable<unknown> {
-    // Chamada real da API para gravar OS, enviando os dados como query string
-    return this.api.post('/api/frotas/OrdensServico/GravarOrdemServico', {}, params);
+    const sanitizedParams = this.sanitizeQueryParams(params);
+    return this.api.post('/api/frotas/OrdensServico/GravarOrdemServico', {}, sanitizedParams);
   }
 
   // Envia foto (base64) para a OS
@@ -221,38 +250,41 @@ export class OrdemServicoService {
    * @param dados Dados coletados das telas de edição, defeitos, etc
    */
   montarPayloadOrdemServico(dados: ApiRecord): QueryParams {
-    // Monta o objeto garantindo que nenhum campo obrigatório fique nulo
-    const asString = (value: unknown): string => {
-      if (value === null || value === undefined) return '';
-      if (value === 'null') return '';
-      return String(value);
+    const asNullableString = (value: unknown): string | null => {
+      if (value === null || value === undefined) return null;
+
+      const normalized = String(value).trim();
+      if (!normalized) return null;
+      if (normalized.toLowerCase() === 'null') return null;
+
+      return normalized;
     };
 
+    const descricao = asNullableString(dados['Descricao']);
+
     const payload: QueryParams = {
-      OsId: asString(dados['OsId'] || dados['IdOs']),
-      Descricao: asString(dados['Descricao']).toUpperCase(),
-      EquipamentoId: asString(dados['EquipamentoId']),
-    Status: Number(dados['Status'] ?? 1),
-StatusId: Number(dados['Status'] ?? 1),
-statusCod: Number(dados['Status'] ?? 1),
-      OsDataAbertura: asString(dados['OsDataAbertura'] || dados['DataAbertura']),
-      OsDataConclusao: asString(dados['OsDataConclusao'] || dados['DataFechamento']),
-      TipoServicoId: asString(dados['TipoServicoId'] || dados['TipoOs']),
-      ClassificacaoId: asString(dados['ClassificacaoId'] || dados['Classificacao']),
-      CausasId: asString(dados['CausasId'] || dados['CausaIntervencao']),
-      MotoristaOperadorId: asString(dados['MotoristaOperadorId'] || dados['ColaboradorId']),
-      EmpreendimentoId: asString(dados['EmpreendimentoId']),
-      EmprdintervencaoId: asString(dados['EmprdintervencaoId'] || dados['EmpreendimentoIntervencao']),
-      Observacao: asString(dados['Observacao'] ?? dados['observacao'] ?? ''),
-      ObsDef: asString(dados['ObsDef'] || dados['DefeitosConstatados']),
-      ObsCausas: asString(dados['ObsCausas'] || dados['CausasProvaveis']),
-      ManutentorResponsavelId: asString(dados['ManutentorResponsavelId']),
+      OsId: asNullableString(dados['OsId'] ?? dados['IdOs']),
+      Descricao: descricao ? descricao.toUpperCase() : null,
+      EquipamentoId: asNullableString(dados['EquipamentoId']),
+      Status: Number(dados['Status'] ?? 1),
+      StatusId: Number(dados['Status'] ?? 1),
+      statusCod: Number(dados['Status'] ?? 1),
+      OsDataAbertura: asNullableString(dados['OsDataAbertura'] ?? dados['DataAbertura']),
+      OsDataConclusao: asNullableString(dados['OsDataConclusao'] ?? dados['DataFechamento']),
+      TipoServicoId: asNullableString(dados['TipoServicoId'] ?? dados['TipoOs']),
+      ClassificacaoId: asNullableString(dados['ClassificacaoId'] ?? dados['Classificacao']),
+      CausasId: asNullableString(dados['CausasId'] ?? dados['CausaIntervencao']),
+      MotoristaOperadorId: asNullableString(dados['MotoristaOperadorId'] ?? dados['ColaboradorId']),
+      EmpreendimentoId: asNullableString(dados['EmpreendimentoId']),
+      EmprdintervencaoId: asNullableString(dados['EmprdintervencaoId'] ?? dados['EmpreendimentoIntervencao']),
+      Observacao: asNullableString(dados['Observacao'] ?? dados['observacao']),
+      ObsDef: asNullableString(dados['ObsDef'] ?? dados['DefeitosConstatados']),
+      ObsCausas: asNullableString(dados['ObsCausas'] ?? dados['CausasProvaveis']),
+      ManutentorResponsavelId: asNullableString(dados['ManutentorResponsavelId']),
+      Odometro: asNullableString(dados['Odometro'] ?? dados['Hodometro']),
+      Horimetro: asNullableString(dados['Horimetro'] ?? dados['horimetro']),
 
-      Odometro: asString(dados['Odometro'] || dados['Hodometro']),
-      Horimetro: asString(dados['Horimetro'] ?? dados['horimetro']),
-
-      Origem: 3, // Origem fixo conforme solicitado
-      // Adicione outros campos do Swagger conforme necessário
+      Origem: 3,
     };
     return payload;
   }

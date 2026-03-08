@@ -30,14 +30,14 @@ ion-header {
 
 /* Wrapper dos botões – sobe o bloco inteiro */
 .buttons-wrapper {
-  padding: 24px 16px 32px;
+  padding: 24px 16px 32px;  /* top menor => fica mais perto do topo */
 }
 
 /* Coluna que contém os botões */
 .buttons-row {
   display: flex;
   flex-direction: column;
-  gap: 16px;              
+  gap: 16px;               /* espaço ENTRE os botões */
 }
 
 /* Botão verde padrão */
@@ -83,12 +83,12 @@ ion-list {
   color: #e5f0f6;
 }
 .home-content {
-  --background: #083244; 
+  --background: #083244; // mesmo fundo das outras telas de frotas
 }
 
 /* Container dos botões */
 .buttons-wrapper {
-  margin-top: 40px;      
+  margin-top: 40px;      // sobe o bloco de botões
   padding: 0 24px;
 }
 
@@ -97,7 +97,7 @@ ion-list {
   padding: 0 6px;
 }
 
-/* Botões de Abastecimento */
+/* Botões de Abastecimento (linha de cima) */
 .btn-abastecimento {
   height: 72px;
   white-space: normal;

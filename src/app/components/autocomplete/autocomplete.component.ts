@@ -25,7 +25,7 @@ export class AutocompleteComponent implements OnChanges {
   @Input() placeholder: string = '';
   @Input() campoDescricao: string = 'descricao';
    @Input() disabled: boolean = false;
-   
+
 
   /** 🔥 VALOR SELECIONADO (ID) */
   @Input() valorSelecionado: any;
@@ -48,7 +48,12 @@ export class AutocompleteComponent implements OnChanges {
   }
 
   private sincronizarValorSelecionado() {
-    if (!this.valorSelecionado || !this.lista?.length) {
+    const valorNaoInformado =
+      this.valorSelecionado === null ||
+      this.valorSelecionado === undefined ||
+      String(this.valorSelecionado).trim() === '';
+
+    if (valorNaoInformado || !this.lista?.length) {
       this.textoBusca = '';
       return;
     }
@@ -60,7 +65,10 @@ export class AutocompleteComponent implements OnChanges {
 
     if (item) {
       this.textoBusca = this.getDescricao(item);
+      return;
     }
+
+    this.textoBusca = '';
   }
 
   // =============================
@@ -76,6 +84,10 @@ export class AutocompleteComponent implements OnChanges {
   }
 
   abrirDropdown() {
+    if (this.disabled) {
+      return;
+    }
+
     this.aberto = true;
     this.listaFiltrada = [...this.lista];
 
@@ -85,6 +97,11 @@ export class AutocompleteComponent implements OnChanges {
   }
 
   filtrar() {
+    if (this.disabled) {
+      this.aberto = false;
+      return;
+    }
+
     const termo = (this.textoBusca || '').toLowerCase();
     this.aberto = true;
 
@@ -105,6 +122,8 @@ export class AutocompleteComponent implements OnChanges {
   }
 
   limpar() {
+    if (this.disabled) return;
+
     this.textoBusca = '';
     this.listaFiltrada = [...this.lista];
     this.aberto = false;

@@ -80,7 +80,7 @@
 }
 
 /* ============================= */
-/*  INPUT PADRÃO DO SISTEMA */
+/* 🎯 INPUT PADRÃO DO SISTEMA */
 /* ============================= */
 
 .os-input {
@@ -101,12 +101,12 @@
   cursor: text;
 }
 
-/* Foco padrão  */
+/* 🔥 Foco padrão (igual Descrição da OS) */
 .os-input:focus {
   border: 2px solid #000000;
 }
 /* ============================= */
-/* CAMPO DE DATA PADRONIZADO */
+/* 📅 CAMPO DE DATA PADRONIZADO */
 /* ============================= */
 
 .os-date-input {
@@ -123,7 +123,7 @@
 /* Espaço interno para X + calendário */
 .os-date-input .os-input {
   --padding-start: 12px;
-  --padding-end: 72px;
+  --padding-end: 44px;
    --background: #ffffff !important;
   background: #ffffff !important;
 
@@ -134,7 +134,7 @@
 }
 
 /* ============================= */
-/*  BOTÃO CALENDÁRIO */
+/* 📅 BOTÃO CALENDÁRIO */
 /* ============================= */
 
 .os-date-btn {
@@ -161,39 +161,7 @@
 }
 
 /* ============================= */
-/* BOTÃO LIMPAR DATA */
-/* ============================= */
-
-.os-date-clear {
-  position: absolute;
-  right: 46px; /* antes do calendário */
-  top: 50%;
-  transform: translateY(-50%);
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: none;
-  background: #e6edf7;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  z-index: 3; /* acima do calendário */
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.os-date-clear ion-icon {
-  font-size: 16px;
-  color: #7a8ca8;
-}
-
-.os-date-clear:hover {
-  background: #dbe7f7;
-}
-
-/* ============================= */
-/*  BOTÃO PESQUISAR */
+/* 🔵 BOTÃO PESQUISAR */
 /* ============================= */
 
 .os-actions {

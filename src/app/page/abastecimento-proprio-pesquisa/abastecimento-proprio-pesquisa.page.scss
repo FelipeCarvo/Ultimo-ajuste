@@ -55,7 +55,7 @@
   background: #ffffff;
   border-radius: 14px;
   box-shadow: 0 7px 16px rgba(0,0,0,0.08);
-  padding: 18px 16px 22px;
+  padding: 16px 16px 20px;
   margin-bottom: 14px;
   width: 100%;
   max-width: 420px;
@@ -68,7 +68,7 @@
 /* ================= LINHAS ================= */
 
 .os-line {
-  margin-bottom: 4px;
+  margin-bottom: 10px;
   line-height: 1.5;
 }
 
@@ -83,32 +83,38 @@
 }
 
 .os-date {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .os-quantidade {
-  margin-top: 10px;
+  margin-top: 14px;
   font-weight: 600;
 }
 
 /* ================= BLOCO EQUIPAMENTO ================= */
 
 .os-equipamento-bloco {
-  margin-top: 16px;
-  margin-bottom: 16px;
-  padding-top: 14px;
-  border-top: 1px solid #e6edf7;
+  margin-top: 12px;
+  margin-bottom: 14px;
+  padding-top: 6px;
 }
 
 .os-equipamento-titulo {
   font-weight: 700;
-  margin-bottom: 6px;
+  margin-bottom: 12px;
+  text-align: center;
+  color: #444;
+}
+
+.os-line-placa .os-value {
+  min-height: 21px;
+  display: inline-block;
 }
 
 /* ================= BOTÃO ================= */
 
 .os-card-footer {
-  margin-top: 14px;
+  margin-top: 18px;
   display: flex;
   justify-content: center;
 }

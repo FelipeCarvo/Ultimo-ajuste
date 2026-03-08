@@ -258,7 +258,6 @@ consultarAplicacaoPrev(equipamentoId: string, insumoId: string) {
     EquipamentoId: equipamentoId,
     InsumoId: insumoId
   };
-  console.log('[DEBUG] consultarAplicacaoPrev enviando:', params);
 
   return this.api.get<any[]>(
     '/api/frotas/Abastecimentos/ConsultaAplicacaoPrevEquipInsumo',
@@ -323,13 +322,20 @@ listarColaboradoresFrentista() {
   }) {
     const params: Record<string, unknown> = {
       TpAbastecimento: 0,
-      Origem: 3, // Só registros feitos pelo app
       // TpAbastecimento: 0 = Abastecimento Próprio
-      // Não filtramos por Origem para buscar TODOS os registros
+      // Não filtramos por Origem para buscar todos os registros retornados pela API
     };
 
-    if (filtros.origemTanque) params.BombaId = filtros.origemTanque;
-    if (filtros.equipamento) params.EquipamentoId = filtros.equipamento;
+    if (filtros.origemTanque) {
+      params.BombaId = filtros.origemTanque;
+      params.IdTanqueOrigem = filtros.origemTanque;
+      params.comboioBombaId = filtros.origemTanque;
+    }
+    if (filtros.equipamento) {
+      params.EquipamentoId = filtros.equipamento;
+      params.IdEquipamento = filtros.equipamento;
+      params.equipamentoId = filtros.equipamento;
+    }
 
     if (filtros.dataInicial) params.DataInicial = filtros.dataInicial;
     if (filtros.dataFinal) params.DataFinal = filtros.dataFinal;
@@ -489,13 +495,11 @@ listarEtapas(params: {
   // Fallback legado opcional
   if (params.emprdCod !== undefined && params.emprdCod !== null) {
     body['emprdCod'] = params.emprdCod;
-    console.log('[DEBUG] listarEtapas COM emprdCod:', params.emprdCod);
   }
 
   if (params.insumoId) {
     body['insumoId'] = params.insumoId;
   }
-  console.log('[DEBUG] listarEtapas BODY COMPLETO:', JSON.stringify(body, null, 2));
 
   return this.api.post<any[]>(
     '/api/orcamentos/Lookups/Etapas',

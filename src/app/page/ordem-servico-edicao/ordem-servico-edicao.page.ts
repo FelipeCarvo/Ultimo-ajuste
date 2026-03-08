@@ -29,15 +29,18 @@ interface OrdemServicoPayload {
   // Adicione outros campos conforme necessário
 }
 import { Router, ActivatedRoute } from '@angular/router';
-import { PopoverController, ToastController } from '@ionic/angular';
+import { PopoverController, ToastController } from '@ionic/angular';//ADD ToastController
 import { format, parseISO } from 'date-fns';
+import { catchError, forkJoin, of } from 'rxjs';
 import { CalendarPopoverComponentModule } from '../../components/calendar-popover/calendar-popover.module';
 import { CalendarPopoverComponent } from '../../components/calendar-popover/calendar-popover.component';
 import { OrdemServicoService } from '../../services/ordem-servico.service';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { HostListener, ElementRef } from '@angular/core';
+// ...existing code...
 
 
+// ...existing code...
 @Component({
   selector: 'app-ordem-servico-edicao',
   templateUrl: './ordem-servico-edicao.page.html',
@@ -53,7 +56,8 @@ import { HostListener, ElementRef } from '@angular/core';
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class OrdemServicoEdicaoPage implements OnInit {
-
+  // Métodos para template
+  // Métodos para template
   onClassificacaoSelecionada(item: { id?: string }) {
     if (!item || !item.id) {
       this.classificacao = '';
@@ -68,9 +72,13 @@ export class OrdemServicoEdicaoPage implements OnInit {
       return;
     }
     this.tipo = item.id;
-  }  
+  }
+
+  // Campos de texto e seleção
   numeroOS: string = '';
+  // Campo de retorno (numRetornoPosto)
   retorno: string = '';
+  // Id interno da OS (GUID) usado para update/anexos
   osId: string = '';
   fotos: FotoCacheItem[] = [];
   fotoSelecionadaIndex = 0;
@@ -92,6 +100,7 @@ export class OrdemServicoEdicaoPage implements OnInit {
   dataAbertura: string | null = null;
   dataConclusao: string | null = null;
 
+  //status: string = '';
   //NOVOS CAMPOS
   defeitosConstatados: string = '';
   causasProvaveis: string = '';
@@ -100,6 +109,9 @@ export class OrdemServicoEdicaoPage implements OnInit {
 
   hodometro: string = '';
   horimetro: string = '';
+
+// ALTERAÇÃO: controla liberação do botão "Anexar Foto"
+  //osConfirmada = false;
 
   // Listas para combos
   equipamentosLista: ItemComId[] = [];
@@ -110,14 +122,19 @@ export class OrdemServicoEdicaoPage implements OnInit {
   motoristasLista: ItemComId[] = [];
   manutentoresLista: ItemComId[] = [];
 
-  // Status fixo 
+  // Status fixo (exemplo)
 statusLista = [
-  { valor: 1, descricao: 'Aberta' },
-  { valor: 2, descricao: 'Em andamento' },
-  { valor: 3, descricao: 'Finalizada' },
-  { valor: 4, descricao: 'Cancelada' },
+  { valor: 0, descricao: 'Aberta' },
+  { valor: 1, descricao: 'Serviço Iniciado' },
+  { valor: 2, descricao: 'Serviço Concluído' },
+  { valor: 3, descricao: 'Fechada' },
+  { valor: 4, descricao: 'Reprov./Cancelada' },
 ];
   carregando = false;
+
+  get podeAnexarFoto(): boolean {
+    return !!this.osId && this.osId.length === 36;
+  }
 
   private getFotoCacheKeyById(osId: string) {
     return `os:lastFotoDataUrl:id:${osId}`;
@@ -150,6 +167,37 @@ statusLista = [
 
   private getLegacyFotoIdCacheKey(osId: string) {
     return `os:lastFotoId:${osId}`;
+  }
+
+  private limparFormularioOs() {
+    this.numeroOS = '';
+    this.retorno = '';
+    this.osId = '';
+    this.descricao = '';
+    this.equipamento = '';
+    this.empreendimento = '';
+    this.empreendimentoIntervencao = '';
+    this.classificacao = '';
+    this.tipo = '';
+    this.tipoDescricao = '';
+    this.causaIntervencao = '';
+    this.operadorMotorista = '';
+    this.manutentor = '';
+    this.statusCodigo = null;
+    this.dataAbertura = new Date().toISOString();
+    this.dataConclusao = null;
+    this.defeitosConstatados = '';
+    this.causasProvaveis = '';
+    this.observacoes = '';
+    this.hodometro = '';
+    this.horimetro = '';
+    this.textoBuscaClassificacao = '';
+    this.textoBuscaStatus = '';
+    this.fotos = [];
+    this.fotoSelecionadaIndex = 0;
+    this.fotoPreviewDataUrl = null;
+    this.fotoModalAberto = false;
+    this.atualizarHrefSeguro();
   }
 
   abrirFotoOverlay(index?: number) {
@@ -257,9 +305,9 @@ statusLista = [
     private route: ActivatedRoute,
     private popoverCtrl: PopoverController,
     private ordemService: OrdemServicoService,
-    private toastCtrl: ToastController, 
+    private toastCtrl: ToastController, //  ALTERAÇÃO injeção do ToastController
     private sanitizer: DomSanitizer,
-    private elementRef: ElementRef
+    private elementRef: ElementRef//novo
   ) {}
 
 @HostListener('document:click', ['$event'])
@@ -279,34 +327,8 @@ fecharDropdownAoClicarFora(event: Event) {
   }
 
 ngOnInit() {
-
   // =============================
-  //  LIMPAR CAMPOS
-  // =============================
-  const limparCampos = () => {
-    this.numeroOS = '';
-    this.osId = '';
-    this.descricao = '';
-    this.equipamento = '';
-    this.empreendimento = '';
-    this.empreendimentoIntervencao = '';
-    this.classificacao = '';
-    this.tipo = '';
-    this.causaIntervencao = '';
-    this.operadorMotorista = '';
-    this.manutentor = '';
-    this.statusCodigo = null;
-    this.dataAbertura = new Date().toISOString();
-    this.dataConclusao = null;
-    this.hodometro = '';
-    this.horimetro = '';
-    this.defeitosConstatados = '';
-    this.causasProvaveis = '';
-    this.observacoes = '';
-  };
-
-  // =============================
-  //  QUERY PARAMS
+  // 🔹 QUERY PARAMS
   // =============================
   this.route.queryParams.subscribe((params) => {
 
@@ -315,7 +337,7 @@ ngOnInit() {
 
       this.carregarCombosComCallback(() => {
 
-        limparCampos();
+        this.limparFormularioOs();
         this.atualizarPreviewFoto();
         this.ativarFiltroEquipamento();
 
@@ -335,22 +357,25 @@ ngOnInit() {
     }
 
     // =============================
-    //  MODO EDIÇÃO (SIMPLIFICADO)
+    // 🔥 MODO EDIÇÃO (SIMPLIFICADO)
     // =============================
 
     const osIdRecebido = String(params['os'] || '');
 
     this.carregarCombosComCallback(() => {
 
+      this.limparFormularioOs();
+
       // Guarda GUID
       this.osId = osIdRecebido;
+      this.atualizarPreviewFoto();
 
       // Validação básica
       if (!this.osId || this.osId.length !== 36) {
-        console.warn('GUID inválido recebido na edição:', this.osId);
         return;
       }
 
+      // 🔥 AQUI É O QUE REALMENTE IMPORTA
       this.carregarOsCompleta(this.osId);
 
     });
@@ -486,7 +511,12 @@ ngOnInit() {
       }
 
       const dataUrl =
-        // Duplicidade removida. Já tratado em outro bloco/método.
+        localStorage.getItem(this.getFotoCacheKeyById(oldOsId)) ||
+        localStorage.getItem(this.getLegacyFotoCacheKey(oldOsId)) ||
+        (osCod ? localStorage.getItem(this.getFotoCacheKeyByCod(osCod)) : null);
+
+      const fotoId =
+        localStorage.getItem(this.getFotoIdCacheKeyById(oldOsId)) ||
         localStorage.getItem(this.getLegacyFotoIdCacheKey(oldOsId)) ||
         (osCod ? localStorage.getItem(this.getFotoIdCacheKeyByCod(osCod)) : null);
 
@@ -494,7 +524,7 @@ ngOnInit() {
         localStorage.setItem(this.getFotoCacheKeyById(newOsId), dataUrl);
         localStorage.setItem(this.getLegacyFotoCacheKey(newOsId), dataUrl);
       }
-      const fotoId = '';
+
       if (fotoId) {
         localStorage.setItem(this.getFotoIdCacheKeyById(newOsId), fotoId);
         localStorage.setItem(this.getLegacyFotoIdCacheKey(newOsId), fotoId);
@@ -518,7 +548,7 @@ ngOnInit() {
       try {
         obj = JSON.parse(trimmed) as Record<string, unknown>;
       } catch {
-        
+        // tenta aspas simples
         try {
           obj = JSON.parse(trimmed.replace(/'/g, '"')) as Record<string, unknown>;
         } catch {
@@ -547,69 +577,71 @@ ngOnInit() {
   // --------- LOOKUPS / COMBOS ---------
 
   private carregarCombosComCallback(callback: () => void) {
-    // Equipamentos
-    let carregadas = 0;
-    const total = 7;
-    const checkDone = () => { carregadas++; if (carregadas === total) callback(); };
-    this.ordemService.listarEquipamentos().subscribe({
-      next: (lista) => { this.equipamentosLista = lista || []; checkDone(); },
-    });
-    this.ordemService.listarEmpreendimentos().subscribe({
-      next: (lista) => { this.empreendimentosLista = lista || []; checkDone(); },
-    });
-    this.ordemService.listarClassificacoesServico().subscribe({
-      next: (lista) => { this.classificacoesLista = lista || []; checkDone(); },
-    });
-    this.ordemService.listarTiposOs().subscribe({
-      next: (lista) => { this.tiposOsLista = lista || []; checkDone(); },
-    });
+    forkJoin({
+      equipamentos: this.ordemService.listarEquipamentos().pipe(catchError(() => of([] as ItemComId[]))),
+      empreendimentos: this.ordemService.listarEmpreendimentos().pipe(catchError(() => of([] as ItemComId[]))),
+      classificacoes: this.ordemService.listarClassificacoesServico().pipe(catchError(() => of([] as ItemComId[]))),
+      tipos: this.ordemService.listarTiposOs().pipe(catchError(() => of([] as ItemComId[]))),
+      causas: this.ordemService.listarCausasIntervencao().pipe(catchError(() => of([] as ItemComId[]))),
+      motoristas: this.ordemService.listarColaboradoresMotoristas().pipe(catchError(() => of([] as ItemComId[]))),
+      manutentores: this.ordemService.listarColaboradoresManutentores().pipe(catchError(() => of([] as ItemComId[]))),
+    }).subscribe({
+      next: ({
+        equipamentos,
+        empreendimentos,
+        classificacoes,
+        tipos,
+        causas,
+        motoristas,
+        manutentores,
+      }) => {
+        this.equipamentosLista = equipamentos || [];
+        this.empreendimentosLista = empreendimentos || [];
+        this.classificacoesLista = classificacoes || [];
+        this.tiposOsLista = tipos || [];
+        this.causasIntervencaoLista = causas || [];
 
-    console.log('TIPOS LOOKUP REAL:', JSON.stringify(this.tiposOsLista, null, 2));
+        this.motoristasLista = (motoristas || []).map((m: ItemComId) => ({
+          ...m,
+          id: String(
+            m.fornId ||
+            m.colaboradorId ||
+            m.id ||
+            m.colaboradorCod ||
+            ''
+          ),
+          colaboradorNome:
+            m.colaboradorNome ||
+            m.nome ||
+            m.descricao ||
+            m.razaoSocial ||
+            ''
+        }));
+        this.motoristasFiltrados = [...this.motoristasLista];
 
-    this.ordemService.listarCausasIntervencao().subscribe({
-      next: (lista) => { this.causasIntervencaoLista = lista || []; checkDone(); },
-    });
-
-
-this.ordemService.listarColaboradoresMotoristas().subscribe({
-  next: (lista) => {
-
-    this.motoristasLista = (lista || []).map((m: ItemComId) => ({
-      ...m,
-      id: String(
-        m.fornId ||
-        m.colaboradorId ||
-        m.id ||
-        m.colaboradorCod ||
-        ''
-      ),
-      colaboradorNome:
-        m.colaboradorNome ||
-        m.nome ||
-        m.descricao ||
-        m.razaoSocial ||
-        ''
-    }));
-
-    // ESSA LINHA FALTAVA
-    this.motoristasFiltrados = [...this.motoristasLista];
-
-    checkDone();
-  },
-});
-
-
-    this.ordemService.listarColaboradoresManutentores().subscribe({
-      next: (lista) => {
-        this.manutentoresLista = (lista || []).map(m => ({
+        this.manutentoresLista = (manutentores || []).map((m: ItemComId) => ({
           ...m,
           id: String(m.fornId || m.colaboradorId || m.id || m.colaboradorCod || ''),
         }));
-        checkDone();
+
+        callback();
       },
+      error: () => {
+        this.equipamentosLista = [];
+        this.empreendimentosLista = [];
+        this.classificacoesLista = [];
+        this.tiposOsLista = [];
+        this.causasIntervencaoLista = [];
+        this.motoristasLista = [];
+        this.motoristasFiltrados = [];
+        this.manutentoresLista = [];
+        callback();
+      }
     });
   }
-
+      //---------------------------------------------------------------------//
+      // ADD ALTERAÇÃO: Toast de sucesso com fechamento automático */
+      //--------------------------------------------------------------------//
   private async mostrarToastSucesso() {
     const toast = await this.toastCtrl.create({
       message: 'OS criada e confirmada com sucesso',
@@ -650,6 +682,15 @@ this.ordemService.listarColaboradoresMotoristas().subscribe({
     await popover.present();
     const { data } = await popover.onDidDismiss();
 
+    if (data?.cleared) {
+      if (fieldName === 'dataAbertura') {
+        this.dataAbertura = null;
+      } else {
+        this.dataConclusao = null;
+      }
+      return;
+    }
+
     if (data && data.date) {
       let dateStr: string;
       // Se vier como objeto Date, converte para ISO
@@ -674,10 +715,6 @@ this.ordemService.listarColaboradoresMotoristas().subscribe({
       }
     }
   }
-  /* 🔹 NOVO — limpar data */
-limparData(campo: 'dataAbertura' | 'dataConclusao') {
-  this[campo] = null;
-}
 
   formatDate(isoOrDate: string | null): string {
     // Removido log de debug
@@ -726,7 +763,7 @@ limparData(campo: 'dataAbertura' | 'dataConclusao') {
       return dateStr;
     }
   }
-
+/////////////////////////////////////////////////////////////////////////////
   /* ================================
    DROPDOWN EQUIPAMENTO
 ================================ */
@@ -749,6 +786,13 @@ onEmpreendimentoSelecionado(item: ItemComId | Event) {
   }
   if ((item as Event).type) return;
   this.empreendimento = (item as ItemComId).id;
+}
+  /* ======================
+   DROPDOWN CLASSIFICAÇÃO
+      // ===============================
+      // 🔎 OPERADOR / MOTORISTA (CORREÇÃO DEFINITIVA)
+      // ===============================
+      // Já tratado acima, remover duplicidade
 }
   /* =============================
    DROPDOWN CAUSA DA INTERVENÇÃO
@@ -811,7 +855,7 @@ onManutentorSelecionado(item: ItemComId | Event) {
   if ((item as Event).type) return;
   this.manutentor = (item as ItemComId).id;
 }
-
+////////////////////////////////////////////////////////////////////////////////
 
 abrirDropdownEquipamento() {
   this.modalEquipamentoAberto = this.equipamentosFiltrados.length > 0;
@@ -825,13 +869,14 @@ limparEquipamento() {
 }
 
 // =============================
-//  SOMENTE NÚMEROS (CORRIGIDO)
+// 🔢 SOMENTE NÚMEROS (CORRIGIDO)
 // =============================
 somenteNumero(event: Event, campo: 'hodometro' | 'horimetro') {
   const input = event.target as HTMLInputElement;
   const valor = (input?.value || '').toString().replace(/\D/g, '');
   input.value = valor;
 
+  // 🔥 AQUI ESTAVA O ERRO — agora atualiza a variável correta
   this[campo] = valor;
 }
   // --------- PAYLOAD PARA A API ---------
@@ -868,7 +913,7 @@ private ativarFiltroEquipamento() {
   this.equipamentosFiltrados = [...this.equipamentosLista];
 }
 // =============================
-//  BUSCA DE EQUIPAMENTO
+// 🔎 BUSCA DE EQUIPAMENTO
 // =============================
 modalEquipamentoAberto = false;
 textoBuscaEquipamento = '';
@@ -908,7 +953,7 @@ filtrarEquipamentos() {
 }
 
 
-/*FAZ O FILTRO AUTOMÁTICO AO DIGITAR */
+/** 🔥 FAZ O FILTRO AUTOMÁTICO AO DIGITAR */
 onDigitarEquipamento() {
   const texto = (this.textoBuscaEquipamento || '').toLowerCase().trim();
 
@@ -931,14 +976,14 @@ this.equipamentosFiltrados = this.equipamentosLista.filter(eq =>
 
 
 // =============================
-//  BUSCA DE EMPREENDIMENTO
+// 🔎 BUSCA DE EMPREENDIMENTO
 // =============================
 
 modalEmpreendimentoAberto = false;
 textoBuscaEmpreendimento = '';
 empreendimentosFiltrados: ItemComId[] = [];
 
-/* FAZ O FILTRO AUTOMÁTICO AO DIGITAR */
+/** 🔥 FAZ O FILTRO AUTOMÁTICO AO DIGITAR */
 onDigitarEmpreendimento() {
 
   const termo = (this.textoBuscaEmpreendimento || '').toLowerCase();
@@ -969,14 +1014,14 @@ onDigitarEmpreendimento() {
 }
 
 // =============================
-//  BUSCA DE CLASSIFICAÇÃO
+// 🔎 BUSCA DE CLASSIFICAÇÃO
 // =============================
 
 modalClassificacaoAberto = false;
 textoBuscaClassificacao = '';
 classificacoesFiltradas: ItemComId[] = [];
 
-/* FILTRO AO DIGITAR */
+/** 🔥 FILTRO AO DIGITAR */
 onDigitarClassificacao() {
 
   const termo = (this.textoBuscaClassificacao || '').toLowerCase();
@@ -1006,14 +1051,14 @@ onDigitarClassificacao() {
   this.modalClassificacaoAberto = false;
 }
 // =============================
-// BUSCA DE TIPO
+// 🔎 BUSCA DE TIPO
 // =============================
 
 modalTipoAberto = false;
 textoBuscaTipo = '';
 tiposFiltrados: ItemComId[] = [];
 
-/* FILTRO AO DIGITAR */
+/** 🔥 FILTRO AO DIGITAR */
 onDigitarTipo() {
 
   const termo = (this.textoBuscaTipo || '').toLowerCase();
@@ -1036,23 +1081,21 @@ onDigitarTipo() {
   // Sempre armazena o GUID (id) do tipo selecionado
   if (t && t.id) {
     this.tipo = String(t.id);
-    console.log('[TIPO] GUID atribuído ao selecionar:', this.tipo, t);
   } else {
     this.tipo = '';
-    console.warn('[TIPO] Nenhum GUID ao selecionar tipo:', t);
   }
   this.textoBuscaTipo = String(t.descricao || t.nome || '');
   this.modalTipoAberto = false;
 }
 // =============================
-//  BUSCA DE CAUSA DA INTERVENÇÃO
+// 🔎 BUSCA DE CAUSA DA INTERVENÇÃO
 // =============================
 
 modalCausaAberto = false;
 textoBuscaCausa = '';
 causasFiltradas: ItemComId[] = [];
 
-/* FILTRO AO DIGITAR */
+/** 🔥 FILTRO AO DIGITAR */
 onDigitarCausa() {
 
   const termo = (this.textoBuscaCausa || '').toLowerCase();
@@ -1082,14 +1125,14 @@ onDigitarCausa() {
   this.modalCausaAberto = false;
 }
 // =============================
-// BUSCA DE OPERADOR / MOTORISTA
+// 🔎 BUSCA DE OPERADOR / MOTORISTA
 // =============================
 
 modalMotoristaAberto = false;
 textoBuscaMotorista = '';
 motoristasFiltrados: ItemComId[] = [];
 
-/* FILTRO AO DIGITAR */
+/** 🔥 FILTRO AO DIGITAR */
 onDigitarMotorista() {
 
   const termo = (this.textoBuscaMotorista || '').toLowerCase().trim();
@@ -1121,14 +1164,14 @@ onDigitarMotorista() {
 }
 
 // =============================
-//  BUSCA DE EMPREENDIMENTO DA INTERVENÇÃO
+// 🔎 BUSCA DE EMPREENDIMENTO DA INTERVENÇÃO
 // =============================
 
 modalEmpreendimentoIntervAberto = false;
 textoBuscaEmpreendimentoInterv = '';
 empreendimentosIntervFiltrados: ItemComId[] = [];
 
-/* FILTRO AO DIGITAR */
+/** 🔥 FILTRO AO DIGITAR */
 onDigitarEmpreendimentoInterv() {
 
   const termo = (this.textoBuscaEmpreendimentoInterv || '').toLowerCase();
@@ -1158,14 +1201,14 @@ onDigitarEmpreendimentoInterv() {
   this.modalEmpreendimentoIntervAberto = false;
 }
 // =============================
-// BUSCA DE MANUTENTOR
+// 🔎 BUSCA DE MANUTENTOR
 // =============================
 
 modalManutentorAberto = false;
 textoBuscaManutentor = '';
 manutentoresFiltrados: ItemComId[] = [];
 
-/* FILTRO AO DIGITAR */
+/** 🔥 FILTRO AO DIGITAR */
 onDigitarManutentor() {
 
   const termo = (this.textoBuscaManutentor || '').toLowerCase();
@@ -1193,7 +1236,7 @@ onDigitarManutentor() {
   this.modalManutentorAberto = false;
 }
 // =============================
-//  DESCRIÇÃO EM UPPERCASE
+// 🔠 DESCRIÇÃO EM UPPERCASE
 // =============================
 onDescricaoInput(event: Event) {
   const input = event.target as HTMLInputElement;
@@ -1201,7 +1244,7 @@ onDescricaoInput(event: Event) {
   this.descricao = valor.toUpperCase();
 }
 // =============================
-//  BUSCA DE STATUS
+// 🔎 BUSCA DE STATUS
 // =============================
 
 modalStatusAberto = false;
@@ -1241,33 +1284,19 @@ private carregarOsCompleta(osId: string) {
   this.ordemService.buscarOSPorId(osId).subscribe({
   next: (res: ItemComId | ItemComId[] | null) => {
 
-  console.log('RESPOSTA BRUTA DA API >>>', res);
-
   const osApi = Array.isArray(res) ? res[0] : res;
 
-  console.log('OBJETO FINAL OS API >>>', osApi);
-
   if (!osApi) {
-    console.error('API NÃO RETORNOU DADOS');
     return;
   }
 
-console.log('OS API COMPLETA >>>', osApi);
-    console.log('TIPOS LISTA:', this.tiposOsLista);
-    console.log('OS API TIPO CAMPOS:', {
-      TipoServicoId: osApi.TipoServicoId,
-      tpServCod: osApi.tpServCod,
-      tpServDescricao: osApi.tpServDescricao
-    });
-
-      // Log detalhado para debug
-      console.log('OS API COMPLETA:', osApi);
-      console.log('DEBUG - classifCod:', osApi.classifCod, 'ClassificacaoId:', osApi.ClassificacaoId);
-      console.log('DEBUG - tpServCod:', osApi.tpServCod, 'TipoServicoId:', osApi.TipoServicoId);
-      console.log('DEBUG - campos brutos:', JSON.stringify(osApi));
+  // ===============================
+  // 🔹 NÚMERO OS (do osCod da API)
+  // ===============================
+  this.numeroOS = String(osApi.numeroOs ?? osApi.NumeroOs ?? osApi.osCod ?? '');
 
       // ===============================
-      //  CAMPOS SIMPLES
+      // 🔹 CAMPOS SIMPLES
       // ===============================
       this.descricao = String(osApi.osDescricao ?? osApi.Descricao ?? '');
 
@@ -1334,16 +1363,25 @@ console.log('OS API COMPLETA >>>', osApi);
       }
 
       // Status
-      const statusCodigoApi = osApi.statusCodigo ?? osApi.statusCod ?? osApi.Status ?? osApi.status ?? osApi.statusDescricao ?? null;
+      const statusCodigoApiRaw = osApi.statusCodigo ?? osApi.statusCod ?? osApi.Status ?? osApi.status ?? null;
+      const statusDescricaoApi = String(osApi.statusDescricao ?? osApi.StatusDescricao ?? '').trim();
+      const statusCodigoApi =
+        statusCodigoApiRaw !== null &&
+        statusCodigoApiRaw !== undefined &&
+        String(statusCodigoApiRaw).trim() !== '' &&
+        !Number.isNaN(Number(statusCodigoApiRaw))
+          ? Number(statusCodigoApiRaw)
+          : null;
       let statusEncontrado = null;
-      if (statusCodigoApi && this.statusLista?.length) {
+      if (statusCodigoApi !== null && this.statusLista?.length) {
         statusEncontrado = this.statusLista.find((s: ItemComId) => String(s.valor) === String(statusCodigoApi));
       }
-      if (statusEncontrado) {
-        this.statusCodigo = statusEncontrado.valor;
-      } else {
-        this.statusCodigo = statusCodigoApi ? Number(statusCodigoApi) : null;
+      if (!statusEncontrado && statusDescricaoApi && this.statusLista?.length) {
+        statusEncontrado = this.statusLista.find((s: ItemComId) =>
+          String(s.descricao ?? '').toLowerCase().trim() === statusDescricaoApi.toLowerCase()
+        );
       }
+      this.statusCodigo = statusEncontrado ? statusEncontrado.valor : statusCodigoApi;
 
       // Operador/Motorista
       const motoristaId =
@@ -1384,25 +1422,14 @@ console.log('OS API COMPLETA >>>', osApi);
         equipamento = this.equipamentosLista.find((e: ItemComId) => String(e.id) === equipId);
       }
       this.equipamento = equipamento?.id || '';
-
-
-      // Bloco duplicado removido: motoristaId já tratado acima
-      // Corrigir statusCodigo e statusEncontrado
-      // Métodos para template removidos do escopo errado
-      // Bloco duplicado removido: statusCodigoApi já tratado acima
-      if (statusEncontrado) {
-        this.statusCodigo = statusEncontrado.valor;
-      } else {
-        this.statusCodigo = statusCodigoApi ? Number(statusCodigoApi) : null;
-      }
       // ===============================
-      // EMPREENDIMENTO
+      // 🔎 EMPREENDIMENTO
       // ===============================
       const empId = String(osApi.emprdId ?? osApi.emprdintervencaoId ?? '');
       this.empreendimento = (empId && empId !== '00000000-0000-0000-0000-000000000000') ? empId : '';
 
       // ===============================
-      //  CLASSIFICAÇÃO
+      // 🔎 CLASSIFICAÇÃO
       // ==============================
 
       const classifId = osApi.ClassificacaoId ?? osApi.classifCod ?? osApi.classifId ?? null;
@@ -1417,8 +1444,14 @@ console.log('OS API COMPLETA >>>', osApi);
         this.classificacao = '';
       }
 
+      // ===============================
+// 🔎 TIPO
 // ===============================
-// CAUSA INTERVENÇÃO
+
+
+      // Já tratado acima
+// ===============================
+// 🔎 CAUSA INTERVENÇÃO
 // ===============================
 
       let causa = null;
@@ -1428,8 +1461,14 @@ console.log('OS API COMPLETA >>>', osApi);
       }
       this.causaIntervencao = causa?.id || '';
 
+// ===============================
+// 🔎 OPERADOR / MOTORISTA (CORREÇÃO DEFINITIVA)
+// ===============================
+
+      // Bloco duplicado removido. Já tratado acima.
+
       // ===============================
-      //  MANUTENTOR
+      // 🔎 MANUTENTOR
       // ===============================
       let manutentor = null;
       const manutentorId = String(osApi.manutentorId ?? osApi.ManutentorResponsavelId ?? '');
@@ -1439,7 +1478,7 @@ console.log('OS API COMPLETA >>>', osApi);
       this.manutentor = manutentor?.id || '';
 
       // ===============================
-      // EMPREENDIMENTO INTERVENÇÃO
+      // 🔎 EMPREENDIMENTO INTERVENÇÃO
       // ===============================
       let empInterv = null;
       const empIntervId = String(osApi.emprdintervencaoId ?? osApi.emprdintervencaoCod ?? '');
@@ -1458,8 +1497,6 @@ private setarTipoPorCodigo(codigo: number) {
   });
 
   this.tipo = tipoEncontrado ? String(tipoEncontrado.id) : '';
-
-  console.log('TIPO FINAL SETADO:', this.tipo);
 }
 
 
@@ -1539,14 +1576,6 @@ if (faltando.length > 0) {
   return;
 }
 
-console.log("STATUS ENVIADO PARA API:", params.Status);
-   // Log detalhado dos parâmetros
-
-
-   console.log("TIPO NA TELA:", this.tipo);
-console.log("CLASSIFICACAO NA TELA:", this.classificacao);
-console.log("CAUSA NA TELA:", this.causaIntervencao);
-
     this.ordemService.gravarOrdem(params).subscribe({
       next: (res: ItemComId | string) => {
         // LOG: resposta do backend ao gravar OS
@@ -1558,9 +1587,12 @@ console.log("CAUSA NA TELA:", this.causaIntervencao);
           // LOG: OS não foi duplicada, ID retornado corretamente
           this.osId = returnedId;
           /*
+          /*
 
-
-
+ // 🔥 SEMPRE recarregar a OS após salvar
+if (this.osId && this.osId.length === 36) {
+   this.carregarOsCompleta(this.osId);
+}
 
 */
         } else {
@@ -1573,20 +1605,20 @@ console.log("CAUSA NA TELA:", this.causaIntervencao);
         // Se o backend trocou o OsId, mantém a foto “junto” via cache local.
         this.migrarCacheFotoSeMudou(oldOsId, this.osId, osCod);
         this.atualizarPreviewFoto();
-        // 🔧 ALTERAÇÃO: exibe popup automático de sucesso
+
+        if (isNovaOS) {
+          this.redirecionarParaListaComNovaOs();
+          return;
+        }
+
         this.mostrarToastSucesso();
-
-
-         if (!isNovaOS) {
-
-        //NOVO: navegar automaticamente para a tela de pesquisa
-this.router.navigate(['/tabs/ordem-servico-pesquisa'], {//DEFINIR PARA QUAL TELA REALMENTE DEVERA VOLTAR
-  replaceUrl: true
-});
-
-        // ALTERAÇÃO: libera botão Anexar Foto
-        //this.osConfirmada = true;
-}
+        this.router.navigate(['/tabs/ordem-servico-pesquisa'], {
+          queryParams: {
+            numeroOs: this.numeroOS || '',
+            highlightOs: this.numeroOS || '',
+          },
+          replaceUrl: true
+        });
       },
       error: async () => {
         // mesmo em erro, mantém o fluxo atual conforme solicitado
@@ -1596,6 +1628,51 @@ this.router.navigate(['/tabs/ordem-servico-pesquisa'], {//DEFINIR PARA QUAL TELA
         // Mesmo em erro, tenta atualizar o preview (pode ter voltado da tela de foto)
         this.atualizarPreviewFoto();
       },
+    });
+  }
+
+  private redirecionarParaListaComNovaOs() {
+    const navegar = (numeroOs: string) => {
+      this.numeroOS = numeroOs;
+      this.mostrarToastSucesso();
+      this.router.navigate(['/tabs/ordem-servico-pesquisa'], {
+        queryParams: {
+          numeroOs,
+          highlightOs: numeroOs,
+        },
+        replaceUrl: true
+      });
+    };
+
+    const numeroAtual = String(this.numeroOS || '').trim();
+    if (numeroAtual) {
+      navegar(numeroAtual);
+      return;
+    }
+
+    if (!this.osId || this.osId.length !== 36) {
+      this.mostrarToastSucesso();
+      this.router.navigate(['/tabs/ordem-servico-pesquisa'], { replaceUrl: true });
+      return;
+    }
+
+    this.ordemService.buscarOSPorId(this.osId).subscribe({
+      next: (res: ItemComId | ItemComId[] | null) => {
+        const osApi = Array.isArray(res) ? res[0] : res;
+        const numeroOs = String(osApi?.osCod ?? osApi?.NumeroOs ?? osApi?.numeroOs ?? '').trim();
+
+        if (numeroOs) {
+          navegar(numeroOs);
+          return;
+        }
+
+        this.mostrarToastSucesso();
+        this.router.navigate(['/tabs/ordem-servico-pesquisa'], { replaceUrl: true });
+      },
+      error: async () => {
+        await this.mostrarToastAviso('OS salva, mas não foi possível carregar a numeração para filtrar a lista.');
+        this.router.navigate(['/tabs/ordem-servico-pesquisa'], { replaceUrl: true });
+      }
     });
   }
     //ALTERAÇÃO
@@ -1610,7 +1687,7 @@ irParaNovaFoto() {
     queryParams: {
       osId: this.osId,
       osCod: this.numeroOS,
-      status: this.statusCodigo ?? 1   // ENVIA STATUS ATUAL
+      status: this.statusCodigo ?? 0   // 🔥 ENVIA STATUS ATUAL
     }
   });
 }

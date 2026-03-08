@@ -26,7 +26,7 @@
 <app-autocomplete
   [lista]="fornecedoresLista"
   campoDescricao="descricao"
-  placeholder=""
+  placeholder="Selecione um fornecedor"
   [valorSelecionado]="fornecedorId"
   (selecionado)="onFornecedorSelecionado($event)">
 </app-autocomplete>
@@ -38,7 +38,7 @@
 <app-autocomplete
   [lista]="equipamentosLista"
   campoDescricao="descricao"
-  placeholder=""
+  placeholder="Selecione um equipamento"
   [valorSelecionado]="equipamentoId"
   (selecionado)="onEquipamentoSelecionado($event)">
 </app-autocomplete>
@@ -58,19 +58,12 @@
       (click)="openCalendar($event, 'dataInicial')">
     </ion-input>
 
-    <!-- 🔥 BOTÃO LIMPAR -->
-    <button
-      *ngIf="dataInicial"
-      type="button"
-      class="os-date-clear"
-      (click)="limparData('dataInicial', $event)">
-      <ion-icon name="close-outline"></ion-icon>
-    </button>
-
     <!-- BOTÃO CALENDÁRIO -->
     <button
       type="button"
       class="os-date-btn"
+      title="Selecionar data inicial"
+      aria-label="Selecionar data inicial"
       (click)="openCalendar($event, 'dataInicial')">
       <ion-icon name="calendar-clear-outline"></ion-icon>
     </button>
@@ -92,19 +85,12 @@
       (click)="openCalendar($event, 'dataFinal')">
     </ion-input>
 
-    <!-- BOTÃO LIMPAR -->
-    <button
-      *ngIf="dataFinal"
-      type="button"
-      class="os-date-clear"
-      (click)="limparData('dataFinal', $event)">
-      ✕
-    </button>
-
     <!-- BOTÃO CALENDÁRIO -->
     <button
       type="button"
       class="os-date-btn"
+      title="Selecionar data final"
+      aria-label="Selecionar data final"
       (click)="openCalendar($event, 'dataFinal')">
       <ion-icon name="calendar-clear-outline"></ion-icon>
     </button>
@@ -119,6 +105,7 @@
   type="text"
   class="os-input"
   name="numeroVoucher"
+  placeholder="Informe o numero do voucher"
   [(ngModel)]="numeroVoucher"
 />
       </div>

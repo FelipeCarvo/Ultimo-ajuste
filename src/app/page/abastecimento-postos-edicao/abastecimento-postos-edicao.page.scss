@@ -258,35 +258,6 @@ ion-checkbox {
 }
 /* ================= BOTÃO LIMPAR DATA ================= */
 
-.abp-date-clear {
-  position: absolute;
-  right: 44px; /* antes do calendário */
-  top: 50%;
-  transform: translateY(-50%);
-
-  width: 26px;
-  height: 26px;
-
-  border-radius: 50%;
-  border: none;
-  background: #e6edf7;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.abp-date-clear ion-icon {
-  font-size: 16px;
-  color: #7a8ca8;
-}
-
-.abp-date-clear:hover {
-  background: #dbe7f7;
-}
 /* ================= CHECKBOX PADRÃO SISTEMA ================= */
 
 ion-checkbox::part(container) {

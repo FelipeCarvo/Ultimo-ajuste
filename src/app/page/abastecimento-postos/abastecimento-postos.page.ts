@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { PopoverController } from '@ionic/angular';
-import { Router } from '@angular/router';
+import { AlertController, PopoverController } from '@ionic/angular';
+import { ActivatedRoute, Router } from '@angular/router';
 import { format, parseISO } from 'date-fns';
 import { CalendarPopoverComponent } from '../../components/calendar-popover/calendar-popover.component';
 import { AbastecimentoService } from '../../services/abastecimento.service';
@@ -12,24 +12,11 @@ import { AbastecimentoService } from '../../services/abastecimento.service';
   standalone: false
 })
 export class AbastecimentoPostosPage implements OnInit {
-
-  // ===============================
-  // LISTAS DO AUTOCOMPLETE
-  // ===============================
-
   fornecedoresLista: any[] = [];
   equipamentosLista: any[] = [];
 
-  // ===============================
-  //  IDS SELECIONADOS
-  // ===============================
-
   fornecedorId: string | null = null;
   equipamentoId: string | null = null;
-
-  // ===============================
-  //  OUTROS CAMPOS
-  // ===============================
 
   numeroVoucher = '';
 
@@ -39,50 +26,67 @@ export class AbastecimentoPostosPage implements OnInit {
   constructor(
     private popoverCtrl: PopoverController,
     private router: Router,
+    private route: ActivatedRoute,
+    private alertCtrl: AlertController,
     private abastecimentoService: AbastecimentoService
   ) {}
 
-  // ===============================
-  //  INIT
-  // ===============================
-
   ngOnInit() {
     this.carregarListas();
+    this.restaurarFiltrosDaPesquisa();
   }
 
-  // ===============================
-  //  CARREGAR LISTAS REAIS (API)
-  // ===============================
+  private restaurarFiltrosDaPesquisa() {
+    this.route.queryParamMap.subscribe((params) => {
+      this.fornecedorId = params.get('fornecedorId') ?? '';
+      this.equipamentoId = params.get('equipamentoId') ?? '';
+      this.dataInicial = params.get('dataInicial');
+      this.dataFinal = params.get('dataFinal');
+      this.numeroVoucher = params.get('numVoucher') ?? '';
+
+      if (params.get('semResultado') === '1') {
+        void this.exibirAlertaSemResultado();
+
+        this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: { semResultado: null },
+          queryParamsHandling: 'merge',
+          replaceUrl: true,
+        });
+      }
+    });
+  }
+
+  private async exibirAlertaSemResultado() {
+    const alert = await this.alertCtrl.create({
+      header: 'Atenção!',
+      message: 'A pesquisa não retornou resultados. Ajuste os filtros e tente novamente.',
+      buttons: ['OK'],
+      backdropDismiss: true,
+    });
+
+    await alert.present();
+  }
 
   carregarListas() {
-
-    //  FORNECEDORES (mesma API da edição)
     this.abastecimentoService.listarFornecedores().subscribe({
       next: dados => {
         this.fornecedoresLista = dados ?? [];
       },
-      error: err => {
-        console.error('[FORNECEDORES] Erro ao carregar:', err);
+      error: () => {
         this.fornecedoresLista = [];
       }
     });
 
-    // EQUIPAMENTOS (mesma API da edição)
     this.abastecimentoService.listarEquipamentosMobile().subscribe({
       next: dados => {
         this.equipamentosLista = dados ?? [];
       },
-      error: err => {
-        console.error('[EQUIPAMENTOS] Erro ao carregar:', err);
+      error: () => {
         this.equipamentosLista = [];
       }
     });
-
   }
-
-  // ===============================
-  //  EVENTOS AUTOCOMPLETE
-  // ===============================
 
   onFornecedorSelecionado(item: any) {
     this.fornecedorId = item?.id ?? null;
@@ -92,17 +96,9 @@ export class AbastecimentoPostosPage implements OnInit {
     this.equipamentoId = item?.id ?? null;
   }
 
-  // ===============================
-  //  HEADER
-  // ===============================
-
   onBack() {
     this.router.navigate(['/tabs/abastecimento']);
   }
-
-  // ===============================
-  //  CALENDÁRIO
-  // ===============================
 
   async openCalendar(event: any, fieldName: 'dataInicial' | 'dataFinal') {
     const popover = await this.popoverCtrl.create({
@@ -117,6 +113,15 @@ export class AbastecimentoPostosPage implements OnInit {
 
     const { data } = await popover.onDidDismiss();
 
+    if (data?.cleared) {
+      if (fieldName === 'dataInicial') {
+        this.dataInicial = null;
+      } else {
+        this.dataFinal = null;
+      }
+      return;
+    }
+
     if (data?.date) {
       if (fieldName === 'dataInicial') {
         this.dataInicial = data.date;
@@ -124,11 +129,6 @@ export class AbastecimentoPostosPage implements OnInit {
         this.dataFinal = data.date;
       }
     }
-  }
-
-  limparData(campo: 'dataInicial' | 'dataFinal', event: Event) {
-    event.stopPropagation();
-    this[campo] = null;
   }
 
   formatDate(isoString: string | null): string {
@@ -140,11 +140,27 @@ export class AbastecimentoPostosPage implements OnInit {
     }
   }
 
-  // ===============================
-  //  PESQUISAR
-  // ===============================
+  async pesquisar() {
+    const possuiFiltro = [
+      this.fornecedorId,
+      this.equipamentoId,
+      this.dataInicial,
+      this.dataFinal,
+      this.numeroVoucher,
+    ].some((value) => String(value || '').trim() !== '');
 
-  pesquisar() {
+    if (!possuiFiltro) {
+      const alert = await this.alertCtrl.create({
+        header: 'Atenção!',
+        message: 'Informe ao menos um filtro antes de pesquisar os abastecimentos.',
+        buttons: ['OK'],
+        backdropDismiss: true,
+      });
+
+      await alert.present();
+      return;
+    }
+
     const filtros = {
       fornecedorId: this.fornecedorId,
       equipamentoId: this.equipamentoId,

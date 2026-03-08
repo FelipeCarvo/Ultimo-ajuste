@@ -14,7 +14,7 @@ import { AutocompleteComponent } from '../../components/autocomplete/autocomplet
     FormsModule,
     IonicModule,
     OrdemServicoPageRoutingModule,
-    AutocompleteComponent
+    AutocompleteComponent // ✅ standalone entra aqui
   ],
   declarations: [OrdemServicoPage]
 })

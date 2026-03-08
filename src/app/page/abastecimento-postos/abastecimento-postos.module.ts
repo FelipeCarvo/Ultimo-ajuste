@@ -6,8 +6,6 @@ import { IonicModule } from '@ionic/angular';
 import { AbastecimentoPostosPageRoutingModule } from './abastecimento-postos-routing.module';
 import { AbastecimentoPostosPage } from './abastecimento-postos.page';
 import { CalendarPopoverComponentModule } from '../../components/calendar-popover/calendar-popover.module';
-
-
 import { AutocompleteComponent } from '../../components/autocomplete/autocomplete.component';
 
 @NgModule({
