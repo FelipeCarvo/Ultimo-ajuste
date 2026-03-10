@@ -1425,7 +1425,7 @@ private carregarOsCompleta(osId: string) {
       // ===============================
       // 🔎 EMPREENDIMENTO
       // ===============================
-      const empId = String(osApi.emprdId ?? osApi.emprdintervencaoId ?? '');
+      const empId = String(osApi.emprdAberturaId ?? osApi.emprdAberturaCod ?? '');
       this.empreendimento = (empId && empId !== '00000000-0000-0000-0000-000000000000') ? empId : '';
 
       // ===============================
