@@ -60,19 +60,21 @@ export class AbastecimentoProprioPage implements OnInit {
   }
 
   private async exibirAlertaSemResultado() {
-    const alert = await this.alertCtrl.create({
-      header: 'Atenção!',
-      message: 'A pesquisa não retornou resultados. Ajuste os filtros e tente novamente.',
-      buttons: ['OK'],
-      backdropDismiss: true,
-    });
+   const alert = await this.alertCtrl.create({
+        header: 'Atenção!',
+        message: 'A pesquisa não retornou resultados. Ajuste os filtros e tente novamente.',
+        buttons: ['OK'],
+        backdropDismiss: true,
+        cssClass: ['custom-alert']
+      });
 
-    await alert.present();
-  }
+      await alert.present();
+      
+    }
 
 carregarListas() {
 
-  // 🔥 ORIGEM / TANQUE (BOMBAS)
+  // ORIGEM / TANQUE (BOMBAS)
   this.abastecimentoService.listarBombas().subscribe({
     next: dados => {
       this.origensLista = (dados ?? []).map(b => ({
@@ -83,7 +85,7 @@ carregarListas() {
     error: () => this.origensLista = []
   });
 
-  // 🔥 EQUIPAMENTOS
+  // EQUIPAMENTOS
   this.abastecimentoService.listarEquipamentosMobile().subscribe({
     next: dados => this.equipamentosLista = dados ?? [],
     error: () => this.equipamentosLista = []
@@ -131,6 +133,10 @@ carregarListas() {
       return '';
     }
   }
+  limparData(campo: 'dataInicial' | 'dataFinal', event: Event) {
+  event.stopPropagation();
+  this[campo] = null;
+}
 
   // PESQUISAR
   async pesquisar() {
@@ -145,9 +151,10 @@ carregarListas() {
     if (!possuiFiltro) {
       const alert = await this.alertCtrl.create({
         header: 'Atenção!',
-        message: 'Informe ao menos um filtro antes de pesquisar os abastecimentos.',
+        message: 'E necessário preencher os campos antes de pesquisar os abastecimentos.',
         buttons: ['OK'],
         backdropDismiss: true,
+        cssClass: ['custom-alert']
       });
 
       await alert.present();

@@ -232,6 +232,43 @@
 .os-date-icons ion-icon {
   font-size: 18px;
   color: #a0b2cf;
+  cursor: pointer;
+}
+
+.os-date-icons ion-icon:hover {
+  color: #6b7a99;
+}
+
+.os-date-clear-icon {
+  font-size: 18px;
+  color: #a0b2cf;
+}
+.os-date-clear-icon:hover {
+  color: #6b7a99;
+}
+.os-date-clear {
+  position: absolute;
+  right: 44px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+
+  background: #eef2f8;
+  color: #6b7a99;
+  font-size: 14px;
+  line-height: 22px;
+  text-align: center;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  z-index: 10; 
 }
 
 
@@ -248,10 +285,11 @@
   width: 100%;
   border-radius: 22px;
   padding: 10px;
-  background: #2d6fb1;
+
   color: #fff;
   font-weight: 700;
   border: none;
+   background: linear-gradient(90deg, #28b766, #1aa953);
 }
 
 .os-attach-photo-btn {
@@ -315,7 +353,7 @@
   font-size: 15px;
   letter-spacing: 0.2px;
 
-  /* 👇 espaço interno à esquerda do número */
+  /*espaço interno à esquerda do número */
   --padding-start: 12px;
 }
 
@@ -413,7 +451,7 @@
 .os-foto-actions {
   width: 100%;
   display: flex;
-  align-items: center;
+   flex-direction: column;
   gap: 10px;
 }
 
@@ -432,7 +470,7 @@
 
 
 .os-modal-delete-btn {
-  flex: 0 0 auto;
+  //flex: 0 0 auto;
   min-height: 32px;
   border: 1px solid #d8e1ef;
   border-radius: 16px;
@@ -453,5 +491,13 @@ ion-input {
 /* Deixa o foco igual aos outros campos do sistema */
 ion-input.ion-focused {
   border: 2px solid #000 !important;
+  border-radius: 12px;
+}
+
+.toast-custom {
+  --background: #e0e0e0;
+  --color: #333;
+  text-align: center;
+  font-weight: 500;
   border-radius: 12px;
 }

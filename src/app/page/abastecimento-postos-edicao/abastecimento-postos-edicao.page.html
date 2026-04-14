@@ -184,33 +184,32 @@
         <div class="abp-field abp-half">
           <label class="abp-label">Horímetro</label>
             <input
-  type="number"
-  class="os-input"
-  [(ngModel)]="horimetro"
-/>
-        </div>
+              type="number"
+              class="os-input"
+              [(ngModel)]="horimetro"
+            />
+         </div>
 
         <!-- Retorno? -->
          <div class="abp-checkbox-group">
-          <ion-checkbox [(ngModel)]="retorno" [ngModelOptions]="{standalone: true}"></ion-checkbox>
+          <ion-checkbox [(ngModel)]="retorno" [ngModelOptions]="{standalone: true}">
+          </ion-checkbox>
           <span>Retorno?</span>
         </div>
-
       </div>
-<!-- Número Ctrl Posto -->
- <!--ATENÇÃO AJUSTAR O TIPO DE CAMPO CONFORME O BACKEND-->
+        <!-- Número Ctrl Posto -->
         <div class="abp-group-row">
         <div class="abp-field abp-half">
           <label class="abp-label">Nº Ctrl Posto</label>
           <input
-  type="text"
-  class="os-input"
-  [(ngModel)]="numeroControlePosto"
-/>
+            type="text"
+            class="os-input"
+            [(ngModel)]="numeroControlePosto"
+          />
         </div>
-
         <div class="abp-checkbox-group">
-          <ion-checkbox [(ngModel)]="estoque" [ngModelOptions]="{standalone: true}"></ion-checkbox>
+          <ion-checkbox [(ngModel)]="estoque" [ngModelOptions]="{standalone: true}">
+          </ion-checkbox>
           <span>Estoque</span>
         </div>
       </div>

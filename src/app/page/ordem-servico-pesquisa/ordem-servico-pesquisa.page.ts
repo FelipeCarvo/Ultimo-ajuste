@@ -23,7 +23,7 @@ export class OrdemServicoPesquisaPage implements OnInit {
   listaOs: OrdemServicoListaItem[] = [];
   carregando = false;
 
-    // 🔥 ALTERAÇÃO 2 - MAPA OFICIAL DE STATUS (PADRONIZAÇÃO FRONT)
+    //  ALTERAÇÃO 2 - MAPA OFICIAL DE STATUS (PADRONIZAÇÃO FRONT)
   private statusMap: Record<number, string> = {
     0: 'Aberta',
     1: 'Serviço Iniciado',
@@ -36,7 +36,7 @@ export class OrdemServicoPesquisaPage implements OnInit {
     const v = (value || '').trim();
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
   }
-
+/*
   private parseDateOnly(value?: string | null): number | null {
     if (!value) return null;
     const str = String(value);
@@ -48,6 +48,24 @@ export class OrdemServicoPesquisaPage implements OnInit {
       return null;
     }
   }
+*/
+
+private parseDateOnly(value?: string | null): number | null {
+  if (!value) return null;
+
+  try {
+    // 🔥 IGNORA A HORA
+    const data = String(value).split('T')[0];
+
+    const [ano, mes, dia] = data.split('-').map(Number);
+
+    return new Date(ano, mes - 1, dia).getTime();
+  } catch {
+    return null;
+  }
+}
+
+
 
   private aplicarFiltrosLocal(dados: any[], filtros: {
 
@@ -81,7 +99,7 @@ export class OrdemServicoPesquisaPage implements OnInit {
     }
 
     // ===============================
-    // 🔎 FILTRO EQUIPAMENTO
+    //  FILTRO EQUIPAMENTO
     // ===============================
     const equipamentoValor = (filtros.equipamento || '').trim();
     if (equipamentoValor) {
@@ -119,7 +137,7 @@ export class OrdemServicoPesquisaPage implements OnInit {
     }
 */
 // ===============================
-// 🔎 FILTRO EMPREENDIMENTO
+//  FILTRO EMPREENDIMENTO
 // ===============================
 const empreendimentoValor = (filtros.empreendimento || '').trim();
 
@@ -133,7 +151,7 @@ if (empreendimentoValor) {
 }
 
     // ===============================
-    // 🔎 FILTRO CAUSA INTERVENÇÃO
+    //  FILTRO CAUSA INTERVENÇÃO
     // ===============================
     const causaValor = (filtros.causaIntervencao || '').trim();
     if (causaValor) {
@@ -154,7 +172,7 @@ if (empreendimentoValor) {
     }
 
     // ===============================
-    // 🔎 FILTRO MANUTENTOR
+    //  FILTRO MANUTENTOR
     // ===============================
     const manutentorValor = (filtros.manutentor || '').trim();
     if (manutentorValor) {
@@ -221,10 +239,17 @@ if (empreendimentoValor) {
 
    ngOnInit() {
 
-    // 🔥 ALTERAÇÃO 3 - mapItem ajustado
+    // ALTERAÇÃO 3 - mapItem ajustado
     const mapItem = (item: any): OrdemServicoListaItem => {
 
-      const statusCod = Number(item?.statusCod ?? item?.Status ?? 0);
+      const statusCodRaw =
+  item?.statusCod ??
+  item?.statusCodigo ??
+  item?.status ??
+  item?.Status ??
+  null;
+
+const statusCod = statusCodRaw !== null ? Number(statusCodRaw) : null;
 
       return {
         osId: item?.OsId ?? item?.IdOs ?? item?.id ?? item?.osId ?? null,
@@ -234,12 +259,11 @@ if (empreendimentoValor) {
         equipIndentificador: item?.equipIndentificador ?? '',
         statusCod: statusCod,
 
-        // 🔥 ALTERAÇÃO 4 - força exibir pelo mapa
-        statusDescricao:
-          this.statusMap[statusCod] ??
-          item?.statusDescricao ??
-          item?.StatusDescricao ??
-          '',
+        // ALTERAÇÃO 4 - força exibir pelo mapa
+      statusDescricao:
+  statusCod !== null
+    ? this.statusMap[statusCod] ?? item?.statusDescricao ?? ''
+    : item?.statusDescricao ?? '',
       };
     };
 
@@ -316,7 +340,7 @@ const filtrosApi = {
         next: (listaApi: any[]) => {
   let listaFiltrada = this.aplicarFiltrosLocal(listaApi || [], filtrosTela);
 
-  // ⭐ NOVO: se veio highlightOs, mostra só a OS criada
+  // se veio highlightOs, mostra só a OS criada
   if (highlightOs) {
     listaFiltrada = listaFiltrada.filter(os =>
       String(os.osCod ?? os.NumeroOs ?? '') === String(highlightOs)

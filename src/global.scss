@@ -504,3 +504,13 @@ ion-popover.select-popover .select-interface-option {
 ion-popover.select-popover {
   --background: #ffffff !important;
 }
+ion-alert.custom-alert .alert-title {
+  color: #2d6fb1 !important;
+}
+
+ion-alert.custom-alert .alert-wrapper {
+  border-radius: 14px !important;
+}
+.custom-alert .alert-message {
+  white-space: pre-line !important;
+}

@@ -33,29 +33,37 @@
 
 <ion-content class="home-content">
   <ion-grid class="buttons-wrapper">
-    <ion-row class="ion-justify-content-center">
-      <ion-col size="12" class="buttons-row">
+
+    <ion-row class="buttons-row ion-justify-content-center">
+
+      <ion-col size="6">
         <ion-button
-          class="btnGreen ion-text-capitalize btn-home"
+          class="btnGreen btn-home"
           expand="block"
           (click)="goOrdemServico()">
           Ordem de Serviço
         </ion-button>
+      </ion-col>
 
+      <ion-col size="6">
         <ion-button
-          class="btnGreen ion-text-capitalize btn-home"
+          class="btnGreen btn-home"
           expand="block"
           (click)="goAbastecimento()">
           Abastecimento
         </ion-button>
+      </ion-col>
 
+      <ion-col size="6" class="ion-text-center">
         <ion-button
-          class="btnGreen ion-text-capitalize btn-home"
+          class="btnGreen btn-home"
           expand="block"
           (click)="goEstoque()">
           Estoque
         </ion-button>
       </ion-col>
+
     </ion-row>
+
   </ion-grid>
 </ion-content>

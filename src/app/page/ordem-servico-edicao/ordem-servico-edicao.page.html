@@ -76,7 +76,7 @@
 </div>
 
 
-<!-- Datas (Abertura / Conclusão) lado a lado -->
+<!-- Datas (Abertura / Conclusão) lado a lado --> 
 <div class="os-group-inline">
 
   <!-- Data Abertura -->
@@ -93,33 +93,45 @@
       </span>
 
       <div class="os-date-icons">
-        <!-- ícone calendário -->
         <ion-icon name="calendar-outline"></ion-icon>
       </div>
     </div>
   </div>
 
-  <!-- Data Conclusão -->
-  <div class="os-group-half">
-    <label class="os-label">Data Conclusão</label>
+<div class="os-group-half">
+  <label class="os-label">Data Conclusão</label>
 
-    <div
-      class="os-date-field"
-      [ngClass]="{ 'has-value': dataConclusao }"
+  <div
+    class="os-date-field"
+    [ngClass]="{ 'has-value': dataConclusao }"
+  >
+
+    <span
+      class="os-date-value"
       (click)="openCalendar($event, 'dataConclusao')"
     >
-      <span class="os-date-value">
-        {{ formatDate(dataConclusao) || 'dd/mm/aaaa' }}
-      </span>
+      {{ formatDate(dataConclusao) || 'dd/mm/aaaa' }}
+    </span>
 
-      <div class="os-date-icons">
-        <!-- ícone calendário -->
-        <ion-icon name="calendar-outline"></ion-icon>
+    <div class="os-date-icons">
+
+      <!-- X -->
+      <ion-icon
+        *ngIf="dataConclusao"
+        name="close-circle"
+        (click)="clearDateConclusao($event)">
+      </ion-icon>
+
+      <!-- calendário -->
+      <ion-icon
+        name="calendar-outline"
+        (click)="openCalendar($event, 'dataConclusao')">
+      </ion-icon>
+
       </div>
     </div>
   </div>
 </div>
-
     <!-- CLASSIFICAÇÃO -->
 <div class="os-field">
   <label class="os-label">Classificação</label>
@@ -224,7 +236,7 @@
    [valorSelecionado]="statusCodigo"
     placeholder="Selecione o status"
     campoDescricao="descricao"
-    (selecionado)="onStatusSelecionado($event)">
+    (selecionado)="selecionarStatus($event)">
   </app-autocomplete>
 </div>
 

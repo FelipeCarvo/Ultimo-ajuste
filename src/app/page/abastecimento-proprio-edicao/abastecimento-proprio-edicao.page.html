@@ -134,6 +134,9 @@ campoDescricao="descricao"
       class="os-input"
       title="Informe o odometro atual"
       placeholder="Informe o odometro atual"
+      min="0"
+      max="2147483647"
+      step="1"
       [(ngModel)]="odometroAtual"
     />
   </div>
@@ -145,6 +148,9 @@ campoDescricao="descricao"
       class="os-input"
       title="Informe o odometro do abastecimento"
       placeholder="Informe o odometro do abastecimento"
+      min="0"
+      max="2147483647"
+      step="1"
       [(ngModel)]="odometro"
     />
   </div>
@@ -160,6 +166,9 @@ campoDescricao="descricao"
       class="os-input"
       title="Informe o horimetro atual"
       placeholder="Informe o horimetro atual"
+      min="0"
+      max="2147483647"
+      step="1"
       [(ngModel)]="horimetroAtual"
     />
   </div>
@@ -171,6 +180,9 @@ campoDescricao="descricao"
       class="os-input"
       title="Informe o horimetro do abastecimento"
       placeholder="Informe o horimetro do abastecimento"
+      min="0"
+      max="2147483647"
+      step="1"
       [(ngModel)]="horimetro"
     />
   </div>
@@ -200,7 +212,6 @@ campoDescricao="descricao"
       [lista]="tiposPrevAbast"
       placeholder="Selecione um tipo"
       campoDescricao="descricao"
-      [disabled]="!aplicacaoHabilitada"
       [valorSelecionado]="tipoPrevAbast"
       (selecionado)="selecionarTipoPrevAbast($event)">
     </app-autocomplete>
@@ -242,6 +253,9 @@ campoDescricao="descricao"
       class="os-input"
       title="Informe o numero inicial da bomba"
       placeholder="Informe o numero inicial"
+      min="0"
+      max="2147483647"
+      step="1"
       [(ngModel)]="numBombaInicial"
       (input)="onNumBombaInicialChange($event)"
     />
@@ -254,6 +268,9 @@ campoDescricao="descricao"
       class="os-input"
       title="Informe o numero final da bomba"
       placeholder="Informe o numero final"
+      min="0"
+      max="2147483647"
+      step="1"
       [(ngModel)]="numBombaFinal"
       (input)="onNumBombaFinalChange($event)"
     />
@@ -332,7 +349,7 @@ campoDescricao="descricao"
 
       <!-- Botão confirmar -->
       <div class="abp-actions">
-        <button type="button" class="abp-primary-btn" (click)="confirmar()">
+        <button type="button" class="abp-primary-btn" [disabled]="carregando" (click)="confirmar()">
           CONFIRMAR
         </button>
       </div>

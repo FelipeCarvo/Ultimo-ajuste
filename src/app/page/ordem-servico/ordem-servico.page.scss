@@ -10,18 +10,40 @@
 
 /* barra interna */
 .os-header-bar {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 16px 10px;
+  padding: 6px 20px 10px;
 }
 
-/* título */
+/* CENTRALIZA O TÍTULO ABSOLUTO */
 .os-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
   margin: 0;
+  line-height: 1.2;
+  text-align: center;
+
+  gap: 2px;
+}
+
+.os-title span {
   font-size: 16px;
-  font-weight: 600;
   color: #2d6fb1;
+  font-weight: 700;
+}
+
+.os-title strong {
+  font-size: 16px;
+  color: #2d6fb1;
+  font-weight: 700;
 }
 
 /* botão voltar */
@@ -102,12 +124,12 @@
 }
 
 .os-search-btn {
-  --background: linear-gradient(135deg, #4c8dff, #2d6fb1);
-  --border-radius: 24px;
-  --color: #fff;
+  --background: #e4f1ff;
+  --border-radius: 22px;
+  --color: #2d6fb1;
   font-weight: 600;
-  letter-spacing: 0.6px;
-  height: 46px;
+  letter-spacing: 0.8px;
+  font-size: 13px;
 }
 
 /* RESULTADOS */
@@ -138,8 +160,6 @@ ion-content.os-content {
 
 /* ===== DATA INPUT  ===== */
 
-/* ===== DATA INPUT ===== */
-
 .os-date-input {
   position: relative;
   width: 100%;
@@ -147,10 +167,10 @@ ion-content.os-content {
 
 /* INPUT */
 .os-date-display {
-  --padding-end: 80px; /* espaço real para X + calendário */
+  --padding-end: 80px; 
   cursor: pointer;
 
-  /* remove azul ionic */
+
   --highlight-color-focused: transparent;
   --highlight-color-valid: transparent;
   --highlight-color-invalid: transparent;
@@ -185,7 +205,7 @@ ion-content.os-content {
   justify-content: center;
 
   cursor: pointer;
-  z-index: 10; /* ← ESSENCIAL */
+  z-index: 10; 
 }
 
 .os-date-clear:hover {
@@ -210,10 +230,49 @@ ion-content.os-content {
   justify-content: center;
   padding: 0;
 
-  z-index: 10; /* ← ESSENCIAL */
+  z-index: 10;
 }
 
 .os-date-btn ion-icon {
   font-size: 16px;
   color: #a0b2cf;
+}
+.os-date-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.os-date-item {
+  width: 100%;
+}
+.os-date-display {
+  --padding-start: 16px;  
+}
+.custom-alert .alert-wrapper {
+  background: #ffffff !important;
+  border-radius: 30px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+}
+
+/* Título */
+.custom-alert .alert-head {
+  padding-bottom: 8px;
+}
+
+
+
+/* Mensagem */
+.custom-alert .alert-message {
+  font-size: 14px;
+  color: #2c3e50;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+/* Botões */
+.custom-alert .alert-button-group {
+  justify-content: flex-end;
+  padding-top: 10px;
 }

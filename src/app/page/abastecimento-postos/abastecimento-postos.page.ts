@@ -58,15 +58,17 @@ export class AbastecimentoPostosPage implements OnInit {
   }
 
   private async exibirAlertaSemResultado() {
-    const alert = await this.alertCtrl.create({
-      header: 'Atenção!',
-      message: 'A pesquisa não retornou resultados. Ajuste os filtros e tente novamente.',
-      buttons: ['OK'],
-      backdropDismiss: true,
-    });
+   const alert = await this.alertCtrl.create({
+        header: 'Atenção!',
+        message: 'A pesquisa não retornou resultados. Ajuste os filtros e tente novamente.',
+        buttons: ['OK'],
+        backdropDismiss: true,
+        cssClass: ['custom-alert']
+      });
 
-    await alert.present();
-  }
+      await alert.present();
+      
+    }
 
   carregarListas() {
     this.abastecimentoService.listarFornecedores().subscribe({
@@ -139,7 +141,17 @@ export class AbastecimentoPostosPage implements OnInit {
       return '';
     }
   }
+limparData(campo: 'dataInicial' | 'dataFinal', event?: Event) {
+  event?.stopPropagation(); // 👈 evita abrir o calendário
 
+  if (campo === 'dataInicial') {
+    this.dataInicial = null;
+  }
+
+  if (campo === 'dataFinal') {
+    this.dataFinal = null;
+  }
+}
   async pesquisar() {
     const possuiFiltro = [
       this.fornecedorId,
@@ -150,16 +162,18 @@ export class AbastecimentoPostosPage implements OnInit {
     ].some((value) => String(value || '').trim() !== '');
 
     if (!possuiFiltro) {
-      const alert = await this.alertCtrl.create({
+  const alert = await this.alertCtrl.create({
         header: 'Atenção!',
-        message: 'Informe ao menos um filtro antes de pesquisar os abastecimentos.',
+        message: 'E necessário preencher os campos antes de pesquisar os abastecimentos.',
         buttons: ['OK'],
         backdropDismiss: true,
+        cssClass: ['custom-alert']
       });
 
       await alert.present();
       return;
     }
+
 
     const filtros = {
       fornecedorId: this.fornecedorId,

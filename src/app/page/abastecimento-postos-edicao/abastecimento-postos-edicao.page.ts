@@ -6,6 +6,13 @@ import { forkJoin, of } from 'rxjs';
 import { CalendarPopoverComponent } from '../../components/calendar-popover/calendar-popover.component';
 import { AbastecimentoService } from '../../services/abastecimento.service';
 
+
+import { NavController } from '@ionic/angular';
+
+
+import { AlertController } from '@ionic/angular';
+
+
 type LookupId = string | number;
 type LookupItem = {
   id: LookupId;
@@ -41,7 +48,7 @@ export class AbastecimentoPostosEdicaoPage implements OnInit {
   total: number | null = null;
   hodometro: number | null = null;
   horimetro: number | null = null;
-  retorno: boolean = true;
+  retorno: boolean = false;
   estoque: boolean = false;
   equipamentos: LookupItem[] = [];
   empreendimentos: LookupItem[] = [];
@@ -54,6 +61,7 @@ export class AbastecimentoPostosEdicaoPage implements OnInit {
 
 
   private ultimoAbastecimentoIdCarregado: string | null = null;
+  private readonly cacheFlagsKey = 'abastecimento_posto_flags_cache_v1';
 
   ionViewWillLeave() {
     this.ultimoAbastecimentoIdCarregado = null;
@@ -64,6 +72,8 @@ export class AbastecimentoPostosEdicaoPage implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private abastecimentoService: AbastecimentoService,
+     private navCtrl: NavController,
+      private alertCtrl: AlertController,
     private toastCtrl: ToastController
   ) {}
 
@@ -76,6 +86,129 @@ export class AbastecimentoPostosEdicaoPage implements OnInit {
       icon: 'checkmark-circle-outline',
     });
     await toast.present();
+  }
+
+  private async mostrarAlerta(message: string) {
+  const alert = await this.alertCtrl.create({
+    header: 'Atenção!',
+    message,
+    buttons: ['OK'],
+    backdropDismiss: true,
+    cssClass: ['custom-alert']
+  });
+
+  await alert.present();
+}
+
+  private getErrorMessage(err: unknown): string {
+    if (typeof err === 'string' && err.trim()) {
+      return err.trim();
+    }
+
+    if (!err || typeof err !== 'object') {
+      return 'Erro ao gravar abastecimento. Não foi possível concluir a operação.';
+    }
+
+    const errorObj = err as Record<string, unknown>;
+    const message = errorObj['message'];
+    if (typeof message === 'string' && message.trim()) {
+      return message.trim();
+    }
+
+    const nestedError = errorObj['error'];
+    if (nestedError && typeof nestedError === 'object') {
+      const nestedRecord = nestedError as Record<string, unknown>;
+      const nestedMessage = nestedRecord['Mensagem'] ?? nestedRecord['mensagem'];
+      if (typeof nestedMessage === 'string' && nestedMessage.trim()) {
+        return nestedMessage.trim();
+      }
+    }
+
+    return 'Erro ao gravar abastecimento. Não foi possível concluir a operação.';
+  }
+
+  private extrairIdRespostaSalvar(res: unknown): string | null {
+    if (typeof res === 'string' || typeof res === 'number') {
+      const texto = String(res).trim();
+      return texto ? texto : null;
+    }
+
+    if (Array.isArray(res)) {
+      for (const item of res) {
+        const idLista = this.extrairIdRespostaSalvar(item);
+        if (idLista) return idLista;
+      }
+      return null;
+    }
+
+    if (res && typeof res === 'object') {
+      const idDireto = this.getItemValue(res, [
+        'abastecimentoId',
+        'IdAbastecimento',
+        'idAbastecimento',
+        'AbastecimentoId',
+        'id',
+        'Id'
+      ]);
+
+      if (idDireto !== null && typeof idDireto !== 'undefined' && typeof idDireto !== 'object') {
+        const texto = String(idDireto).trim();
+        if (texto) return texto;
+      }
+
+      const obj = res as Record<string, unknown>;
+      for (const candidato of [obj['data'], obj['result'], obj['resultado'], obj['value']]) {
+        const idAninhado = this.extrairIdRespostaSalvar(candidato);
+        if (idAninhado) return idAninhado;
+      }
+    }
+
+    return null;
+  }
+
+  private obterCacheFlags(): Record<string, { retorno?: boolean; estoque?: boolean; atualizadoEm: string }> {
+    try {
+      const bruto = localStorage.getItem(this.cacheFlagsKey);
+      if (!bruto) return {};
+      const parsed = JSON.parse(bruto);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private salvarCacheFlags(abastecimentoId: string): void {
+    if (!abastecimentoId) return;
+
+    const cache = this.obterCacheFlags();
+    cache[String(abastecimentoId)] = {
+      retorno: !!this.retorno,
+      estoque: !!this.estoque,
+      atualizadoEm: new Date().toISOString()
+    };
+
+    localStorage.setItem(this.cacheFlagsKey, JSON.stringify(cache));
+  }
+
+  private aplicarCacheFlags(
+    abastecimentoId: string | null,
+    campos?: { retorno?: unknown; estoque?: unknown }
+  ): void {
+    if (!abastecimentoId) return;
+
+    const cache = this.obterCacheFlags()[String(abastecimentoId)];
+    if (!cache) return;
+
+    const retornoInformado = this.parseBooleanFlag(campos?.retorno);
+    const estoqueInformado = this.parseBooleanFlag(campos?.estoque);
+
+    if (retornoInformado === null && typeof cache.retorno === 'boolean') {
+      this.retorno = cache.retorno;
+    }
+
+    if (estoqueInformado === null && typeof cache.estoque === 'boolean') {
+      this.estoque = cache.estoque;
+    }
   }
 
   compareLookupId = (a: LookupId | null, b: LookupId | null): boolean => {
@@ -118,14 +251,31 @@ export class AbastecimentoPostosEdicaoPage implements OnInit {
 
   ionViewWillEnter() {
     const navState = this.getNavigationState();
-
+/*
     if (navState.mode === 'novo' || (!navState.item && !navState.abastecimentoId)) {
       this.resetForm();
       this.ultimoAbastecimentoIdCarregado = null;
       return;
     }
+      */
+     if (navState.mode === 'novo') {
+  this.resetForm();
+  this.ultimoAbastecimentoIdCarregado = null;
+  return;
+}
 
     this.resetForm();
+
+    if (navState.item) {
+      this.preencherFormulario(navState.item, { onlyIfEmpty: true });
+    }
+
+    if (navState.abastecimentoId) {
+      this.aplicarCacheFlags(navState.abastecimentoId, {
+        retorno: this.getItemValue(navState.item, ['Retorno', 'retorno', 'indRetorno', 'flRetorno', 'isRetorno', 'retornoPosto', 'numRetornoPosto']),
+        estoque: this.getItemValue(navState.item, ['Estoque', 'estoque', 'indEstoque', 'flEstoque', 'isEstoque'])
+      });
+    }
 
     this.resolverEmpresaPendente();
     this.resolverEmpreendimentoPendenteECarregarDependencias();
@@ -153,6 +303,10 @@ export class AbastecimentoPostosEdicaoPage implements OnInit {
             return;
           }
           this.preencherFormulario(detalhe);
+          this.aplicarCacheFlags(navState.abastecimentoId, {
+            retorno: this.getItemValue(detalhe, ['Retorno', 'retorno', 'indRetorno', 'flRetorno', 'isRetorno', 'retornoPosto', 'numRetornoPosto']),
+            estoque: this.getItemValue(detalhe, ['Estoque', 'estoque', 'indEstoque', 'flEstoque', 'isEstoque'])
+          });
           this.resolverEmpresaPendente();
           this.resolverEmpreendimentoPendenteECarregarDependencias();
           if (this.isGuid(this.empreendimento)) {
@@ -191,7 +345,7 @@ export class AbastecimentoPostosEdicaoPage implements OnInit {
     this.total = null;
     this.hodometro = null;
     this.horimetro = null;
-    this.retorno = true;
+    this.retorno = false;
     this.estoque = false;
     this.centrosDespesas = [];
     this.etapas = [];
@@ -319,6 +473,32 @@ export class AbastecimentoPostosEdicaoPage implements OnInit {
       if (v !== null && typeof v !== 'undefined') return v;
     }
     return undefined;
+  }
+
+  private parseDateOnly(value: unknown): string | null {
+    if (value === null || typeof value === 'undefined') return null;
+    const valueStr = String(value).trim();
+    if (!valueStr) return null;
+
+    try {
+      const parsed = parseISO(valueStr);
+      if (Number.isNaN(parsed.getTime())) return null;
+
+
+
+      //const year = parsed.getUTCFullYear();
+      //const month = String(parsed.getUTCMonth() + 1).padStart(2, '0');
+      //const day = String(parsed.getUTCDate()).padStart(2, '0');
+     
+      const year = parsed.getFullYear();
+      const month = String(parsed.getMonth() + 1).padStart(2, '0');
+      const day = String(parsed.getDate()).padStart(2, '0');
+      
+      
+      return `${year}-${month}-${day}`;
+    } catch {
+      return null;
+    }
   }
 
   private preencherFormulario(item: unknown, options?: { onlyIfEmpty?: boolean }) {
@@ -464,7 +644,8 @@ export class AbastecimentoPostosEdicaoPage implements OnInit {
     if (shouldSet(this.observacao) && typeof obs === 'string') this.observacao = obs;
 
     const data = this.getItemValue(item, ['dataAbastecimento', 'DataAbastecimento', 'data']);
-    if (shouldSet(this.dtRetirada) && typeof data === 'string') this.dtRetirada = data;
+    const dataSomente = this.parseDateOnly(data);
+    if (shouldSet(this.dtRetirada) && dataSomente) this.dtRetirada = dataSomente;
 
     const qtd = this.getItemValue(item, ['quantidade', 'QtdInsumo']);
     if (shouldSet(this.qtdRetirada)) this.qtdRetirada = typeof qtd === 'number' ? qtd : (typeof qtd === 'string' ? Number(qtd) : null);
@@ -481,13 +662,30 @@ export class AbastecimentoPostosEdicaoPage implements OnInit {
     const voucher = this.getItemValue(item, ['NumeroControlePosto', 'numeroControlePosto', 'numVoucher', 'voucher']);
     if (shouldSet(this.numeroControlePosto)) this.numeroControlePosto = typeof voucher === 'string' || typeof voucher === 'number' ? String(voucher) : '';
 
-    const retorno = this.getItemValue(item, ['Retorno', 'retorno', 'numRetornoPosto']);
+    const retorno = this.getItemValue(item, [
+      'Retorno',
+      'retorno',
+      'indRetorno',
+      'flRetorno',
+      'isRetorno',
+      'ehRetorno',
+      'retornoPosto',
+      'retornoAbastecimento',
+      'numRetornoPosto'
+    ]);
     const retornoFlag = this.parseBooleanFlag(retorno);
     if (retornoFlag !== null) {
       this.retorno = retornoFlag;
     }
 
-    const estoque = this.getItemValue(item, ['Estoque', 'estoque']);
+    const estoque = this.getItemValue(item, [
+      'Estoque',
+      'estoque',
+      'indEstoque',
+      'flEstoque',
+      'isEstoque',
+      'ehEstoque'
+    ]);
     const estoqueFlag = this.parseBooleanFlag(estoque);
     if (estoqueFlag !== null) {
       this.estoque = estoqueFlag;
@@ -704,9 +902,13 @@ export class AbastecimentoPostosEdicaoPage implements OnInit {
     });
   }
 
-  onBack() {
-    this.router.navigate(['/tabs/abastecimento-postos-pesquisa']);
-  }
+
+onBack() {
+  this.router.navigate(['/tabs/abastecimento-postos'], {
+    queryParams: { recarregar: true }
+  });
+}
+
 
   async openCalendar(
     event: Event,
@@ -735,59 +937,74 @@ export class AbastecimentoPostosEdicaoPage implements OnInit {
 
   formatDate(isoString: string | null): string {
     if (!isoString) return '';
+    const dateOnly = this.parseDateOnly(isoString);
+    if (!dateOnly) return '';
+
     try {
-      return format(parseISO(isoString), 'dd/MM/yyyy');
+      //const utcDate = new Date(`${dateOnly}T00:00:00.000Z`);
+      //return format(utcDate, 'dd/MM/yyyy');
+
+     const localDate = new Date(dateOnly + 'T00:00:00');
+    return format(localDate, 'dd/MM/yyyy');
     } catch {
       return '';
     }
   }
 
-  confirmar() {
+  async confirmar() {
     if (!this.dtRetirada) {
-      alert('⚠️ Data obrigatória');
+      await this.mostrarAlerta(' Data obrigatória');
       return;
     }
 
-    // Formatar data para ISO padrão (ex: 2026-01-26T00:00:00.000Z)
-    const d = new Date(this.dtRetirada);
-    if (Number.isNaN(d.getTime())) {
-      alert('⚠️ Data inválida');
+    // Formatar data em horário local (sem UTC)
+    const dataSomente = this.parseDateOnly(this.dtRetirada);
+    if (!dataSomente) {
+      await this.mostrarAlerta(' Data inválida');
       return;
     }
-    const dataFormatada = d.toISOString();
+    //const dataFormatada = `${dataSomente}T00:00:00.000Z`;
+
+    const dataFormatada = `${dataSomente}T00:00:00`;
+
+
+    // 🔍 LOG PARA DEBUG
+console.log('dtRetirada:', this.dtRetirada);
+console.log('dataSomente:', dataSomente);
+console.log('dataFormatada:', dataFormatada);
 
     // Validação Quantidade / Total
     const qtdNum = this.parseNumber(this.qtdRetirada);
     if (qtdNum === null || qtdNum <= 0) {
-      alert('⚠️ Informe a quantidade (maior que zero).');
+      await this.mostrarAlerta(' Informe a quantidade (maior que zero).');
       return;
     }
     const totalNum = this.parseNumber(this.total);
     if (totalNum === null || totalNum <= 0) {
-      alert('⚠️ Informe o total (maior que zero).');
+      await this.mostrarAlerta(' Informe o total (maior que zero).');
       return;
     }
 
     // Validação do Centro de Despesa
     if (!this.centrosDespesas || !Array.isArray(this.centrosDespesas)) {
-      alert('Centro de Despesa não carregado');
+      await this.mostrarAlerta('Centro de Despesa não carregado');
       return;
     }
     const centroDespesaSelecionado = this.centrosDespesas.find(cd => this.getCentroDespesaValue(cd) === String(this.centroDespesas ?? ''));
 
     if (!this.centroDespesas || !centroDespesaSelecionado) {
-      alert('Selecione um Centro de Despesa válido antes de confirmar!');
+      await this.mostrarAlerta('Selecione um Centro de Despesa válido antes de confirmar!');
       this.centroDespesas = null;
       return;
     }
 
     if (!this.isCentroDespesaSelecionavel(centroDespesaSelecionado)) {
       const desc = this.getCentroDespesaDescricao(centroDespesaSelecionado);
-      alert(
-        '⚠️ Centro de Despesa inválido para o Insumo.\n' +
-          'Selecione um Centro de Despesa analítico (não agrupador).\n\n' +
-          (desc ? `Selecionado: ${desc}` : '')
-      );
+    await this.mostrarAlerta(
+      ' Centro de Despesa inválido para o Insumo.<br>' +
+      'Selecione um Centro de Despesa analítico (não agrupador).<br><br>' +
+      (desc ? `Selecionado: ${desc}` : '')
+    );
       return;
     }
 
@@ -826,12 +1043,45 @@ export class AbastecimentoPostosEdicaoPage implements OnInit {
     Object.keys(payload).forEach(key => (payload[key] === null || payload[key] === undefined) && delete payload[key]);
 
     this.abastecimentoService.gravarAbastecimento(payload).subscribe({
-      next: (res) => {
-        this.mostrarToastSucesso('Abastecimento gravado com sucesso');
-        this.router.navigate(['/tabs/abastecimento-postos']);
+      next: async (res) => {
+        const idSalvo = this.ultimoAbastecimentoIdCarregado || this.extrairIdRespostaSalvar(res);
+        if (idSalvo) {
+          this.ultimoAbastecimentoIdCarregado = idSalvo;
+          this.salvarCacheFlags(idSalvo);
+        }
+
+        const toast = await this.toastCtrl.create({
+          message: 'Abastecimento gravado com sucesso',
+          duration: 2500,
+          position: 'bottom',
+          cssClass: 'toast-custom'
+        });
+
+        await toast.present();
+
+        this.router.navigate(['/tabs/abastecimento-postos-pesquisa'], {
+          queryParams: {
+            idAbastecimento: idSalvo || null,
+            highlight: idSalvo || null,
+            somenteRecente: '1',
+            fornecedorId: this.fornecedor,
+            equipamentoId: this.equipamento,
+            numVoucher: this.numeroControlePosto,
+            dataInicial: this.dtRetirada,
+            dataFinal: this.dtRetirada
+          }
+        });
       },
-      error: (err) => {
-        alert('Erro ao gravar abastecimento.\n\nNão foi possível concluir a operação.');
+      error: async (err) => {
+        const alert = await this.alertCtrl.create({
+          header: 'Atenção!',
+          message: this.getErrorMessage(err),
+          buttons: ['OK'],
+          backdropDismiss: true,
+          cssClass: ['custom-alert']
+        });
+
+        await alert.present();
       }
     });
   }

@@ -8,7 +8,10 @@
       </button>
 
       <!-- título -->
-      <h1 class="os-title">Ordem de Serviço</h1>
+      <h1 class="os-title">
+        <span>Pesquisa</span>
+        <strong>Ordem de Serviço</strong>
+      </h1>
 
       <!-- botão NOVA -->
       <button class="os-new-btn" (click)="goNovaOrdem()">
@@ -94,15 +97,15 @@
   </app-autocomplete>
 </div>
 
-<!-- CAMPOS DE DATA -->
-<ng-container *ngFor="let c of camposData">
+<!-- CAMPOS DE DATA COMO O NOVO FORMATO DE ALINHAMENTO-->
+<div class="os-date-grid">
 
-  <div class="os-field">
+  <div class="os-date-item" *ngFor="let c of camposData">
+
     <label class="os-label">{{ c.label }}</label>
 
     <div class="os-date-input">
 
-      <!-- INPUT VISUAL -->
       <ion-input
         class="os-input os-date-display"
         readonly
@@ -111,32 +114,26 @@
         (click)="openCalendar($event, c.key)">
       </ion-input>
 
-      <!-- LIMPAR DATA -->
       <button
         *ngIf="filtro[c.key]"
         type="button"
         class="os-date-clear"
-        title="Limpar data"
-        aria-label="Limpar data"
         (click)="clearDate(c.key, $event)">
         ✕
       </button>
 
-      <!-- CALENDÁRIO -->
       <button
         type="button"
         class="os-date-btn"
-        title="Abrir calendário"
-        aria-label="Abrir calendário"
         (click)="openCalendar($event, c.key)">
         <ion-icon name="calendar-clear-outline"></ion-icon>
       </button>
 
     </div>
+
   </div>
 
-</ng-container>
-
+</div>
 
 
       <!-- BOTÃO -->

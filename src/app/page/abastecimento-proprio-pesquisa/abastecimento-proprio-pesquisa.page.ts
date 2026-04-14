@@ -19,6 +19,8 @@ export class AbastecimentoProprioPesquisaPage implements OnInit {
   carregando = false;
 
   private ignorarPrimeiroIonViewWillEnter = true;
+  private idHighlight: string | null = null;
+  private somenteRecente = false;
 
   // Armazena os filtros atuais
   private filtrosAtuais: any = {};
@@ -32,6 +34,9 @@ export class AbastecimentoProprioPesquisaPage implements OnInit {
   ngOnInit() {
     // pega os filtros enviados pela tela anterior
     this.route.queryParams.subscribe((params) => {
+      this.idHighlight = (params['highlight'] ?? params['idAbastecimento'] ?? '')?.toString() || null;
+      this.somenteRecente = String(params['somenteRecente'] ?? '').trim() === '1';
+
       this.filtrosAtuais = {
         origemTanque: params['origemTanqueId'] || params['origemTanque'] || undefined,
         equipamento: params['equipamentoId'] || params['equipamento'] || undefined,
@@ -39,14 +44,19 @@ export class AbastecimentoProprioPesquisaPage implements OnInit {
         dataFinal: params['dataFinal'] || undefined,
       };
 
-      const possuiFiltroInformado = Object.values(this.filtrosAtuais).some(
+      const possuiFiltroInformado = !!this.idHighlight || Object.values(this.filtrosAtuais).some(
         (value) => String(value || '').trim() !== ''
       );
 
-      if (!possuiFiltroInformado) {
+      if (!possuiFiltroInformado && !params['recarregar']) {
         this.lista = [];
         this.carregando = false;
         this.router.navigate(['/tabs/abastecimento-proprio'], { replaceUrl: true });
+        return;
+      }
+
+      if (this.idHighlight) {
+        this.buscarAbastecimentoPorId(this.idHighlight, this.filtrosAtuais);
         return;
       }
 
@@ -61,11 +71,16 @@ export class AbastecimentoProprioPesquisaPage implements OnInit {
       return;
     }
 
-    const possuiFiltroInformado = Object.values(this.filtrosAtuais || {}).some(
+    const possuiFiltroInformado = !!this.idHighlight || Object.values(this.filtrosAtuais || {}).some(
       (value) => String(value || '').trim() !== ''
     );
 
     if (possuiFiltroInformado) {
+      if (this.idHighlight) {
+        this.buscarAbastecimentoPorId(this.idHighlight, this.filtrosAtuais);
+        return;
+      }
+
       this.buscarAbastecimentos(this.filtrosAtuais);
     }
   }
@@ -156,6 +171,34 @@ export class AbastecimentoProprioPesquisaPage implements OnInit {
     if (Number.isNaN(data.getTime())) return null;
 
     return new Date(data.getFullYear(), data.getMonth(), data.getDate()).getTime();
+  }
+
+  private ordenarListaPorMaisRecente(lista: AbastecimentoConsulta[]): AbastecimentoConsulta[] {
+    const obterTimestamp = (item: AbastecimentoConsulta): number => {
+      const dataBruta = String(
+        (item as any)?.dataCadastro ??
+        item?.dataAbastecimento ??
+        (item as any)?.data ??
+        (item as any)?.dataHora ??
+        ''
+      ).trim();
+
+      if (!dataBruta) return 0;
+
+      const data = new Date(dataBruta);
+      return Number.isNaN(data.getTime()) ? 0 : data.getTime();
+    };
+
+    return [...(Array.isArray(lista) ? lista : [])].sort((a, b) => {
+      const timestampB = obterTimestamp(b);
+      const timestampA = obterTimestamp(a);
+
+      if (timestampB !== timestampA) {
+        return timestampB - timestampA;
+      }
+
+      return this.obterIdAbastecimento(b).localeCompare(this.obterIdAbastecimento(a));
+    });
   }
 
   private formatLocalDateIso(date: Date): string {
@@ -269,13 +312,13 @@ export class AbastecimentoProprioPesquisaPage implements OnInit {
       .subscribe({
         next: (dados) => {
           const listaApi = Array.isArray(dados) ? dados : [];
-          const lista = this.aplicarFiltrosLocal(listaApi, {
+          const listaFiltrada = this.aplicarFiltrosLocal(listaApi, {
             ...filtros,
             dataInicial: intervalo.dataInicial,
             dataFinal: intervalo.dataFinal,
           });
 
-          if (lista.length === 0) {
+          if (listaFiltrada.length === 0) {
             this.carregando = false;
             this.router.navigate(['/tabs/abastecimento-proprio'], {
               queryParams: {
@@ -290,7 +333,24 @@ export class AbastecimentoProprioPesquisaPage implements OnInit {
             return;
           }
 
-          this.lista = lista;
+          const listaOrdenada = this.ordenarListaPorMaisRecente(listaFiltrada);
+
+          if (this.idHighlight) {
+            const idHighlight = String(this.idHighlight).trim();
+            const itemDestacado = listaOrdenada.find(
+              (item) => this.obterIdAbastecimento(item) === idHighlight
+            );
+
+            if (itemDestacado) {
+              this.lista = [itemDestacado];
+              this.carregando = false;
+              return;
+            }
+          }
+
+          this.lista = this.somenteRecente && listaOrdenada.length > 1
+            ? [listaOrdenada[0]]
+            : listaOrdenada;
           this.carregando = false;
         },
         error: () => {
@@ -299,12 +359,69 @@ export class AbastecimentoProprioPesquisaPage implements OnInit {
       });
   }
 
+  private obterIdAbastecimento(item?: any): string {
+    const abastecimentoId =
+      item?.abastecimentoId ??
+      item?.AbastecimentoId ??
+      item?.idAbastecimento ??
+      item?.IdAbastecimento ??
+      item?.id ??
+      item?.Id ??
+      null;
+
+    return abastecimentoId !== null && typeof abastecimentoId !== 'undefined'
+      ? String(abastecimentoId).trim()
+      : '';
+  }
+
+  private buscarAbastecimentoPorId(
+    abastecimentoId: string,
+    filtrosFallback?: {
+      origemTanque?: string;
+      equipamento?: string;
+      dataInicial?: string | null;
+      dataFinal?: string | null;
+    }
+  ) {
+    const id = String(abastecimentoId || '').trim();
+    if (!id) {
+      if (filtrosFallback) {
+        this.buscarAbastecimentos(filtrosFallback);
+      }
+      return;
+    }
+
+    this.carregando = true;
+    this.abastecimentoService.consultarAbastecimentoProprioPorId(id).subscribe({
+      next: (dados: any) => {
+        const lista = Array.isArray(dados) ? dados : (dados ? [dados] : []);
+        const item = lista.find((registro) => this.obterIdAbastecimento(registro) === id) || lista[0] || null;
+
+        this.lista = item ? [item] : [];
+        this.carregando = false;
+
+        if (!item && filtrosFallback) {
+          this.buscarAbastecimentos(filtrosFallback);
+        }
+      },
+      error: () => {
+        this.carregando = false;
+        if (filtrosFallback) {
+          this.buscarAbastecimentos(filtrosFallback);
+        }
+      }
+    });
+  }
+
   onBack() {
-    this.router.navigate(['/tabs/abastecimento']);
+    this.router.navigate(['/tabs/abastecimento-proprio']);
   }
 
   verDetalhes(item: any) {
-    this.router.navigate(['/tabs/abastecimento-proprio-edicao', item.abastecimentoId]);
+    const idAbastecimento = this.obterIdAbastecimento(item);
+    if (!idAbastecimento) return;
+
+    this.router.navigate(['/tabs/abastecimento-proprio-edicao', idAbastecimento]);
   }
 }
 

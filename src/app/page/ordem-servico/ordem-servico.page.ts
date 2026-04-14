@@ -14,7 +14,7 @@ import { CalendarPopoverComponent } from '../../components/calendar-popover/cale
 })
 export class OrdemServicoPage implements OnInit {
 
-  // 🔹 FILTRO
+  //  FILTRO
   filtro = {
     numeroOs: '',
     empreendimento: '',
@@ -30,13 +30,13 @@ export class OrdemServicoPage implements OnInit {
 
   resultados: any[] = [];
 
-  // 🔹 LISTAS AUTOCOMPLETE
+  //  LISTAS AUTOCOMPLETE
   equipamentosLista: any[] = [];
   empreendimentosLista: any[] = [];
   causasLista: any[] = [];
   manutentoresLista: any[] = [];
 
-  // 🔹 STATUS
+  //  STATUS
   statusLista = [
     { valor: 0, descricao: 'Aberta' },
     { valor: 1, descricao: 'Serviço Iniciado' },
@@ -67,7 +67,7 @@ export class OrdemServicoPage implements OnInit {
     private ordemService: OrdemServicoService
   ) {}
 
-  // 🔹 INIT
+  //  INIT
   ngOnInit() {
     this.carregarCombos();
     this.restaurarFiltrosDaPesquisa();
@@ -106,12 +106,15 @@ export class OrdemServicoPage implements OnInit {
       message: 'A pesquisa não retornou resultados. Ajuste os filtros e tente novamente.',
       buttons: ['OK'],
       backdropDismiss: true,
+      cssClass: ['custom-alert']
     });
 
     await alert.present();
   }
 
-  // 🔹 CARREGAR COMBOS
+  
+
+  //  CARREGAR COMBOS
   private carregarCombos() {
 
     this.ordemService.listarEmpreendimentos().subscribe({
@@ -164,7 +167,7 @@ export class OrdemServicoPage implements OnInit {
     });
   }
 
-  // 🔹 NAVEGAÇÃO
+  //  NAVEGAÇÃO
   onBack() {
     this.router.navigate(['/tabs/frotas-home']);
   }
@@ -173,7 +176,7 @@ export class OrdemServicoPage implements OnInit {
     this.router.navigate(['/tabs/ordem-servico-edicao']);
   }
 
-  // 🔹 AUTOCOMPLETE
+  // AUTOCOMPLETE
   onEquipamentoSelecionado(item: any) {
     this.filtro.equipamento = item?.id || '';
   }
@@ -206,7 +209,7 @@ onEmpreendimentoSelecionado(item: any) {
       : '';
   }
 
-  // 🔹 CALENDÁRIO
+  // CALENDÁRIO
   async openCalendar(
     event: any,
     field: 'dataAberturaInicial' |
@@ -230,7 +233,7 @@ onEmpreendimentoSelecionado(item: any) {
     }
   }
 
-  // 🔹 LIMPAR DATA (ESSENCIAL PRO “X”)
+  // LIMPAR DATA (ESSENCIAL PRO “X”)
   clearDate(
     field: 'dataAberturaInicial' |
            'dataAberturaFinal' |
@@ -242,7 +245,7 @@ onEmpreendimentoSelecionado(item: any) {
     this.filtro[field] = '';
   }
 
-  // 🔹 FORMATAR DATA
+  // FORMATAR DATA
   formatDate(isoString: string): string {
     if (!isoString) return '';
     try {
@@ -252,21 +255,22 @@ onEmpreendimentoSelecionado(item: any) {
     }
   }
 
-  // 🔹 PESQUISAR
+  // PESQUISAR
 async pesquisar() {
   const possuiFiltro = Object.values(this.filtro).some((value) => String(value || '').trim() !== '');
 
   if (!possuiFiltro) {
-    const alert = await this.alertCtrl.create({
-      header: 'Atenção!',
-      message: 'Informe ao menos um filtro antes de pesquisar as Ordens de Serviço.',
-      buttons: ['OK'],
-      backdropDismiss: true,
-    });
+   const alert = await this.alertCtrl.create({
+        header: 'Atenção!',
+        message: 'E necessário preencher os campos antes de pesquisar os abastecimentos.',
+        buttons: ['OK'],
+        backdropDismiss: true,
+        cssClass: ['custom-alert']
+      });
 
-    await alert.present();
-    return;
-  }
+      await alert.present();
+      return;
+    }
 
   this.router.navigate(['/tabs/ordem-servico-pesquisa'], {
     queryParams: {

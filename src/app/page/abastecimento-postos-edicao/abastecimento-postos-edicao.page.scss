@@ -250,7 +250,7 @@ ion-checkbox {
   border-radius: 24px;
   padding: 12px;
 
-  background: linear-gradient(135deg, #4c8dff, #2d6fb1);
+  background: linear-gradient(90deg, #28b766, #1aa953);
   color: #ffffff;
 
   font-weight: 600;
@@ -275,4 +275,11 @@ ion-checkbox.checkbox-checked::part(container) {
 /* Cor do ícone de check */
 ion-checkbox::part(mark) {
   color: #ffffff;
+}
+.toast-custom {
+  --background: #e0e0e0;
+  --color: #333;
+  text-align: center;
+  font-weight: 500;
+  border-radius: 12px;
 }

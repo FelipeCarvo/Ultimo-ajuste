@@ -6,6 +6,8 @@ import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
 import { AutocompleteComponent } from '../../components/autocomplete/autocomplete.component';
 
+import { NavController } from '@ionic/angular';//nova navegação
+
 // Definição do tipo FotoCacheItem
 type FotoCacheItem = { id?: string; dataUrl: string; createdAt: string };
 
@@ -30,6 +32,7 @@ interface OrdemServicoPayload {
 }
 import { Router, ActivatedRoute } from '@angular/router';
 import { PopoverController, ToastController } from '@ionic/angular';//ADD ToastController
+import { AlertController } from '@ionic/angular';
 import { format, parseISO } from 'date-fns';
 import { catchError, forkJoin, of } from 'rxjs';
 import { CalendarPopoverComponentModule } from '../../components/calendar-popover/calendar-popover.module';
@@ -184,15 +187,17 @@ statusLista = [
     this.operadorMotorista = '';
     this.manutentor = '';
     this.statusCodigo = null;
-    this.dataAbertura = new Date().toISOString();
+    
+const hoje = new Date();
+this.dataAbertura = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+
+
     this.dataConclusao = null;
     this.defeitosConstatados = '';
     this.causasProvaveis = '';
     this.observacoes = '';
     this.hodometro = '';
     this.horimetro = '';
-    this.textoBuscaClassificacao = '';
-    this.textoBuscaStatus = '';
     this.fotos = [];
     this.fotoSelecionadaIndex = 0;
     this.fotoPreviewDataUrl = null;
@@ -307,7 +312,10 @@ statusLista = [
     private ordemService: OrdemServicoService,
     private toastCtrl: ToastController, //  ALTERAÇÃO injeção do ToastController
     private sanitizer: DomSanitizer,
-    private elementRef: ElementRef//novo
+    private navCtrl: NavController,//nova nevegação 
+    private elementRef: ElementRef,//novo
+    private alertCtrl: AlertController
+    
   ) {}
 
 @HostListener('document:click', ['$event'])
@@ -328,11 +336,11 @@ fecharDropdownAoClicarFora(event: Event) {
 
 ngOnInit() {
   // =============================
-  // 🔹 QUERY PARAMS
+  //  QUERY PARAMS
   // =============================
   this.route.queryParams.subscribe((params) => {
 
-    // 🔹 NOVA OS (sem parâmetro)
+    //  NOVA OS (sem parâmetro)
     if (!params || !params['os']) {
 
       this.carregarCombosComCallback(() => {
@@ -357,7 +365,7 @@ ngOnInit() {
     }
 
     // =============================
-    // 🔥 MODO EDIÇÃO (SIMPLIFICADO)
+    //  MODO EDIÇÃO (SIMPLIFICADO)
     // =============================
 
     const osIdRecebido = String(params['os'] || '');
@@ -375,7 +383,7 @@ ngOnInit() {
         return;
       }
 
-      // 🔥 AQUI É O QUE REALMENTE IMPORTA
+      // AQUI É O QUE REALMENTE IMPORTA
       this.carregarOsCompleta(this.osId);
 
     });
@@ -644,15 +652,25 @@ ngOnInit() {
       //--------------------------------------------------------------------//
   private async mostrarToastSucesso() {
     const toast = await this.toastCtrl.create({
-      message: 'OS criada e confirmada com sucesso',
+      message: 'OS confirmada com sucesso',
       duration: 2500,
-      position: 'top',
-      color: 'success',
-      icon: 'checkmark-circle-outline',
+      position: 'bottom',
+      cssClass: 'toast-custom'//AQUI
     });
 
     await toast.present();
   }
+private async mostrarAlerta(message: string) {
+  const alert = await this.alertCtrl.create({
+    header: 'Atenção!',
+    message: message,
+    buttons: ['OK'],
+    backdropDismiss: true,
+    cssClass: ['custom-alert']
+  });
+
+  await alert.present();
+}
 
   private async mostrarToastAviso(message: string) {
     const toast = await this.toastCtrl.create({
@@ -663,12 +681,15 @@ ngOnInit() {
     });
     await toast.present();
   }
+  
 
   // --------- NAVEGAÇÃO / CALENDÁRIO ---------
 
   onBack() {
-    this.router.navigate(['/tabs/ordem-servico']);
+    this.navCtrl.back();
+    //this.router.navigate(['/tabs/ordem-servico']);
   }
+
 
   async openCalendar(event: Event, fieldName: 'dataAbertura' | 'dataConclusao') {
     const popover = await this.popoverCtrl.create({
@@ -692,78 +713,85 @@ ngOnInit() {
     }
 
     if (data && data.date) {
-      let dateStr: string;
-      // Se vier como objeto Date, converte para ISO
-      if (data.date instanceof Date) {
-        dateStr = data.date.toISOString();
-      } else if (typeof data.date === 'string') {
-        // Se vier como string dd/MM/yyyy, converte para ISO
-        if (/^\d{2}\/\d{2}\/\d{4}$/.test(data.date)) {
-          const [dia, mes, ano] = data.date.split('/');
-          const d = new Date(Number(ano), Number(mes) - 1, Number(dia));
-          dateStr = d.toISOString();
-        } else {
-          dateStr = data.date;
-        }
-      } else {
-        dateStr = String(data.date);
-      }
-      if (fieldName === 'dataAbertura') {
-        this.dataAbertura = dateStr;
-      } else {
-        this.dataConclusao = dateStr;
-      }
+  let dateStr: string;
+
+  if (data.date instanceof Date) {
+    const d = data.date;
+
+    dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  } else if (typeof data.date === 'string') {
+
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(data.date)) {
+      const [dia, mes, ano] = data.date.split('/');
+
+      dateStr = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+
+    } else {
+      dateStr = data.date;
     }
+
+  } else {
+    dateStr = String(data.date);
   }
 
-  formatDate(isoOrDate: string | null): string {
-    // Removido log de debug
-    if (!isoOrDate) return '';
-    // Se já estiver no formato dd/MM/yyyy, só devolve
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(isoOrDate)) {
-      return isoOrDate;
-    }
-    // Se vier no formato yyyy-MM-dd, converte para dd/MM/yyyy
-    if (/^\d{4}-\d{2}-\d{2}$/.test(isoOrDate)) {
-      const [ano, mes, dia] = isoOrDate.split('-');
-      return `${dia}/${mes}/${ano}`;
-    }
-    // Se vier no formato yyyy-MM-ddTHH:mm:ss (com ou sem milissegundos, sem Z), adiciona Z para parseISO
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(isoOrDate)) {
-      try {
-        return format(parseISO(isoOrDate + 'Z'), 'dd/MM/yyyy');
-      } catch {
-        return isoOrDate;
-      }
-    }
-    // Se vier no formato ISO completo, tenta converter
-    try {
-      return format(parseISO(isoOrDate), 'dd/MM/yyyy');
-    } catch {
-      return isoOrDate;
-    }
+  if (fieldName === 'dataAbertura') {
+    this.dataAbertura = dateStr;
+  } else {
+    this.dataConclusao = dateStr;
+  }
+}
   }
 
-  /** Converte a data interna para um formato ISO (ou null) */
-  private toApiDate(dateStr: string | null): string | null {
-    if (!dateStr) return null;
+formatDate(isoOrDate: string | null): string {
+  if (!isoOrDate) return '';
 
-    // dd/MM/yyyy -> ISO
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
-      const [dia, mes, ano] = dateStr.split('/');
-      const d = new Date(Number(ano), Number(mes) - 1, Number(dia));
-      return d.toISOString();
-    }
-
-    // já ISO
-    try {
-      const d = parseISO(dateStr);
-      return d.toISOString();
-    } catch {
-      return dateStr;
-    }
+  // 🔥 Se já estiver no formato dd/MM/yyyy
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(isoOrDate)) {
+    return isoOrDate;
   }
-/////////////////////////////////////////////////////////////////////////////
+
+  // 🔥 Remove a hora (se vier com T)
+  const data = isoOrDate.split('T')[0];
+
+  // 🔥 Se estiver no formato yyyy-MM-dd
+  if (/^\d{4}-\d{2}-\d{2}$/.test(data)) {
+    const [ano, mes, dia] = data.split('-');
+    return `${dia}/${mes}/${ano}`;
+  }
+
+  return isoOrDate;
+}
+clearDateConclusao(event: Event) {
+  event.stopPropagation();
+  this.dataConclusao = null;
+}
+
+private toApiDate(dateStr: string | null): string | null {
+  if (!dateStr) return null;
+
+  let ano: number, mes: number, dia: number;
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+    const partes = dateStr.split('/');
+    dia = Number(partes[0]);
+    mes = Number(partes[1]);
+    ano = Number(partes[2]);
+  } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const partes = dateStr.split('-');
+    ano = Number(partes[0]);
+    mes = Number(partes[1]);
+    dia = Number(partes[2]);
+  } else {
+    return dateStr;
+  }
+
+  // 🔥 COMPENSA O BACKEND BUGADO
+return `${ano}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}T06:00:00`;
+}
+
+ 
+
   /* ================================
    DROPDOWN EQUIPAMENTO
 ================================ */
@@ -787,13 +815,7 @@ onEmpreendimentoSelecionado(item: ItemComId | Event) {
   if ((item as Event).type) return;
   this.empreendimento = (item as ItemComId).id;
 }
-  /* ======================
-   DROPDOWN CLASSIFICAÇÃO
-      // ===============================
-      // 🔎 OPERADOR / MOTORISTA (CORREÇÃO DEFINITIVA)
-      // ===============================
-      // Já tratado acima, remover duplicidade
-}
+
   /* =============================
    DROPDOWN CAUSA DA INTERVENÇÃO
 ================================== */
@@ -869,14 +891,14 @@ limparEquipamento() {
 }
 
 // =============================
-// 🔢 SOMENTE NÚMEROS (CORRIGIDO)
+//  SOMENTE NÚMEROS (CORRIGIDO)
 // =============================
 somenteNumero(event: Event, campo: 'hodometro' | 'horimetro') {
   const input = event.target as HTMLInputElement;
   const valor = (input?.value || '').toString().replace(/\D/g, '');
   input.value = valor;
 
-  // 🔥 AQUI ESTAVA O ERRO — agora atualiza a variável correta
+  //  AQUI ESTAVA O ERRO — agora atualiza a variável correta
   this[campo] = valor;
 }
   // --------- PAYLOAD PARA A API ---------
@@ -905,7 +927,7 @@ somenteNumero(event: Event, campo: 'hodometro' | 'horimetro') {
     };
     return payload;
   }
-  /*  NOVO — prepara atualização visual do equipamento */
+  /* NOVO — prepara atualização visual do equipamento */
 private ativarFiltroEquipamento() {
   if (!this.equipamentosLista || !this.equipamentosLista.length) return;
 
@@ -913,7 +935,7 @@ private ativarFiltroEquipamento() {
   this.equipamentosFiltrados = [...this.equipamentosLista];
 }
 // =============================
-// 🔎 BUSCA DE EQUIPAMENTO
+// BUSCA DE EQUIPAMENTO
 // =============================
 modalEquipamentoAberto = false;
 textoBuscaEquipamento = '';
@@ -953,7 +975,7 @@ filtrarEquipamentos() {
 }
 
 
-/** 🔥 FAZ O FILTRO AUTOMÁTICO AO DIGITAR */
+/** FAZ O FILTRO AUTOMÁTICO AO DIGITAR */
 onDigitarEquipamento() {
   const texto = (this.textoBuscaEquipamento || '').toLowerCase().trim();
 
@@ -976,14 +998,14 @@ this.equipamentosFiltrados = this.equipamentosLista.filter(eq =>
 
 
 // =============================
-// 🔎 BUSCA DE EMPREENDIMENTO
+// BUSCA DE EMPREENDIMENTO
 // =============================
 
 modalEmpreendimentoAberto = false;
 textoBuscaEmpreendimento = '';
 empreendimentosFiltrados: ItemComId[] = [];
 
-/** 🔥 FAZ O FILTRO AUTOMÁTICO AO DIGITAR */
+/** FAZ O FILTRO AUTOMÁTICO AO DIGITAR */
 onDigitarEmpreendimento() {
 
   const termo = (this.textoBuscaEmpreendimento || '').toLowerCase();
@@ -1012,16 +1034,15 @@ onDigitarEmpreendimento() {
 
   this.modalEmpreendimentoAberto = false;
 }
-
 // =============================
-// 🔎 BUSCA DE CLASSIFICAÇÃO
+// BUSCA DE CLASSIFICAÇÃO
 // =============================
 
 modalClassificacaoAberto = false;
 textoBuscaClassificacao = '';
 classificacoesFiltradas: ItemComId[] = [];
 
-/** 🔥 FILTRO AO DIGITAR */
+/** FILTRO AO DIGITAR */
 onDigitarClassificacao() {
 
   const termo = (this.textoBuscaClassificacao || '').toLowerCase();
@@ -1051,14 +1072,14 @@ onDigitarClassificacao() {
   this.modalClassificacaoAberto = false;
 }
 // =============================
-// 🔎 BUSCA DE TIPO
+//  BUSCA DE TIPO
 // =============================
 
 modalTipoAberto = false;
 textoBuscaTipo = '';
 tiposFiltrados: ItemComId[] = [];
 
-/** 🔥 FILTRO AO DIGITAR */
+/** FILTRO AO DIGITAR */
 onDigitarTipo() {
 
   const termo = (this.textoBuscaTipo || '').toLowerCase();
@@ -1088,14 +1109,14 @@ onDigitarTipo() {
   this.modalTipoAberto = false;
 }
 // =============================
-// 🔎 BUSCA DE CAUSA DA INTERVENÇÃO
+// BUSCA DE CAUSA DA INTERVENÇÃO
 // =============================
 
 modalCausaAberto = false;
 textoBuscaCausa = '';
 causasFiltradas: ItemComId[] = [];
 
-/** 🔥 FILTRO AO DIGITAR */
+/** FILTRO AO DIGITAR */
 onDigitarCausa() {
 
   const termo = (this.textoBuscaCausa || '').toLowerCase();
@@ -1125,14 +1146,14 @@ onDigitarCausa() {
   this.modalCausaAberto = false;
 }
 // =============================
-// 🔎 BUSCA DE OPERADOR / MOTORISTA
+// BUSCA DE OPERADOR / MOTORISTA
 // =============================
 
 modalMotoristaAberto = false;
 textoBuscaMotorista = '';
 motoristasFiltrados: ItemComId[] = [];
 
-/** 🔥 FILTRO AO DIGITAR */
+/** FILTRO AO DIGITAR */
 onDigitarMotorista() {
 
   const termo = (this.textoBuscaMotorista || '').toLowerCase().trim();
@@ -1164,14 +1185,14 @@ onDigitarMotorista() {
 }
 
 // =============================
-// 🔎 BUSCA DE EMPREENDIMENTO DA INTERVENÇÃO
+// BUSCA DE EMPREENDIMENTO DA INTERVENÇÃO
 // =============================
 
 modalEmpreendimentoIntervAberto = false;
 textoBuscaEmpreendimentoInterv = '';
 empreendimentosIntervFiltrados: ItemComId[] = [];
 
-/** 🔥 FILTRO AO DIGITAR */
+/** FILTRO AO DIGITAR */
 onDigitarEmpreendimentoInterv() {
 
   const termo = (this.textoBuscaEmpreendimentoInterv || '').toLowerCase();
@@ -1201,14 +1222,14 @@ onDigitarEmpreendimentoInterv() {
   this.modalEmpreendimentoIntervAberto = false;
 }
 // =============================
-// 🔎 BUSCA DE MANUTENTOR
+//  BUSCA DE MANUTENTOR
 // =============================
 
 modalManutentorAberto = false;
 textoBuscaManutentor = '';
 manutentoresFiltrados: ItemComId[] = [];
 
-/** 🔥 FILTRO AO DIGITAR */
+/** FILTRO AO DIGITAR */
 onDigitarManutentor() {
 
   const termo = (this.textoBuscaManutentor || '').toLowerCase();
@@ -1236,7 +1257,7 @@ onDigitarManutentor() {
   this.modalManutentorAberto = false;
 }
 // =============================
-// 🔠 DESCRIÇÃO EM UPPERCASE
+// DESCRIÇÃO EM UPPERCASE
 // =============================
 onDescricaoInput(event: Event) {
   const input = event.target as HTMLInputElement;
@@ -1244,7 +1265,7 @@ onDescricaoInput(event: Event) {
   this.descricao = valor.toUpperCase();
 }
 // =============================
-// 🔎 BUSCA DE STATUS
+// BUSCA DE STATUS
 // =============================
 
 modalStatusAberto = false;
@@ -1291,12 +1312,12 @@ private carregarOsCompleta(osId: string) {
   }
 
   // ===============================
-  // 🔹 NÚMERO OS (do osCod da API)
+  //  NÚMERO OS (do osCod da API)
   // ===============================
   this.numeroOS = String(osApi.numeroOs ?? osApi.NumeroOs ?? osApi.osCod ?? '');
 
       // ===============================
-      // 🔹 CAMPOS SIMPLES
+      //  CAMPOS SIMPLES
       // ===============================
       this.descricao = String(osApi.osDescricao ?? osApi.Descricao ?? '');
 
@@ -1307,22 +1328,26 @@ private carregarOsCompleta(osId: string) {
       this.observacoes = String(osApi.observacao ?? osApi.Observacao ?? '');
 
       // Datas
-      this.dataAbertura = String(
-        osApi.dataAbertura ??
-        osApi.osDataAbertura ??
-        osApi.dataIniParaliz ??
-        osApi.osDataInicio ??
-        osApi.osDataAbertura ??
-        ''
-      );
-      this.dataConclusao = String(
-        osApi.dataConclusao ??
-        osApi.osDataConclusao ??
-        osApi.dataFimParaliz ??
-        osApi.osDataFim ??
-        osApi.osDataConclusao ??
-        ''
-      );
+   const dataAberturaRaw = String(
+  osApi.dataAbertura ??
+  osApi.osDataAbertura ??
+  osApi.dataIniParaliz ??
+  osApi.osDataInicio ??
+  ''
+);
+
+this.dataAbertura = dataAberturaRaw ? dataAberturaRaw.split('T')[0] : null;
+
+
+const dataConclusaoRaw = String(
+  osApi.dataConclusao ??
+  osApi.osDataConclusao ??
+  osApi.dataFimParaliz ??
+  osApi.osDataFim ??
+  ''
+);
+
+this.dataConclusao = dataConclusaoRaw ? dataConclusaoRaw.split('T')[0] : null;
 
       // Hodômetro e Horímetro
       this.hodometro = String(osApi.hodometro ?? osApi.Hodometro ?? osApi.odometro ?? osApi.osHodometro ?? '');
@@ -1423,13 +1448,13 @@ private carregarOsCompleta(osId: string) {
       }
       this.equipamento = equipamento?.id || '';
       // ===============================
-      // 🔎 EMPREENDIMENTO
+      // EMPREENDIMENTO
       // ===============================
-      const empId = String(osApi.emprdAberturaId ?? osApi.emprdAberturaCod ?? '');
+      const empId = String(osApi.emprdId ?? osApi.emprdintervencaoId ?? '');
       this.empreendimento = (empId && empId !== '00000000-0000-0000-0000-000000000000') ? empId : '';
 
       // ===============================
-      // 🔎 CLASSIFICAÇÃO
+      // CLASSIFICAÇÃO
       // ==============================
 
       const classifId = osApi.ClassificacaoId ?? osApi.classifCod ?? osApi.classifId ?? null;
@@ -1443,15 +1468,8 @@ private carregarOsCompleta(osId: string) {
       } else {
         this.classificacao = '';
       }
-
-      // ===============================
-// 🔎 TIPO
 // ===============================
-
-
-      // Já tratado acima
-// ===============================
-// 🔎 CAUSA INTERVENÇÃO
+// CAUSA INTERVENÇÃO
 // ===============================
 
       let causa = null;
@@ -1461,14 +1479,9 @@ private carregarOsCompleta(osId: string) {
       }
       this.causaIntervencao = causa?.id || '';
 
-// ===============================
-// 🔎 OPERADOR / MOTORISTA (CORREÇÃO DEFINITIVA)
-// ===============================
-
-      // Bloco duplicado removido. Já tratado acima.
 
       // ===============================
-      // 🔎 MANUTENTOR
+      // MANUTENTOR
       // ===============================
       let manutentor = null;
       const manutentorId = String(osApi.manutentorId ?? osApi.ManutentorResponsavelId ?? '');
@@ -1478,7 +1491,7 @@ private carregarOsCompleta(osId: string) {
       this.manutentor = manutentor?.id || '';
 
       // ===============================
-      // 🔎 EMPREENDIMENTO INTERVENÇÃO
+      //  EMPREENDIMENTO INTERVENÇÃO
       // ===============================
       let empInterv = null;
       const empIntervId = String(osApi.emprdintervencaoId ?? osApi.emprdintervencaoCod ?? '');
@@ -1500,137 +1513,164 @@ private setarTipoPorCodigo(codigo: number) {
 }
 
 
+
   /** Clicou na setinha – monta o JSON igual ao do sistema antigo e chama a API */
-  salvarOS() {
-    const oldOsId = this.osId;
-    const osCod = this.numeroOS;
+ async salvarOS() {
+  const oldOsId = this.osId;
+  const osCod = this.numeroOS;
 
-      const isNovaOS = !oldOsId;
+  const isNovaOS = !oldOsId;
 
 
 
-    // Log do valor atual do campo descricao
-    // Monta o objeto principal usando o método centralizador do serviço
-    // Só envia IdOs se for um GUID válido (evita duplicidade/criação indevida)
-    const idOsValido = (this.osId && this.osId.length === 36) ? this.osId : undefined;
-    const params = this.ordemService.montarPayloadOrdemServico({
-      ...(idOsValido ? { IdOs: idOsValido } : {}),
-      NumeroOs: this.numeroOS,
-      Descricao: (this.descricao || '').toString().trim().toUpperCase(),
-      EquipamentoId: this.equipamento,
-      EmpreendimentoId: this.empreendimento,
-      EmpreendimentoIntervencao: this.empreendimentoIntervencao,
-      Classificacao: this.classificacao,
-      // Sempre envia o GUID do tipo selecionado
-      TipoServicoId: (() => {
-        if (this.tiposOsLista?.length) {
-          // Se o valor atual for um código ou descrição, converte para GUID
-          let tipoEncontrado = this.tiposOsLista.find(t => String(t.id) === String(this.tipo));
-          if (!tipoEncontrado) {
-            tipoEncontrado = this.tiposOsLista.find(t => String(t.codigo) === String(this.tipo));
-          }
-          if (!tipoEncontrado) {
-            tipoEncontrado = this.tiposOsLista.find(t => String(t.descricao).toUpperCase().trim() === String(this.tipo).toUpperCase().trim());
-          }
-          return tipoEncontrado ? String(tipoEncontrado.id) : String(this.tipo);
+  // ===============================
+  // 🔥 GARANTE QUE AS DATAS EXISTEM
+  // ===============================
+  if (!this.dataAbertura) {
+    const hoje = new Date();
+    this.dataAbertura = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1)
+      .padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+  }
+
+if (!this.dataConclusao || this.dataConclusao === 'dd/mm/aaaa') {
+  this.dataConclusao = this.dataAbertura;
+}
+
+  // ===============================
+  // 🔎 LOGS COMPLETOS (DEBUG)
+  // ===============================
+  console.log('dataAbertura RAW:', this.dataAbertura);
+  console.log('dataConclusao RAW:', this.dataConclusao);
+
+  console.log('convertido abertura:', this.toApiDate(this.dataAbertura));
+  console.log('convertido conclusao:', this.toApiDate(this.dataConclusao));
+
+  // ===============================
+  // MONTA PAYLOAD
+  // ===============================
+  const idOsValido = (this.osId && this.osId.length === 36) ? this.osId : undefined;
+
+  const params = this.ordemService.montarPayloadOrdemServico({
+    ...(idOsValido ? { IdOs: idOsValido } : {}),
+
+    NumeroOs: this.numeroOS,
+    Descricao: (this.descricao || '').toString().trim().toUpperCase(),
+
+    EquipamentoId: this.equipamento,
+    EmpreendimentoId: this.empreendimento,
+    EmpreendimentoIntervencao: this.empreendimentoIntervencao,
+    Classificacao: this.classificacao,
+
+    TipoServicoId: (() => {
+      if (this.tiposOsLista?.length) {
+        let tipoEncontrado = this.tiposOsLista.find(t => String(t.id) === String(this.tipo));
+
+        if (!tipoEncontrado) {
+          tipoEncontrado = this.tiposOsLista.find(t => String(t.codigo) === String(this.tipo));
         }
-        return String(this.tipo);
-      })(),
-      CausaIntervencao: this.causaIntervencao,
-      ColaboradorId: this.operadorMotorista,
-      ManutentorResponsavelId: this.manutentor,
-      //Status: (this.statusCodigo !== null && this.statusCodigo !== undefined) ? this.statusCodigo : 1,
-      Status: this.statusCodigo,
-      DataAbertura: this.dataAbertura,
-      DataFechamento: this.dataConclusao,
 
-      Odometro: this.hodometro,
-Horimetro: this.horimetro,
+        if (!tipoEncontrado) {
+          tipoEncontrado = this.tiposOsLista.find(
+            t => String(t.descricao).toUpperCase().trim() === String(this.tipo).toUpperCase().trim()
+          );
+        }
 
-      // Novos campos:
-      DefeitosConstatados: (this.defeitosConstatados || '').toString().trim(),
-      CausasProvaveis: (this.causasProvaveis || '').toString().trim(),
-      Observacao: (this.observacoes || '').toString().trim(),
+        return tipoEncontrado ? String(tipoEncontrado.id) : String(this.tipo);
+      }
+      return String(this.tipo);
+    })(),
 
-    });
+    CausaIntervencao: this.causaIntervencao,
+    ColaboradorId: this.operadorMotorista,
+    ManutentorResponsavelId: this.manutentor,
 
+    Status: this.statusCodigo,
 
-   // Validação dos campos obrigatórios (apenas o que o usuário precisa preencher)
-const obrigatorios = ['Descricao', 'EquipamentoId'];
+// Status: Number(this.statusCodigo),
+//statusCodigo: Number(this.statusCodigo),
 
-// Nome amigável dos campos
-const nomesCampos: Record<string, string> = {
-  Descricao: 'Descrição',
-  EquipamentoId: 'Equipamento'
-};
+    // 🔥 AGORA GARANTIDO
+    DataAbertura: this.toApiDate(this.dataAbertura),
+    DataFechamento: this.toApiDate(this.dataConclusao),
 
-// Verifica quais estão faltando
-const faltando = obrigatorios.filter((key) => !params[key]);
+    Odometro: this.hodometro,
+    Horimetro: this.horimetro,
 
-if (faltando.length > 0) {
-  const msg =
-    'Preencha os campos obrigatórios:\n' +
-    faltando.map(f => nomesCampos[f]).join('\n');
+    DefeitosConstatados: (this.defeitosConstatados || '').toString().trim(),
+    CausasProvaveis: (this.causasProvaveis || '').toString().trim(),
+    Observacao: (this.observacoes || '').toString().trim(),
+  });
 
-  alert(msg);
+  // ===============================
+  // 🔎 LOG FINAL
+  // ===============================
+console.log('STATUS ENVIADO:', this.statusCodigo);
+
+  console.log('PAYLOAD FINAL:', params);
+console.log('DATA ABERTURA ENVIADA:', params.OsDataAbertura);
+console.log('DATA FECHAMENTO ENVIADA:', params.OsDataConclusao);
+
+  // ===============================
+  // VALIDAÇÃO
+  // ===============================
+  const obrigatorios = ['Descricao', 'EquipamentoId'];
+
+  const nomesCampos: Record<string, string> = {
+    Descricao: 'Descrição',
+    EquipamentoId: 'Equipamento'
+  };
+
+  const faltando = obrigatorios.filter((key) => !params[key]);
+
+  if (faltando.length > 0) {
+    await this.mostrarAlerta(
+      'Preencha os campos obrigatórios: \n\n' +
+      faltando.map(f => nomesCampos[f]).join('\n')
+    );
+    return;
+  }
+
+  // ===============================
+  // SALVAR
+  // ===============================
+  this.ordemService.gravarOrdem(params).subscribe({
+    next: (res: ItemComId | string) => {
+
+      const returnedId = typeof res === 'string'
+        ? res
+        : String((res as ItemComId)?.OsId ?? (res as ItemComId)?.osId ?? (res as ItemComId)?.id ?? '');
+
+      if (returnedId && returnedId.length === 36) {
+        this.osId = returnedId;
+      }
+
+      this.atualizarQueryParamOsComNovoId(this.osId);
+      this.migrarCacheFotoSeMudou(oldOsId, this.osId, osCod);
+      this.atualizarPreviewFoto();
+
+ if (isNovaOS) {
+   this.mostrarToastSucesso();
   return;
 }
 
-    this.ordemService.gravarOrdem(params).subscribe({
-      next: (res: ItemComId | string) => {
-        // LOG: resposta do backend ao gravar OS
-        // Se o backend retornar o OsId (GUID) no insert, guarda para anexos/edição
-        const returnedId = typeof res === 'string'
-          ? res
-          : String((res as ItemComId)?.OsId ?? (res as ItemComId)?.osId ?? (res as ItemComId)?.id ?? '');
-        if (returnedId && returnedId.length === 36) {
-          // LOG: OS não foi duplicada, ID retornado corretamente
-          this.osId = returnedId;
-          /*
-          /*
+// 👉 edição (OS já existente)
+this.mostrarToastSucesso();
 
- // 🔥 SEMPRE recarregar a OS após salvar
-if (this.osId && this.osId.length === 36) {
-   this.carregarOsCompleta(this.osId);
+this.router.navigate(['/tabs/ordem-servico-pesquisa'], {
+  queryParams: {
+    numeroOs: this.numeroOS || '',
+    highlightOs: this.numeroOS || '',
+  },
+  replaceUrl: true
+});
+    },
+
+    error: async () => {
+      await this.mostrarAlerta('Não foi possível salvar a OS.\n\nTente novamente.');
+      this.atualizarPreviewFoto();
+    },
+  });
 }
-
-*/
-        } else {
-          // LOG: backend não retornou OsId válido
-        }
-
-        // Atualiza o queryParam 'os' (JSON) para não voltar ao OsId antigo em refresh/retorno.
-        this.atualizarQueryParamOsComNovoId(this.osId);
-
-        // Se o backend trocou o OsId, mantém a foto “junto” via cache local.
-        this.migrarCacheFotoSeMudou(oldOsId, this.osId, osCod);
-        this.atualizarPreviewFoto();
-
-        if (isNovaOS) {
-          this.redirecionarParaListaComNovaOs();
-          return;
-        }
-
-        this.mostrarToastSucesso();
-        this.router.navigate(['/tabs/ordem-servico-pesquisa'], {
-          queryParams: {
-            numeroOs: this.numeroOS || '',
-            highlightOs: this.numeroOS || '',
-          },
-          replaceUrl: true
-        });
-      },
-      error: async () => {
-        // mesmo em erro, mantém o fluxo atual conforme solicitado
-        await this.mostrarToastAviso('Erro ao salvar a OS');
-        //this.osConfirmada = true;
-
-        // Mesmo em erro, tenta atualizar o preview (pode ter voltado da tela de foto)
-        this.atualizarPreviewFoto();
-      },
-    });
-  }
-
   private redirecionarParaListaComNovaOs() {
     const navegar = (numeroOs: string) => {
       this.numeroOS = numeroOs;
@@ -1687,7 +1727,7 @@ irParaNovaFoto() {
     queryParams: {
       osId: this.osId,
       osCod: this.numeroOS,
-      status: this.statusCodigo ?? 0   // 🔥 ENVIA STATUS ATUAL
+      status: this.statusCodigo ?? 0   //  ENVIA STATUS ATUAL
     }
   });
 }

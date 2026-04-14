@@ -1,10 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { PopoverController, ToastController } from '@ionic/angular';
+import { AlertController, PopoverController, ToastController } from '@ionic/angular';
 import { format, parseISO } from 'date-fns';
 import { CalendarPopoverComponent } from '../../components/calendar-popover/calendar-popover.component';
 import { AbastecimentoService } from '../../services/abastecimento.service';
 import { InsumoService } from '../../services/insumo.service';
+
+
+import { NavController } from '@ionic/angular';
 
 type IonicChangeEvent<T = unknown> = CustomEvent<{ value: T }>;
 
@@ -86,6 +89,7 @@ type BlocoDto = {
 })
 export class AbastecimentoProprioEdicaoPage implements OnInit {
   private readonly cacheCamposKey = 'abastecimento_proprio_campos_cache_v1';
+  private readonly maxIntPayloadValue = Number.MAX_SAFE_INTEGER;
 
   // Novos campos para exibição completa
   public fornecedorRazao: string | null = null;
@@ -106,6 +110,7 @@ export class AbastecimentoProprioEdicaoPage implements OnInit {
 //  FUNÇÕES DE MUDANÇA DE CAMPOS (COM AUTOCOMPLETE)
 // =====================================================
 
+
 // =======================
 // BOMBA
 // =======================
@@ -118,6 +123,8 @@ onBombaChange(value: string | null) {
   // Limpa dependentes
   this.bicoSelecionado = null;
   this.bicos = [];
+  this.numBombaInicial = null;
+  this.numBombaFinal = null;
 
   this.destinoSelecionado = null;
   this.destinos = [];
@@ -148,8 +155,8 @@ onBombaChange(value: string | null) {
       this.carregarInsumos(bombaId);
 
     },
-    error: () => {
-      this.toast('Erro ao consultar bomba', 'danger');
+    error: (err) => {
+      this.mostrarAlertaErro(this.getErrorMessage(err, 'Erro ao consultar bomba'));
     }
   });
 }
@@ -165,6 +172,7 @@ selecionarBomba(item: any) {
 
 onBicoChange(value: string | null) {
   this.bicoSelecionado = value ? String(value) : null;
+  this.numBombaInicial = null;
 
   this.carregarUltimoNumeroBico(); // chama automaticamente
 }
@@ -344,6 +352,8 @@ tiposPrevAbast = [
     private popoverCtrl: PopoverController,
     private abastecimentoService: AbastecimentoService,
     private insumoService: InsumoService,
+    private navCtrl: NavController,
+    private alertCtrl: AlertController,
     private toastCtrl: ToastController
   )
   {
@@ -352,16 +362,102 @@ tiposPrevAbast = [
     this.dadosAbastecimento = navigation?.extras?.state?.['abastecimento'];
   }
 
-  private async toast(message: string, color: 'success' | 'warning' | 'danger' = 'success') {
-    const toast = await this.toastCtrl.create({
-      message,
-      duration: 2500,
-      position: 'top',
-      color,
-      icon: color === 'success' ? 'checkmark-circle-outline' : undefined,
-    });
-    await toast.present();
+private async toast(
+  message: string,
+  color: 'success' | 'warning' | 'danger' = 'success'
+) {
+  const toast = await this.toastCtrl.create({
+    message,
+    duration: 2500,
+    position: 'bottom',
+    cssClass: 'toast-custom',
+    color: undefined,
+  });
+
+  await toast.present();
+}
+
+private async mostrarAlertaErro(message: string) {
+  const alert = await this.alertCtrl.create({
+    header: 'Atenção!',
+    message,
+    buttons: ['OK'],
+    backdropDismiss: true,
+    cssClass: ['custom-alert']
+  });
+
+  await alert.present();
+}
+
+private getErrorMessage(
+  err: unknown,
+  fallback = 'Erro ao processar a operação.'
+): string {
+  if (typeof err === 'string' && err.trim()) {
+    return err.trim();
   }
+
+  if (!err || typeof err !== 'object') {
+    return fallback;
+  }
+
+  const errorObj = err as Record<string, unknown>;
+  const message = errorObj['message'];
+  if (typeof message === 'string' && message.trim()) {
+    return message.trim();
+  }
+
+  const nestedError = errorObj['error'];
+  if (nestedError && typeof nestedError === 'object') {
+    const nestedRecord = nestedError as Record<string, unknown>;
+    const nestedMessage = nestedRecord['Mensagem'] ?? nestedRecord['mensagem'];
+    if (typeof nestedMessage === 'string' && nestedMessage.trim()) {
+      return nestedMessage.trim();
+    }
+  }
+
+  return fallback;
+}
+
+private extrairIdRespostaSalvar(res: unknown): string | null {
+  if (typeof res === 'string' || typeof res === 'number') {
+    const texto = String(res).trim();
+    return texto ? texto : null;
+  }
+
+  if (Array.isArray(res)) {
+    for (const item of res) {
+      const idLista = this.extrairIdRespostaSalvar(item);
+      if (idLista) return idLista;
+    }
+    return null;
+  }
+
+  if (res && typeof res === 'object') {
+    const obj = res as Record<string, unknown>;
+    const idDireto = this.getItemValue(obj, [
+      'abastecimentoId',
+      'IdAbastecimento',
+      'idAbastecimento',
+      'AbastecimentoId',
+      'id',
+      'Id'
+    ]);
+
+    if (idDireto !== null && typeof idDireto !== 'undefined' && typeof idDireto !== 'object') {
+      const texto = String(idDireto).trim();
+      if (texto) return texto;
+    }
+
+    const candidatosAninhados = [obj['data'], obj['result'], obj['resultado'], obj['value']];
+    for (const candidato of candidatosAninhados) {
+      const idAninhado = this.extrairIdRespostaSalvar(candidato);
+      if (idAninhado) return idAninhado;
+    }
+  }
+
+  return null;
+}
 
 ngOnInit() {
   this.carregarBombas();
@@ -370,8 +466,7 @@ ngOnInit() {
   this.carregarEquipamentos();
 
   if (!this.abastecimentoId) {
-    const hoje = new Date();
-    this.data = hoje.toISOString().split('T')[0];
+    this.data = this.getHojeLocalIso();
   }
 }
 
@@ -517,12 +612,15 @@ ngOnInit() {
 
       this.abastecimentoId = null;
 
-      const hoje = new Date();
-      this.data = hoje.toISOString().split('T')[0];
+      this.data = this.getHojeLocalIso();
     }
 
   });
 }
+
+  private getHojeLocalIso(): string {
+    return format(new Date(), 'yyyy-MM-dd');
+  }
 
   ngOnDestroy() {
     if (this.paramMapSubscription) {
@@ -549,8 +647,7 @@ ngOnInit() {
     if (
       tipoNormalizado === 'T' ||
       tipoNormalizado.includes('TROCA') ||
-      tipoNumero === 0 ||
-      tipoNumero === 1
+      tipoNumero === 0
     ) {
       return 'T';
     }
@@ -558,6 +655,7 @@ ngOnInit() {
     if (
       tipoNormalizado === 'R' ||
       tipoNormalizado.includes('REPOS') ||
+      tipoNumero === 1 ||
       tipoNumero === 2
     ) {
       return 'R';
@@ -567,11 +665,21 @@ ngOnInit() {
   }
 
   private obterTipoPrevAbastPayload(): number | undefined {
-    if (!this.aplicacaoHabilitada || !this.tipoPrevAbast) {
+    if (!this.tipoPrevAbast) {
       return undefined;
     }
 
     return this.tipoPrevAbast === 'T' ? 0 : 1;
+  }
+
+  private obterAplicacaoPrevIdPayload(): string | undefined {
+    const aplicacaoId = String(this.aplicacaoSelecionada ?? '').trim();
+
+    if (!aplicacaoId || aplicacaoId === '00000000-0000-0000-0000-000000000000') {
+      return undefined;
+    }
+
+    return aplicacaoId;
   }
 
   private resolverMotoristaOperadorSelecionado(dados: any): string | null {
@@ -711,6 +819,23 @@ ngOnInit() {
     const registro = cache[String(abastecimentoId)];
     if (!registro) return;
 
+    if (!this.tipoPrevAbast && registro.tipoPrevAbast) {
+      this.tipoPrevAbast = this.normalizarTipoPrevAbast(registro.tipoPrevAbast);
+    }
+
+    if (!this.aplicacaoSelecionada && registro.aplicacaoSelecionada) {
+      this.aplicacaoSelecionada = registro.aplicacaoSelecionada;
+      if (!this.aplicacoes.some(a => String(a.id) === String(registro.aplicacaoSelecionada))) {
+        this.aplicacoes = [
+          ...this.aplicacoes,
+          {
+            id: registro.aplicacaoSelecionada,
+            descricao: registro.aplicacaoDescricao || 'Aplicação (cache local)'
+          }
+        ];
+      }
+    }
+
     if (!this.blocoSelecionado && registro.blocoSelecionado) {
       this.blocoSelecionado = registro.blocoSelecionado;
       if (!this.blocos.some(b => String(b.id) === String(registro.blocoSelecionado))) {
@@ -737,13 +862,19 @@ ngOnInit() {
       }
     }
 
-    // Restaurar horimetroAtual e odometroAtual se não vieram do backend
-    if (this.horimetroAtual == null && registro.horimetroAtual != null) {
-      this.horimetroAtual = registro.horimetroAtual;
+    // Backend pode devolver valor padrão nesses campos; prioriza o último valor salvo localmente.
+    if (registro.horimetroAtual != null) {
+      const horimetroAtualCache = Number(registro.horimetroAtual);
+      if (Number.isFinite(horimetroAtualCache)) {
+        this.horimetroAtual = horimetroAtualCache;
+      }
     }
 
-    if (this.odometroAtual == null && registro.odometroAtual != null) {
-      this.odometroAtual = registro.odometroAtual;
+    if (registro.odometroAtual != null) {
+      const odometroAtualCache = Number(registro.odometroAtual);
+      if (Number.isFinite(odometroAtualCache)) {
+        this.odometroAtual = odometroAtualCache;
+      }
     }
   }
 
@@ -888,8 +1019,26 @@ ngOnInit() {
       'aplicacaoCod',
       'AplicacaoCod'
     ]);
-    this.aplicacaoSelecionada = (aplicacaoRaw && aplicacaoRaw !== guidZerado) ? String(aplicacaoRaw) : null;
 
+    const aplicacaoId = (aplicacaoRaw && aplicacaoRaw !== guidZerado)
+  ? String(aplicacaoRaw)
+  : null;
+
+this.aplicacaoSelecionada = aplicacaoId;
+
+if (aplicacaoId && !this.aplicacoes.find(a => String(a.id) === aplicacaoId)) {
+  this.aplicacoes = [
+    ...this.aplicacoes,
+    {
+      id: aplicacaoId,
+      descricao: this.getItemValue(dados, [
+        'aplicacaoDescr',
+        'aplicacaoDesc',
+        'descricaoAplicacao'
+      ]) || 'Aplicação carregada'
+    }
+  ];
+}
     const destinoRaw = this.getItemValue(dados, ['destino', 'TpDestino']);
     this.destinoSelecionado = (destinoRaw && destinoRaw !== guidZerado) ? String(destinoRaw) : null;
 
@@ -920,6 +1069,17 @@ ngOnInit() {
       'trocaReposicaoDesc'
     ]);
     this.tipoPrevAbast = this.normalizarTipoPrevAbast(tipo);
+//novo
+
+if (!this.tipoPrevAbast) {
+  const tipoBruto = String(tipo ?? '').toUpperCase();
+
+  if (tipoBruto.includes('T')) this.tipoPrevAbast = 'T';
+  if (tipoBruto.includes('R')) this.tipoPrevAbast = 'R';
+}
+    if (!this.tiposPrevAbast.some(t => t.id === this.tipoPrevAbast)) {
+  this.tipoPrevAbast = null;
+}
 
     this.quantidade = this.getItemValue(dados, ['quantidade', 'qtdInsumo', 'QtdInsumo']);
 
@@ -949,9 +1109,6 @@ ngOnInit() {
     this.frentistalNome = this.getItemValue(dados, ['frentistalNome']);
     this.frentistaId = (frentistaRaw && frentistaRaw !== guidZerado) ? String(frentistaRaw) : null;
 
-    this.aplicacoes = [];
-    this.aplicacaoHabilitada = false;
-
     if (this.abastecimentoId) {
       this.aplicarCacheCampos(String(this.abastecimentoId));
     }
@@ -959,10 +1116,18 @@ ngOnInit() {
     if (this.empreendimentoSelecionado) {
       this.onEmpreendimentoChange(this.empreendimentoSelecionado, false);
     }
+/*
+    setTimeout(() => {
+  if (this.equipamentoSelecionado && this.insumoSelecionado) {
+    this.carregarAplicacoes();
+  }
+}, 100);
+*/
+if (this.equipamentoSelecionado && this.insumoSelecionado) {
+  this.carregarAplicacoes();
+}
 
-    if (this.equipamentoSelecionado && this.insumoSelecionado) {
-      this.carregarAplicacoes();
-    }
+
   }
   /**
    * Limpa todos os campos do formulário para criar um novo abastecimento
@@ -1209,22 +1374,88 @@ private carregarInsumos(bombaId: string) {
 }
 
 private carregarUltimoNumeroBico() {
+  this.numBombaInicial = null;
 
   if (!this.bombaSelecionada || !this.bicoSelecionado) {
     return;
   }
+
+  const extrairNumeracao = (retorno: any): number | null => {
+    if (typeof retorno === 'string') {
+      const texto = retorno.trim();
+      if (!texto) return null;
+
+      try {
+        return extrairNumeracao(JSON.parse(texto));
+      } catch {
+        const numeroTexto = Number(texto.replace(',', '.'));
+        return Number.isSafeInteger(numeroTexto) && numeroTexto >= 0
+          ? numeroTexto
+          : null;
+      }
+    }
+
+    const candidatos = Array.isArray(retorno)
+      ? retorno
+      : [
+          retorno,
+          retorno?.data,
+          retorno?.result,
+          retorno?.resultado,
+          retorno?.value,
+          retorno?.items,
+        ].filter((item) => item !== null && typeof item !== 'undefined');
+
+    for (const item of candidatos) {
+      if (Array.isArray(item)) {
+        const numeroLista = extrairNumeracao(item);
+        if (numeroLista !== null) return numeroLista;
+        continue;
+      }
+
+      const valorBruto = item?.numeracao ??
+        item?.Numeracao ??
+        item?.ctrNumeracao ??
+        item?.CtrNumeracao ??
+        item?.bombaNumeracao ??
+        item?.BombaNumeracao ??
+        item?.numero ??
+        item?.Numero ??
+        item;
+
+      const numero = typeof valorBruto === 'number'
+        ? valorBruto
+        : Number(String(valorBruto ?? '').trim().replace(',', '.'));
+
+      if (Number.isSafeInteger(numero) && numero >= 0 && numero <= this.maxIntPayloadValue) {
+        return numero;
+      }
+    }
+
+    return null;
+  };
 
   this.abastecimentoService
     .consultarUltimoNumeroBico(
       this.bombaSelecionada,
       this.bicoSelecionado
     )
-.subscribe({
-  next: (retorno: any) => {
-    this.numBombaInicial = retorno?.[0]?.numeracao ?? 0;
-  },
-  error: () => {}
-});
+    .subscribe({
+      next: (retorno: any) => {
+        const numeracao = extrairNumeracao(retorno);
+
+        if (numeracao === null) {
+          this.numBombaInicial = null;
+          this.toast('Não foi possível preencher automaticamente o No.Bomba Inicial. Informe o valor manualmente.', 'warning');
+          return;
+        }
+
+        this.numBombaInicial = numeracao;
+      },
+      error: () => {
+        this.numBombaInicial = null;
+      }
+    });
 }
 
 onEmpreendimentoChange(value: string | null, resetDependentes: boolean = true) {
@@ -1379,12 +1610,10 @@ private carregarEtapas() {
 }
 private carregarAplicacoes() {
 
-  this.aplicacoes = [];
-  this.aplicacaoHabilitada = false;
+ const aplicacaoAtual = this.aplicacaoSelecionada;
 
   if (!this.equipamentoSelecionado || !this.insumoSelecionado) {
     this.aplicacaoSelecionada = null;
-    this.tipoPrevAbast = null;
     return;
   }
 
@@ -1395,6 +1624,7 @@ private carregarAplicacoes() {
     )
     .subscribe({
       next: (res: any) => {
+
         const lista = this.extrairLista<any>(res);
 
         this.aplicacoes = lista
@@ -1408,26 +1638,47 @@ private carregarAplicacoes() {
           })
           .filter((a: any) => !!a.id && !!String(a.descricao ?? '').trim());
 
-        this.aplicacaoHabilitada = this.aplicacoes.length > 0;
+        this.aplicacaoHabilitada = this.aplicacoes.length > 0 || !!aplicacaoAtual;
 
-        if (!this.aplicacaoHabilitada) {
+        if (aplicacaoAtual) {
+
+          const existe = this.aplicacoes.find(
+            a => String(a.id) === String(aplicacaoAtual)
+          );
+
+          if (existe) {
+            this.aplicacaoSelecionada = existe.id;
+          } else {
+            this.aplicacoes = [
+              ...this.aplicacoes,
+              {
+                id: aplicacaoAtual,
+                descricao: 'Aplicação (carregada)'
+              }
+            ];
+
+            this.aplicacaoSelecionada = aplicacaoAtual;
+          }
+
+        } else {
           this.aplicacaoSelecionada = null;
-          this.tipoPrevAbast = null;
         }
+
       },
       error: () => {
         this.aplicacoes = [];
         this.aplicacaoHabilitada = false;
         this.aplicacaoSelecionada = null;
-        this.tipoPrevAbast = null;
       }
     });
 }
-
-
-  onBack() {
-    this.router.navigate(['/tabs/abastecimento-proprio-pesquisa']);
-  }
+onBack() {
+  this.navCtrl.navigateRoot('/tabs/abastecimento-proprio', {
+    queryParams: {
+      recarregar: true
+    }
+  });
+}
 
   async openCalendar(event: Event) {
     event.stopPropagation();
@@ -1573,7 +1824,30 @@ private getTipoControleEquipamentoSelecionado(): string {
     .toUpperCase();
 }
 
+private normalizarInteiroPayload(label: string, value: unknown): number | undefined | null {
+  if (value === null || typeof value === 'undefined' || value === '') {
+    return undefined;
+  }
 
+  const numero = typeof value === 'number'
+    ? value
+    : Number(String(value).trim().replace(',', '.'));
+
+  if (
+    !Number.isFinite(numero) ||
+    !Number.isInteger(numero) ||
+    numero < 0 ||
+    numero > this.maxIntPayloadValue
+  ) {
+    this.toast(
+      `${label} inválido. Informe um número inteiro entre 0 e ${this.maxIntPayloadValue}.`,
+      'warning'
+    );
+    return null;
+  }
+
+  return numero;
+}
 
 onQuantidadeChange(event: Event) {
   const value = (event.target as HTMLInputElement).value;
@@ -1602,6 +1876,10 @@ onAplicacaoChange(event: any) {
   this.aplicacaoSelecionada = event?.id ?? null;
 }
   confirmar() {
+
+  if (this.carregando) {
+    return;
+  }
 
   const isEdicao = !!this.abastecimentoId;
 
@@ -1644,14 +1922,49 @@ onAplicacaoChange(event: any) {
     return;
   }
 
+  if (this.aplicacaoHabilitada && !this.tipoPrevAbast) {
+    this.toast('Selecione Troca ou Reposição', 'warning');
+    return;
+  }
+
+  if (this.aplicacaoHabilitada && !this.aplicacaoSelecionada) {
+    this.toast('Informe local da aplicação do insumo', 'warning');
+    return;
+  }
+
+  if (this.aplicacaoHabilitada && !this.blocoSelecionado) {
+    this.toast('Bloco obrigatório para aplicação do insumo', 'warning');
+    return;
+  }
+
   if (this.quantidade == null || this.quantidade <= 0) {
     this.toast('Quantidade inválida', 'warning');
     return;
   }
 
-  // ------------------ DATA FORMATADA ------------------
+  const quantidadePayload = Number(this.quantidade);
+  if (!Number.isFinite(quantidadePayload) || quantidadePayload > this.maxIntPayloadValue) {
+    this.toast(`Quantidade inválida. Informe um valor até ${this.maxIntPayloadValue}.`, 'warning');
+    return;
+  }
 
- // ------------------ DATA FORMATADA ------------------
+  const odometroPayload = this.normalizarInteiroPayload('Odômetro Abastecimento', this.odometro);
+  if (odometroPayload === null) return;
+
+  const odometroAtualPayload = this.normalizarInteiroPayload('Odômetro Atual', this.odometroAtual);
+  if (odometroAtualPayload === null) return;
+
+  const horimetroPayload = this.normalizarInteiroPayload('Horímetro', this.horimetro);
+  if (horimetroPayload === null) return;
+
+  const horimetroAtualPayload = this.normalizarInteiroPayload('Horímetro Atual', this.horimetroAtual);
+  if (horimetroAtualPayload === null) return;
+
+  const numBicoInicialPayload = this.normalizarInteiroPayload('No.Bomba Inicial', this.numBombaInicial);
+  if (numBicoInicialPayload === null) return;
+
+  const numBicoFinalPayload = this.normalizarInteiroPayload('No.Bomba Final', this.numBombaFinal);
+  if (numBicoFinalPayload === null) return;
 
 // ------------------ DATA FORMATADA (SEM UTC) ------------------
 
@@ -1730,6 +2043,10 @@ if (!this.blocoSelecionado) {
 */
 // ---------------- PARAMS ----------------
 
+
+const tipoPrevAbastPayload = this.obterTipoPrevAbastPayload();
+const aplicacaoPrevIdPayload = this.obterAplicacaoPrevIdPayload();
+
 const params: Record<string, unknown> = {
   TpAbastecimento: 0,
   DataAbastecimento: dataFormatada,
@@ -1737,27 +2054,35 @@ const params: Record<string, unknown> = {
   IdTanqueOrigem: this.bombaSelecionada,
   IdBico: this.bicoSelecionado,
   IdInsumo: this.insumoSelecionado,
-  QtdInsumo: Number(this.quantidade),
+  QtdInsumo: quantidadePayload,
   Origem: 3,
   IdEmprd: idEmprdFinal,
   IdEtapa: this.etapaSelecionada ?? undefined,
   IdBloco: idBlocoFinal,
-  Odometro: this.odometro ?? undefined,
-  OdometroAtual: this.odometroAtual ?? undefined,
-  Horimetro: this.horimetro ?? undefined,
-  HorimetroAtual: this.horimetroAtual ?? undefined,
+  Odometro: odometroPayload,
+  OdometroAtual: odometroAtualPayload,
+  Horimetro: horimetroPayload,
+  HorimetroAtual: horimetroAtualPayload,
   horaAbastecimento: this.horaAbastecimento ?? undefined,
-  NumBicoInicial: this.numBombaInicial ?? undefined,
-  NumBicoFinal: this.numBombaFinal ?? undefined,
+  NumBicoInicial: numBicoInicialPayload,
+  NumBicoFinal: numBicoFinalPayload,
   Observacao: (this.observacao ?? '').trim() || undefined,
   OperadorSolicitanteId: operadorId ?? undefined,
   FrentistaId: this.colaboradorFrentistaSelecionado ?? undefined,
-  TipoPrevAbast: this.obterTipoPrevAbastPayload(),
-  IdAplicacaoPrev: this.aplicacaoHabilitada ? (this.aplicacaoSelecionada ?? undefined) : undefined,
-  // Se for edição, inclui IdAbastecimento
+  TipoPrevAbast: tipoPrevAbastPayload,
+  AplicacaoPrevId: this.aplicacaoHabilitada
+    ? aplicacaoPrevIdPayload
+    : undefined,
+  IdAplicacaoPrev: this.aplicacaoHabilitada
+    ? aplicacaoPrevIdPayload
+    : undefined,
+  AplicacaoId: this.aplicacaoHabilitada
+    ? aplicacaoPrevIdPayload
+    : undefined,
+
+  // Se for edição
   ...(this.abastecimentoId ? { IdAbastecimento: this.abastecimentoId } : {})
 };
-
 
   // ------------------ REGRA DESTINO ------------------
 
@@ -1766,45 +2091,100 @@ const params: Record<string, unknown> = {
     params.IdEquipamento = this.equipamentoSelecionado;
   } else {
     // Tanque / Comboio / etc
-    params.IdTanqueDestino = destinoObj.destinoId;
+    params.IdTanqueDestino =
+      destinoObj.destinoId ??
+      (destinoObj as any).destinoid ??
+      this.destinoSelecionado ??
+      undefined;
   }
 
-  // Remove undefined
-  Object.keys(params).forEach(
-    key => params[key] === undefined && delete params[key]
-  );
+  // Remove valores vazios/inválidos antes de enviar
+  Object.keys(params).forEach((key) => {
+    const value = params[key];
+
+    if (value === undefined || value === null) {
+      delete params[key];
+      return;
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+
+      if (!trimmed || trimmed === guidZerado) {
+        delete params[key];
+        return;
+      }
+
+      params[key] = trimmed;
+    }
+  });
 
   // ------------------ ENVIO ------------------
 
-  this.carregando = true;
+  const enviarGravacao = (tentativa: number) => {
+    this.carregando = true;
 
-  this.abastecimentoService.gravarAbastecimento(params)
-  .subscribe({
-    next: (res) => {
-      this.carregando = false;
+    this.abastecimentoService.gravarAbastecimento(params)
+    .subscribe({
+      next: (res) => {
+        this.carregando = false;
 
-      const idParaCache = this.abastecimentoId || (typeof res === 'string' ? String(res) : null);
-      if (idParaCache) {
-        this.salvarCacheCampos(idParaCache);
-      }
+        const idRetornado = this.extrairIdRespostaSalvar(res);
+        const idParaCache = this.abastecimentoId || idRetornado;
+        if (idParaCache) {
+          this.salvarCacheCampos(idParaCache);
+        }
 
-      this.toast(
-        'Abastecimento gravado! ID: ' +
-        (typeof res === 'string' ? res.substring(0, 8) : 'OK'),
-        'success'
-      );
+        this.toast(
+          'Abastecimento gravado com sucesso',
+          'success'
+        );
 
-      setTimeout(() => {
-        this.router.navigate(['/tabs/abastecimento-proprio-pesquisa']);
-      }, 1500);
-    },
-    error: () => {
-      this.carregando = false;
-      this.toast(
-        'Erro ao salvar abastecimento. Veja o console para detalhes.',
-        'danger'
-      );
-    },
-  });
+      /*
+this.navCtrl.navigateRoot('/tabs/abastecimento-proprio-pesquisa', {
+  queryParams: {
+    recarregar: true
+  }
+});
+
+*/
+
+        const idGerado = this.abastecimentoId || idRetornado || '';
+
+        this.router.navigate(['/tabs/abastecimento-proprio-pesquisa'], {
+          queryParams: {
+            idAbastecimento: idGerado || null,
+            highlight: idGerado || null,
+            somenteRecente: '1',
+            origemTanqueId: this.bombaSelecionada || null,
+            equipamentoId: this.equipamentoSelecionado || null,
+            dataInicial: this.data || null,
+            dataFinal: this.data || null,
+          },
+          replaceUrl: true
+        });
+      },
+
+      error: (err) => {
+        this.carregando = false;
+
+        const mensagemErro = this.getErrorMessage(err, 'Erro ao salvar abastecimento.');
+        const erroSqlIntermitente =
+          mensagemErro.toLowerCase().includes('dynamic sql error') ||
+          mensagemErro.toLowerCase().includes('unexpected end of command') ||
+          mensagemErro.toLowerCase().includes('sql error code = -104');
+
+        if (erroSqlIntermitente && tentativa < 2) {
+          this.toast('Oscilacao no servidor ao salvar. Tentando novamente...', 'warning');
+          enviarGravacao(tentativa + 1);
+          return;
+        }
+
+        this.mostrarAlertaErro(mensagemErro);
+      },
+    });
+  };
+
+  enviarGravacao(1);
 }
 }
