@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # siecon-req
 
 ![](https://img.shields.io/badge/Ionic-v7.2.0-blue) ![](https://img.shields.io/badge/Capacitor-v7.0.0-black) ![](https://img.shields.io/badge/Angular-19.1.5-red) ![](https://img.shields.io/badge/Node-v20.18.2-green)
@@ -107,3 +108,4 @@ Selecione a opção "Any IOS Device" na lista dos dispositivos.
 No lado esquerdo clique duplo em App, na aba **"General"**, procure por **Version** e **Build** esses dois campos devem ser únicos em relação ao site da Apple. 
 
 Depois selecione o menu Product->Archive, siga os passos na tela.
+
