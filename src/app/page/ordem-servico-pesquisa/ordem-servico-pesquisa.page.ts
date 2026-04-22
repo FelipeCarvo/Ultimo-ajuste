@@ -8,8 +8,9 @@ export interface OrdemServicoListaItem {
   osDescricao: string;
   equipCod: string;
   equipIndentificador: string;
-    statusCod?: number; // ALTERAÇÃO 1 - adicionar statusCod
+  statusCod?: number; // ALTERAÇÃO 1 - adicionar statusCod
   statusDescricao: string;
+  rawData?: Record<string, unknown>;
 }
 
 
@@ -260,10 +261,11 @@ const statusCod = statusCodRaw !== null ? Number(statusCodRaw) : null;
         statusCod: statusCod,
 
         // ALTERAÇÃO 4 - força exibir pelo mapa
-      statusDescricao:
+        statusDescricao:
   statusCod !== null
     ? this.statusMap[statusCod] ?? item?.statusDescricao ?? ''
     : item?.statusDescricao ?? '',
+        rawData: item,
       };
     };
 
@@ -392,6 +394,14 @@ verDetalhes(os: OrdemServicoListaItem) {
   if (!guid || String(guid).length !== 36) {
     alert('GUID da OS não encontrado.');
     return;
+  }
+
+  try {
+    if (os.rawData) {
+      sessionStorage.setItem(`os:detalhe:${guid}`, JSON.stringify(os.rawData));
+    }
+  } catch {
+    // ignore
   }
 
   this.router.navigate(['/tabs/ordem-servico-edicao'], {

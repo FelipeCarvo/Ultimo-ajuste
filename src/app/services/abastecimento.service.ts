@@ -20,7 +20,7 @@ function normalizeNulls(obj: any): any {
 }
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
-import { map } from 'rxjs';
+import { map, of, switchMap } from 'rxjs';
 
 export type LookupId = string | number;
 export type LookupItem = {
@@ -163,6 +163,26 @@ export interface AbastecimentoConsulta {
 })
 export class AbastecimentoService {
   constructor(private api: ApiService) {}
+
+  private normalizeConsultaAbastecimentoPorIdResponse(response: unknown, abastecimentoId: string) {
+    const norm = normalizeNulls(response);
+    if (Array.isArray(norm)) {
+      const alvo = String(abastecimentoId || '').toLowerCase();
+      return norm.find((item: any) => {
+        const itemId = String(
+          item?.abastecimentoId ??
+          item?.AbastecimentoId ??
+          item?.idAbastecimento ??
+          item?.IdAbastecimento ??
+          item?.id ??
+          item?.Id ??
+          ''
+        ).toLowerCase();
+        return itemId === alvo;
+      }) || norm[0] || null;
+    }
+    return norm;
+  }
 
   // Empresas (Lookup correto)
   listarEmpresas() {
@@ -350,27 +370,31 @@ listarColaboradoresFrentista() {
 
   // Consulta de abastecimento próprio por ID (igual ao posto)
   consultarAbastecimentoProprioPorId(abastecimentoId: string) {
-    const params: Record<string, string | number> = {
+    const endpoint = '/api/frotas/Abastecimentos/ConsultaAbastecimento';
+    const paramsComOrigem: Record<string, string | number> = {
       TpAbastecimento: 0,
       Origem: 3,
       AbastecimentoId: abastecimentoId,
+      idAbastecimento: abastecimentoId,
+      IdAbastecimento: abastecimentoId,
     };
-    return this.api.get<unknown[]>('/api/frotas/Abastecimentos/ConsultaAbastecimento', params).pipe(
-      map((res: any) => {
-        const norm = normalizeNulls(res);
-        if (Array.isArray(norm)) {
-          const alvo = String(abastecimentoId || '').toLowerCase();
-          return norm.find((item: any) => {
-            const itemId = String(
-              item?.abastecimentoId ??
-              item?.AbastecimentoId ??
-              item?.idAbastecimento ??
-              ''
-            ).toLowerCase();
-            return itemId === alvo;
-          }) || norm[0] || null;
+    const paramsSemOrigem: Record<string, string | number> = {
+      TpAbastecimento: 0,
+      AbastecimentoId: abastecimentoId,
+      idAbastecimento: abastecimentoId,
+      IdAbastecimento: abastecimentoId,
+    };
+
+    return this.api.get<unknown[]>(endpoint, paramsComOrigem).pipe(
+      map((res: any) => this.normalizeConsultaAbastecimentoPorIdResponse(res, abastecimentoId)),
+      switchMap((resultado) => {
+        if (resultado) {
+          return of(resultado);
         }
-        return norm;
+
+        return this.api.get<unknown[]>(endpoint, paramsSemOrigem).pipe(
+          map((res: any) => this.normalizeConsultaAbastecimentoPorIdResponse(res, abastecimentoId))
+        );
       })
     );
   }

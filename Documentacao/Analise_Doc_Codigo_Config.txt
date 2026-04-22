@@ -1,0 +1,525 @@
+ANALISE DO APP - DOCUMENTACAO X CODIGO X CONFIGURACAO
+
+Data: 16/04/2026
+Projeto: Ultimo-ajuste
+
+OBJETIVO
+
+Consolidar em um unico arquivo:
+1. Comparacao entre a documentacao de API e o codigo do aplicativo.
+2. Rastreio do fluxo de configuracao dinamica de ambiente.
+3. Diagnostico inicial do erro de conexao com Firebird.
+
+
+FONTES CONSULTADAS
+
+1. Documentacao/Frt_ApiFrotas.md
+2. Documentacao/Frt_ApiFrotas.pdf
+3. Documentacao/Alteracao_Abastecimento_Postos.txt
+4. Documentacao/Alteracao_Abastecimento_Proprio.txt
+5. Documentacao/PROBLEMA_API_ConsultaAbastecimento.txt
+6. src/app/services/abastecimento.service.ts
+7. src/app/services/api.service.ts
+8. src/app/shared/services/login/login.service.ts
+9. src/app/shared/services/request/request.service.ts
+10. src/app/core/store/state/auth.state.ts
+11. src/app/core/interceptor/interceptor.service.ts
+
+
+====================================================================
+PARTE 1 - MATRIZ DOCUMENTACAO X CODIGO
+====================================================================
+
+Legenda de status:
+- CONFORME: o app usa a rota de acordo com a documentacao.
+- DIVERGENTE: o app usa rota ou parametro diferente do que esta documentado.
+- PARCIAL: o app usa a rota principal correta, mas com comportamento extra ou diferente.
+- PENDENTE: a documentacao nao deixa claro o suficiente para bater 100%.
+
+
+1. ABASTECIMENTO PROPRIO - PESQUISA
+
+1.1 Origem/Tanque
+Documentacao:
+- Usar /api/frotas/Abastecimentos/ConsultaBomba
+
+Codigo:
+- abastecimento-proprio.page.ts carrega bombas via AbastecimentoService.listarBombas()
+- abastecimento.service.ts usa /api/frotas/Abastecimentos/ConsultaBomba
+
+Status: CONFORME
+
+
+1.2 Equipamento
+Documentacao:
+- Usar /api/frotas/Lookups/EquipamentosMobile
+
+Codigo:
+- abastecimento-proprio.page.ts usa listarEquipamentosMobile()
+- abastecimento.service.ts usa /api/frotas/Lookups/EquipamentosMobile
+
+Status: CONFORME
+
+
+1.3 Consulta de abastecimentos
+Documentacao:
+- Usar /api/frotas/Abastecimentos/ConsultaAbastecimento
+- Parametro fixo TpAbastecimento = 0
+- Para retornar somente registros do app mobile, passar Origem = 3
+
+Codigo:
+- abastecimento.service.ts usa /api/frotas/Abastecimentos/ConsultaAbastecimento
+- Envia TpAbastecimento = 0
+- Comentario explicito diz que NAO filtra por Origem
+
+Status: DIVERGENTE
+
+Observacao:
+- O app pode trazer registros fora do escopo mobile, diferente do combinado na documentacao.
+
+
+2. ABASTECIMENTO PROPRIO - GRAVACAO
+
+2.1 Origem/Tanque
+Documentacao:
+- Usar /api/frotas/Abastecimentos/ConsultaBomba
+
+Codigo:
+- Correto
+
+Status: CONFORME
+
+
+2.2 Equipamento
+Documentacao:
+- Usar /api/frotas/Lookups/EquipamentosMobile
+
+Codigo:
+- Correto
+
+Status: CONFORME
+
+
+2.3 Bico
+Documentacao:
+- Usar /api/frotas/Abastecimentos/ConsultaBico com parametro Id = bombaId
+
+Codigo:
+- listarBicos(bombaId) usa /api/frotas/Abastecimentos/ConsultaBico?Id=...
+
+Status: CONFORME
+
+
+2.4 Destino
+Documentacao:
+- Usar /api/frotas/Abastecimentos/ConsultaDestinoAbastecimentos com parametro bombaId
+
+Codigo:
+- listarDestinos(bombaId) usa /api/frotas/Abastecimentos/ConsultaDestinoAbastecimentos?bombaId=...
+
+Status: CONFORME
+
+
+2.5 Empreendimento
+Documentacao:
+- Usar /api/cadastros/Lookups/Empreendimentos
+
+Codigo:
+- listarEmpreendimentos() usa /api/cadastros/Lookups/Empreendimentos
+
+Status: CONFORME
+
+
+2.6 Etapa
+Documentacao:
+- Usar /api/orcamentos/Lookups/Etapas
+
+Codigo:
+- listarEtapas() usa /api/orcamentos/Lookups/Etapas
+
+Status: CONFORME
+
+
+2.7 Insumo
+Documentacao:
+- Usar /api/frotas/Abastecimentos/ConsultaEstoqueComboio
+
+Codigo:
+- listarInsumosComboio() usa /api/frotas/Abastecimentos/ConsultaEstoqueComboio
+
+Status: CONFORME
+
+
+2.8 Ultimo numero do bico
+Documentacao:
+- Usar /api/frotas/Abastecimentos/ConsultaUltimoNumeroBico com bombaId e bicoId
+
+Codigo:
+- consultarUltimoNumeroBico() usa /api/frotas/Abastecimentos/ConsultaUltimoNumeroBico?bombaId=...&bicoId=...
+
+Status: CONFORME
+
+
+2.9 Aplicacao
+Documentacao:
+- Usar /api/frotas/Abastecimentos/ConsultaAplicacaoPrevEquipInsumo
+
+Codigo:
+- consultarAplicacaoPrev() usa /api/frotas/Abastecimentos/ConsultaAplicacaoPrevEquipInsumo
+
+Status: CONFORME
+
+
+2.10 Gravacao
+Documentacao:
+- Usar /api/frotas/Abastecimentos/GravaAbastecimento
+- Origem = 3
+
+Codigo:
+- gravarAbastecimento() usa /api/frotas/Abastecimentos/GravaAbastecimento
+- A tela envia Origem = 3
+
+Status: CONFORME
+
+Observacao:
+- O app envia os parametros na query string de um POST sem corpo.
+- A documentacao lista parametros, mas nao deixa totalmente explicito se o backend espera query string ou body.
+- Nao foi possivel marcar isso como erro so pela leitura esttica.
+
+
+3. ABASTECIMENTO EM POSTOS - PESQUISA
+
+3.1 Fornecedor
+Documentacao:
+- Usar /api/cadastros/Lookups/Pessoas com tipoPessoa = Fornecedor
+
+Codigo:
+- listarFornecedores() usa /api/cadastros/Lookups/Pessoas com tipoPessoa = Fornecedor
+
+Status: CONFORME
+
+
+3.2 Equipamento
+Documentacao:
+- Usar /api/frotas/Lookups/Equipamentos
+
+Codigo:
+- A tela abastecimento-postos usa listarEquipamentosMobile()
+- O service chama /api/frotas/Lookups/EquipamentosMobile
+
+Status: DIVERGENTE
+
+Observacao:
+- Para pesquisa de postos, a documentacao pede Equipamentos.
+- O app esta usando EquipamentosMobile.
+
+
+3.3 Consulta de abastecimentos
+Documentacao:
+- Usar /api/frotas/Abastecimentos/ConsultaAbastecimento
+- Parametro fixo TpAbastecimento = 1
+
+Codigo:
+- consultarAbastecimentoPosto() usa /api/frotas/Abastecimentos/ConsultaAbastecimento
+- Envia TpAbastecimento = 1
+- Tambem envia Origem = 3
+- Tambem aceita DataInicial, DataFinal e NumVoucher
+
+Status: PARCIAL
+
+Observacao:
+- A rota principal bate.
+- O contrato usado pelo app esta mais amplo do que o descrito na documentacao da pesquisa.
+
+
+4. ABASTECIMENTO EM POSTOS - GRAVACAO
+
+4.1 Equipamento
+Documentacao:
+- Usar /api/frotas/Lookups/EquipamentosMobile
+
+Codigo:
+- Usa EquipamentosMobile
+
+Status: CONFORME
+
+
+4.2 Empresa
+Documentacao:
+- Usar /api/cadastros/Lookups/Empresas com tipoEmpresa = 0
+
+Codigo:
+- listarEmpresas() usa /api/cadastros/Lookups/Empresas com tipoEmpresa = 0
+
+Status: CONFORME
+
+
+4.3 Centro de despesa
+Documentacao:
+- Usar /api/cadastros/Lookups/PlanoContasDespesas
+
+Codigo:
+- listarCentrosDespesas() usa /api/cadastros/Lookups/PlanoContasDespesas
+
+Status: CONFORME
+
+
+4.4 Etapa
+Documentacao:
+- Usar /api/orcamentos/Lookups/Etapas
+
+Codigo:
+- listarEtapas() usa /api/orcamentos/Lookups/Etapas
+
+Status: CONFORME
+
+
+4.5 Insumo
+Documentacao:
+- Usar /api/suprimentos/Lookups/Insumos
+
+Codigo:
+- listarInsumos() usa /api/suprimentos/Lookups/Insumos
+
+Status: CONFORME
+
+
+4.6 Bloco
+Documentacao:
+- Usar /api/cadastros/Lookups/Blocos
+
+Codigo:
+- listarBlocos() usa /api/cadastros/Lookups/Blocos
+
+Status: CONFORME
+
+
+4.7 Gravacao
+Documentacao:
+- Usar /api/frotas/Abastecimentos/GravaAbastecimento
+- Origem = 3
+
+Codigo:
+- Usa GravaAbastecimento
+- Envia Origem = 3
+
+Status: CONFORME
+
+
+RESUMO DA PARTE 1
+
+Pontos conformes mais importantes:
+- Rotas centrais de abastecimento estao majoritariamente corretas.
+- Gravacao de abastecimento proprio e posto usa a rota esperada.
+- Lookups principais de empresa, etapa, insumo, bloco, bomba, bico, destino e aplicacao batem com a documentacao.
+
+Pontos divergentes mais importantes:
+- Pesquisa de abastecimento proprio nao usa Origem = 3, apesar da documentacao indicar esse recorte para mobile.
+- Pesquisa de abastecimento em postos usa EquipamentosMobile, mas a documentacao pede Equipamentos.
+- Pesquisa de postos usa filtros extras alem dos listados na documentacao.
+
+
+====================================================================
+PARTE 2 - FLUXO DE CONFIGURACAO DINAMICA
+====================================================================
+
+OBJETIVO
+
+Descobrir em que ponto o app respeita a configuracao dinamica do cliente e em que ponto deixa de respeitar.
+
+
+FLUXO ESPERADO
+
+1. O usuario informa o identificador da configuracao.
+2. O app busca no backend os enderecos do cliente.
+3. O app salva no store:
+   - urlLogin
+   - urlAPISuprimentos
+   - urlAPISP7
+4. Todos os servicos deveriam consumir essas URLs dinamicas.
+
+
+ONDE O FLUXO ESTA CORRETO
+
+1. O componente de configuracao chama LoginService.getConfig().
+2. O LoginService salva as URLs dinamicas no store.
+3. O AuthState monta urlAPISuprimentos + '/api' e urlAPISP7 + '/api'.
+4. Os servicos antigos usam essas URLs dinamicas corretamente.
+
+Exemplos de modulos que respeitam o store dinamico:
+- RequestService
+- LoockupstService
+- DocumentService
+- InsumosRequest
+- InsumosRequest Frota
+- UpdateRequestStatus
+
+
+ONDE O FLUXO QUEBRA
+
+1. A busca inicial de configuracao usa uma base fixa de environment.
+   Resultado:
+   - O primeiro passo ja depende de uma URL hardcoded.
+
+2. Existe um ApiService novo que usa base fixa do environment.apiUrl.
+   Resultado:
+   - Os servicos novos que dependem dele ignoram o store dinamico.
+
+ATUALIZACAO EM 17/04/2026
+
+- Este ponto foi corrigido no codigo atual.
+- O arquivo src/app/services/api.service.ts agora consulta primeiro AuthUser.geturlAPISP7 no store e so usa environment.apiUrl como fallback.
+- Com isso, os modulos novos que dependem de ApiService passaram a respeitar a URL dinamica apos a configuracao ser carregada.
+- A pendencia restante desta frente continua sendo a busca inicial de configuracao em LoginService.getConfig(), que ainda chama environment.BASE_URL.
+
+3. Os modulos novos afetados por essa base fixa incluem:
+   - AbastecimentoService
+   - OrdemServicoService
+   - InsumoService
+   - EtapaService
+
+ATUALIZACAO EM 17/04/2026
+
+- Como o ApiService foi ajustado para usar o store dinamico, esta lista deixa de estar afetada por base fixa dentro do proprio ApiService.
+- Ainda assim, esses modulos continuam dependendo de a configuracao inicial ter sido carregada corretamente antes do uso.
+
+
+CONCLUSAO DA PARTE 2
+
+O projeto esta misturado.
+
+Parte antiga:
+- Usa a configuracao dinamica do cliente corretamente.
+
+Parte nova, principalmente frotas:
+- Usava ApiService com base fixa do environment.
+- Isso podia forcar chamadas para a base demo ou para uma base errada.
+
+ATUALIZACAO EM 17/04/2026
+
+- O ApiService foi corrigido e agora usa a URL dinamica do store.
+- O risco remanescente de base fixa ficou concentrado no fluxo inicial de descoberta de configuracao em LoginService.getConfig().
+
+
+LISTA CURTA - MODULOS AFETADOS POR BASE FIXA
+
+- Abastecimento
+- Ordem de Servico
+- InsumoService novo
+- EtapaService novo
+
+
+LISTA CURTA - MODULOS QUE JA USAM BASE DINAMICA
+
+- Requisicoes
+- Documentos
+- Lookups antigos
+- Servicos antigos de insumos
+- Atualizacao de status de requisicoes
+
+
+====================================================================
+PARTE 3 - ERRO FIREBIRD
+====================================================================
+
+ERRO RECEBIDO
+
+Mensagem principal:
+- Erro ao conectar na base de dados do Firebird. Verifique o log!
+
+Mensagem detalhada importante:
+- Your user name and password are not defined. Ask your database administrator to set up a Firebird login.
+
+
+INTERPRETACAO TECNICA
+
+Esse erro indica:
+1. O frontend conseguiu chamar a API.
+2. A API entrou no backend e tentou consultar a base Firebird.
+3. A conexao com o Firebird falhou por credencial ausente, invalida ou configuracao errada no servidor.
+
+Ou seja:
+- Nao e um erro de rota inexistente no app.
+- Nao e um erro de parsing do frontend.
+- E um erro de backend e/ou configuracao da base do cliente.
+
+
+ONDE ISSO APARECE NO APP
+
+O erro menciona PesquisaRequisicoes.
+
+No app, esse fluxo passa por:
+- RequestService.getReq()
+- EnumRequest.PesquisaRequisicoes = /suprimentos/Requisicao/PesquisaRequisicoes
+
+Importante:
+- Esse fluxo de requisicoes usa URL dinamica vinda do store.
+- Portanto, isoladamente, esse erro parece muito mais um problema do ambiente/backend do cliente do que do modulo de configuracao fixa da parte de frotas.
+
+
+CENARIOS PROVAVEIS PARA ESSE ERRO
+
+Cenario A - Backend do cliente com Firebird mal configurado
+- Mais provavel para o fluxo de requisicoes.
+- A API certa foi chamada, mas o servidor nao conseguiu autenticar no Firebird.
+
+Cenario B - O app foi direcionado para ambiente diferente do esperado
+- Possivel principalmente nos modulos novos de frotas/abastecimento/os.
+- Menos provavel para o fluxo de requisicoes, porque ali o app usa a URL dinamica corretamente.
+
+
+CONCLUSAO DA PARTE 3
+
+Para esse erro especifico de Firebird:
+- O indico principal e backend/configuracao do servidor de banco.
+- Nao ha evidencia forte de que esse erro tenha sido gerado por rota incorreta no frontend de requisicoes.
+
+
+====================================================================
+PARTE 4 - PROXIMOS PASSOS SUGERIDOS
+====================================================================
+
+1. Confirmar com o backend qual contrato oficial deve valer para:
+   - Pesquisa abastecimento proprio com Origem = 3 ou sem Origem
+   - Pesquisa abastecimento posto com Equipamentos ou EquipamentosMobile
+
+2. Separar correcao por frente:
+   Frente A - Contrato de rotas e parametros de abastecimento
+   Frente B - Configuracao dinamica de ambiente versus base fixa
+
+3. Para o erro de Firebird, validar no servidor do cliente:
+   - usuario do Firebird
+   - senha do Firebird
+   - string de conexao
+   - permissao de acesso ao banco correto
+
+4. Antes de corrigir codigo, decidir o criterio oficial:
+   - manter implementacao do app e atualizar a documentacao
+   - ou alinhar o app estritamente ao PDF/documentacao atual
+
+ATUALIZACAO EM 17/04/2026
+
+- A frente B ja teve uma correcao parcial aplicada: ApiService agora respeita o store dinamico.
+- O proximo passo tecnico dessa frente e avaliar se LoginService.getConfig() deve deixar de usar environment.BASE_URL ou se essa URL fixa e intencional por ser o bootstrap global.
+
+
+====================================================================
+RESUMO EXECUTIVO FINAL
+====================================================================
+
+1. O app nao esta totalmente desalinhado da documentacao; a maior parte das rotas principais de abastecimento bate.
+
+2. As divergencias mais importantes sao:
+   - pesquisa de abastecimento proprio sem Origem = 3
+   - pesquisa de postos usando EquipamentosMobile em vez de Equipamentos
+
+3. O projeto esta tecnicamente dividido em duas arquiteturas:
+   - uma parte antiga que usa configuracao dinamica do cliente
+   - uma parte nova de frotas que usava base fixa do environment
+
+ATUALIZACAO EM 17/04/2026
+
+- A divisao ainda existe em parte, mas foi reduzida.
+- Hoje, o principal ponto fixo confirmado nesta analise e o bootstrap de configuracao em LoginService.getConfig().
+
+4. O erro de Firebird analisado aponta principalmente para falha de credencial/configuracao do backend do cliente, e nao para erro de rota no frontend.

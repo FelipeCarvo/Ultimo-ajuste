@@ -59,6 +59,29 @@ import { HostListener, ElementRef } from '@angular/core';
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class OrdemServicoEdicaoPage implements OnInit {
+  private getDetalheOsCacheKey(osId: string) {
+    return `os:detalhe:${osId}`;
+  }
+
+  private obterDetalheOsCache(osId: string): ItemComId | null {
+    try {
+      const raw = sessionStorage.getItem(this.getDetalheOsCacheKey(osId));
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private salvarDetalheOsCache(osId: string, dados: ItemComId) {
+    try {
+      sessionStorage.setItem(this.getDetalheOsCacheKey(osId), JSON.stringify(dados));
+    } catch {
+      // ignore
+    }
+  }
+
   // Métodos para template
   // Métodos para template
   onClassificacaoSelecionada(item: { id?: string }) {
@@ -1300,39 +1323,44 @@ onDigitarStatus() {
 private carregarOsCompleta(osId: string) {
   if (!osId || osId.length !== 36) return;
 
-
+  const detalheCache = this.obterDetalheOsCache(osId);
 
   this.ordemService.buscarOSPorId(osId).subscribe({
   next: (res: ItemComId | ItemComId[] | null) => {
 
   const osApi = Array.isArray(res) ? res[0] : res;
+  const osDados = osApi
+    ? { ...(detalheCache || {}), ...osApi }
+    : detalheCache;
 
-  if (!osApi) {
+  if (!osDados) {
     return;
   }
+
+  this.salvarDetalheOsCache(osId, osDados);
 
   // ===============================
   //  NÚMERO OS (do osCod da API)
   // ===============================
-  this.numeroOS = String(osApi.numeroOs ?? osApi.NumeroOs ?? osApi.osCod ?? '');
+  this.numeroOS = String(osDados.numeroOs ?? osDados.NumeroOs ?? osDados.osCod ?? '');
 
       // ===============================
       //  CAMPOS SIMPLES
       // ===============================
-      this.descricao = String(osApi.osDescricao ?? osApi.Descricao ?? '');
+      this.descricao = String(osDados.osDescricao ?? osDados.Descricao ?? '');
 
-      this.defeitosConstatados = String(osApi.obsDef ?? osApi.DefeitosConstatados ?? '');
+      this.defeitosConstatados = String(osDados.obsDef ?? osDados.DefeitosConstatados ?? '');
 
-      this.causasProvaveis = String(osApi.obsCausas ?? osApi.CausasProvaveis ?? '');
+      this.causasProvaveis = String(osDados.obsCausas ?? osDados.CausasProvaveis ?? '');
 
-      this.observacoes = String(osApi.observacao ?? osApi.Observacao ?? '');
+      this.observacoes = String(osDados.observacao ?? osDados.Observacao ?? '');
 
       // Datas
    const dataAberturaRaw = String(
-  osApi.dataAbertura ??
-  osApi.osDataAbertura ??
-  osApi.dataIniParaliz ??
-  osApi.osDataInicio ??
+  osDados.dataAbertura ??
+  osDados.osDataAbertura ??
+  osDados.dataIniParaliz ??
+  osDados.osDataInicio ??
   ''
 );
 
@@ -1340,56 +1368,56 @@ this.dataAbertura = dataAberturaRaw ? dataAberturaRaw.split('T')[0] : null;
 
 
 const dataConclusaoRaw = String(
-  osApi.dataConclusao ??
-  osApi.osDataConclusao ??
-  osApi.dataFimParaliz ??
-  osApi.osDataFim ??
+  osDados.dataConclusao ??
+  osDados.osDataConclusao ??
+  osDados.dataFimParaliz ??
+  osDados.osDataFim ??
   ''
 );
 
 this.dataConclusao = dataConclusaoRaw ? dataConclusaoRaw.split('T')[0] : null;
 
       // Hodômetro e Horímetro
-      this.hodometro = String(osApi.hodometro ?? osApi.Hodometro ?? osApi.odometro ?? osApi.osHodometro ?? '');
-      this.horimetro = String(osApi.horimetro ?? osApi.Horimetro ?? osApi.osHorimetro ?? '');
+      this.hodometro = String(osDados.hodometro ?? osDados.Hodometro ?? osDados.odometro ?? osDados.osHodometro ?? '');
+      this.horimetro = String(osDados.horimetro ?? osDados.Horimetro ?? osDados.osHorimetro ?? '');
 
       // Tipo
-      const tipoCodigo = osApi.TipoServicoId ?? osApi.tipoServicoId ?? osApi.tpServCod ?? osApi.tpServcod ?? osApi.tipo ?? null;
+      const tipoCodigo = osDados.TipoServicoId ?? osDados.tipoServicoId ?? osDados.tpServCod ?? osDados.tpServcod ?? osDados.tipo ?? null;
       let tipoEncontrado = null;
       if (this.tiposOsLista?.length) {
         // Tenta encontrar pelo GUID
         tipoEncontrado = this.tiposOsLista.find(t => String(t.id) === String(tipoCodigo));
         // Se não encontrar pelo GUID, tenta pelo código
-        if (!tipoEncontrado && (osApi.tpServcod || osApi.tpServCod)) {
-          const cod = osApi.tpServcod ?? osApi.tpServCod;
+        if (!tipoEncontrado && (osDados.tpServcod || osDados.tpServCod)) {
+          const cod = osDados.tpServcod ?? osDados.tpServCod;
           tipoEncontrado = this.tiposOsLista.find(t => String(t.codigo) === String(cod));
         }
         // Se não encontrar pelo código, tenta pela descrição (comparando o final da string)
-        if (!tipoEncontrado && osApi.tpServDescricao) {
+        if (!tipoEncontrado && osDados.tpServDescricao) {
           tipoEncontrado = this.tiposOsLista.find(t =>
-            String(t.descricao).toUpperCase().trim().endsWith(String(osApi.tpServDescricao).toUpperCase().trim())
+            String(t.descricao).toUpperCase().trim().endsWith(String(osDados.tpServDescricao).toUpperCase().trim())
           );
         }
       }
       if (tipoEncontrado) {
         // Sempre seleciona o GUID do tipo encontrado
         this.tipo = String(tipoEncontrado.id);
-      } else if (this.tiposOsLista?.length && (osApi.tpServcod || osApi.tpServCod)) {
+      } else if (this.tiposOsLista?.length && (osDados.tpServcod || osDados.tpServCod)) {
         // Se não encontrou, tenta buscar pelo código e selecionar o GUID
-        const cod = osApi.tpServcod ?? osApi.tpServCod;
+        const cod = osDados.tpServcod ?? osDados.tpServCod;
         const tipoPorCodigo = this.tiposOsLista.find(t => String(t.codigo) === String(cod));
         this.tipo = tipoPorCodigo ? String(tipoPorCodigo.id) : '';
-      } else if (this.tiposOsLista?.length && osApi.tpServDescricao) {
+      } else if (this.tiposOsLista?.length && osDados.tpServDescricao) {
         // Se não encontrou, tenta buscar pela descrição e selecionar o GUID
-        const tipoPorDescricao = this.tiposOsLista.find(t => String(t.descricao).toUpperCase().trim() === String(osApi.tpServDescricao).toUpperCase().trim());
+        const tipoPorDescricao = this.tiposOsLista.find(t => String(t.descricao).toUpperCase().trim() === String(osDados.tpServDescricao).toUpperCase().trim());
         this.tipo = tipoPorDescricao ? String(tipoPorDescricao.id) : '';
       } else {
         this.tipo = '';
       }
 
       // Status
-      const statusCodigoApiRaw = osApi.statusCodigo ?? osApi.statusCod ?? osApi.Status ?? osApi.status ?? null;
-      const statusDescricaoApi = String(osApi.statusDescricao ?? osApi.StatusDescricao ?? '').trim();
+      const statusCodigoApiRaw = osDados.statusCodigo ?? osDados.statusCod ?? osDados.Status ?? osDados.status ?? null;
+      const statusDescricaoApi = String(osDados.statusDescricao ?? osDados.StatusDescricao ?? '').trim();
       const statusCodigoApi =
         statusCodigoApiRaw !== null &&
         statusCodigoApiRaw !== undefined &&
@@ -1410,27 +1438,27 @@ this.dataConclusao = dataConclusaoRaw ? dataConclusaoRaw.split('T')[0] : null;
 
       // Operador/Motorista
       const motoristaId =
-        osApi.MotoristaOperadorId ??
-        osApi.colaboradorId ??
-        osApi.colaboradorCod ??
-        osApi.colaColaboradorId ??
-        osApi.colaborador ??
+        osDados.MotoristaOperadorId ??
+        osDados.colaboradorId ??
+        osDados.colaboradorCod ??
+        osDados.colaColaboradorId ??
+        osDados.colaborador ??
         null;
       let motoristaEncontrado = null;
       if (this.motoristasLista?.length) {
         // Tenta encontrar pelo GUID
         motoristaEncontrado = this.motoristasLista.find(m => String(m.id) === String(motoristaId));
         // Se não encontrar pelo código
-        if (!motoristaEncontrado && osApi.colaboradorCod) {
-          motoristaEncontrado = this.motoristasLista.find(m => String(m.codigo) === String(osApi.colaboradorCod));
+        if (!motoristaEncontrado && osDados.colaboradorCod) {
+          motoristaEncontrado = this.motoristasLista.find(m => String(m.codigo) === String(osDados.colaboradorCod));
         }
         // Se não encontrar pelo GUID/código, tenta pelo nome
-        if (!motoristaEncontrado && osApi.colaboradorNome) {
-          motoristaEncontrado = this.motoristasLista.find(m => String(m.descricao).toUpperCase().trim() === String(osApi.colaboradorNome).toUpperCase().trim());
+        if (!motoristaEncontrado && osDados.colaboradorNome) {
+          motoristaEncontrado = this.motoristasLista.find(m => String(m.descricao).toUpperCase().trim() === String(osDados.colaboradorNome).toUpperCase().trim());
         }
         // Se não encontrar pelo GUID/código/nome, tenta pelo colaColaboradorId
-        if (!motoristaEncontrado && osApi.colaColaboradorId) {
-          motoristaEncontrado = this.motoristasLista.find(m => String(m.id) === String(osApi.colaColaboradorId));
+        if (!motoristaEncontrado && osDados.colaColaboradorId) {
+          motoristaEncontrado = this.motoristasLista.find(m => String(m.id) === String(osDados.colaColaboradorId));
         }
       }
       if (motoristaEncontrado) {
@@ -1441,7 +1469,7 @@ this.dataConclusao = dataConclusaoRaw ? dataConclusaoRaw.split('T')[0] : null;
         this.operadorMotorista = '';
       }
       // Bloco duplicado removido: tipoCodigo já tratado acima
-      const equipId = String(osApi.equipId ?? osApi.EquipamentoId ?? '');
+      const equipId = String(osDados.equipId ?? osDados.EquipamentoId ?? '');
       let equipamento = null;
       if (equipId && equipId !== '00000000-0000-0000-0000-000000000000') {
         equipamento = this.equipamentosLista.find((e: ItemComId) => String(e.id) === equipId);
@@ -1450,14 +1478,14 @@ this.dataConclusao = dataConclusaoRaw ? dataConclusaoRaw.split('T')[0] : null;
       // ===============================
       // EMPREENDIMENTO
       // ===============================
-      const empId = String(osApi.emprdId ?? osApi.emprdintervencaoId ?? '');
+      const empId = String(osDados.emprdId ?? osDados.emprdintervencaoId ?? '');
       this.empreendimento = (empId && empId !== '00000000-0000-0000-0000-000000000000') ? empId : '';
 
       // ===============================
       // CLASSIFICAÇÃO
       // ==============================
 
-      const classifId = osApi.ClassificacaoId ?? osApi.classifCod ?? osApi.classifId ?? null;
+      const classifId = osDados.ClassificacaoId ?? osDados.classifCod ?? osDados.classifId ?? null;
       if (classifId && this.classificacoesLista?.length) {
         const classificacaoEncontrada = this.classificacoesLista.find((c: ItemComId) =>
           String(c.id) === String(classifId) ||
@@ -1473,7 +1501,7 @@ this.dataConclusao = dataConclusaoRaw ? dataConclusaoRaw.split('T')[0] : null;
 // ===============================
 
       let causa = null;
-      const causaId = String(osApi.causasId ?? osApi.CausasId ?? '');
+      const causaId = String(osDados.causasId ?? osDados.CausasId ?? '');
       if (causaId && causaId !== '00000000-0000-0000-0000-000000000000') {
         causa = this.causasIntervencaoLista.find((c: ItemComId) => String(c.id ?? c.codigo ?? c.CausaIntervencao) === causaId);
       }
@@ -1484,7 +1512,7 @@ this.dataConclusao = dataConclusaoRaw ? dataConclusaoRaw.split('T')[0] : null;
       // MANUTENTOR
       // ===============================
       let manutentor = null;
-      const manutentorId = String(osApi.manutentorId ?? osApi.ManutentorResponsavelId ?? '');
+      const manutentorId = String(osDados.manutentorId ?? osDados.ManutentorResponsavelId ?? '');
       if (manutentorId && manutentorId !== '00000000-0000-0000-0000-000000000000') {
         manutentor = this.manutentoresLista.find((m: ItemComId) => String(m.id ?? m.manutentorId ?? m.colaboradorCod) === manutentorId);
       }
@@ -1494,7 +1522,7 @@ this.dataConclusao = dataConclusaoRaw ? dataConclusaoRaw.split('T')[0] : null;
       //  EMPREENDIMENTO INTERVENÇÃO
       // ===============================
       let empInterv = null;
-      const empIntervId = String(osApi.emprdintervencaoId ?? osApi.emprdintervencaoCod ?? '');
+      const empIntervId = String(osDados.emprdintervencaoId ?? osDados.emprdintervencaoCod ?? '');
       if (empIntervId && empIntervId !== '00000000-0000-0000-0000-000000000000') {
         empInterv = this.empreendimentosLista.find((e: ItemComId) => String(e.id ?? e.codigo ?? e.EmpreendimentoId) === empIntervId);
       }

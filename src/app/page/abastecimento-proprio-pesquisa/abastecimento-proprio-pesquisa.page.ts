@@ -421,7 +421,9 @@ export class AbastecimentoProprioPesquisaPage implements OnInit {
     const idAbastecimento = this.obterIdAbastecimento(item);
     if (!idAbastecimento) return;
 
-    this.router.navigate(['/tabs/abastecimento-proprio-edicao', idAbastecimento]);
+    this.router.navigate(['/tabs/abastecimento-proprio-edicao', idAbastecimento], {
+      state: { abastecimento: item, abastecimentoId: idAbastecimento }
+    });
   }
 }
 

@@ -64,6 +64,16 @@ type CamposPersistidosLocal = {
   etapaDescricao?: string | null;
   aplicacaoSelecionada: string | null;
   aplicacaoDescricao?: string | null;
+  motoristaOperadorSelecionado?: string | null;
+  motoristaOperadorDescricao?: string | null;
+  motoristaOperadorCodigo?: string | null;
+  colaboradorFrentistaSelecionado?: string | null;
+  colaboradorFrentistaDescricao?: string | null;
+  colaboradorFrentistaCodigo?: string | null;
+  observacao?: string | null;
+  numBombaInicial?: number | null;
+  numBombaFinal?: number | null;
+  horaAbastecimento?: string | null;
   horimetroAtual?: number | null;
   odometroAtual?: number | null;
   atualizadoEm: string;
@@ -344,6 +354,16 @@ tiposPrevAbast = [
   // Dados do abastecimento para edição
   dadosAbastecimento: any = null;
 
+  get isModoEdicao(): boolean {
+    return !!this.abastecimentoId;
+  }
+
+  get tituloPagina(): string {
+    return this.isModoEdicao
+      ? 'Abastecimento Próprio - Edição'
+      : 'Abastecimento Próprio - Edição';
+  }
+
   destinoTravado = false;
 
   constructor(
@@ -502,7 +522,11 @@ ngOnInit() {
     this.paramMapSubscription.unsubscribe();
   }
 
+  this.carregarMotoristasOperadores();
+  this.carregarColaboradoresFrentista();
+
   this.paramMapSubscription = this.route.paramMap.subscribe(params => {
+    const fallbackDados = this.dadosAbastecimento ?? history.state?.['abastecimento'] ?? null;
 
     const id = params.get('id');
 
@@ -525,7 +549,8 @@ ngOnInit() {
             .consultarAbastecimentoProprioPorId(id)
             .subscribe({
               next: (res: any) => {
-                const dados = Array.isArray(res) ? res[0] : res;
+                const dadosApi = Array.isArray(res) ? res[0] : res;
+                const dados = dadosApi || fallbackDados;
 
                 if (dados) {
 
@@ -586,10 +611,11 @@ ngOnInit() {
                         .toPromise()
                         .then((etapas: any) => {
 
-                          this.etapas = (etapas || []).map(e => ({
-                            id: String(e.id),
-                            descricao: e.descricao || e.nome
-                          }));
+                          const listaEtapas = this.extrairLista<any>(etapas);
+                          this.etapas = (listaEtapas || []).map((e: any) => ({
+                            id: String(e.id ?? e.Id ?? e.etapaId ?? e.IdEtapa ?? e.idEtapa ?? e.etapaID ?? e.etapaCdg ?? e.etapaCod ?? e.value ?? e.valor ?? e.codigo ?? e.cod ?? ''),
+                            descricao: e.descricao ?? e.Descricao ?? e.nome ?? e.label ?? e.etapaDescr ?? e.EtapaDescr ?? e.descr ?? ''
+                          })).filter((e: any) => !!e.id && !!String(e.descricao ?? '').trim());
 
                         })
                     );
@@ -602,6 +628,11 @@ ngOnInit() {
                 }
               },
               error: () => {
+                if (fallbackDados) {
+                  this.preencherFormularioComDados(fallbackDados);
+                  return;
+                }
+
                 this.limparFormulario();
               }
             });
@@ -682,9 +713,100 @@ ngOnInit() {
     return aplicacaoId;
   }
 
+  private normalizarTextoComparacao(value: unknown): string {
+    return String(value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toUpperCase();
+  }
+
+  private garantirOpcaoSelecionada<T extends Record<string, unknown>>(
+    lista: T[],
+    id: unknown,
+    descricao: unknown,
+    extras?: Partial<T>
+  ): T[] {
+    const idNormalizado = String(id ?? '').trim();
+    const descricaoNormalizada = String(descricao ?? '').trim();
+
+    if (!idNormalizado || !descricaoNormalizada) {
+      return lista;
+    }
+
+    if (lista.some((item) => String(item['id'] ?? '').trim() === idNormalizado)) {
+      return lista;
+    }
+
+    return [
+      ...lista,
+      {
+        id: idNormalizado,
+        descricao: descricaoNormalizada,
+        ...(extras ?? {}),
+      } as unknown as T,
+    ];
+  }
+
+  private obterMotoristaOperadorFallback(dados: any): { id: string | null; descricao: string | null; codigo: string | null } {
+    const guidZerado = '00000000-0000-0000-0000-000000000000';
+    const idBruto = this.getItemValue(dados, [
+      'responsavelId',
+      'operadorSolicitanteId',
+      'colaboradorId',
+      'colaColaboradorId'
+    ]);
+    const codigoBruto = this.getItemValue(dados, ['responsavelCod', 'colaboradorCod', 'codigoResponsavel']);
+    const nomeBruto = this.getItemValue(dados, [
+      'responsavelNome',
+      'colaboradorNome',
+      'nomeResponsavel',
+      'nomeMotoristaOperador'
+    ]);
+
+    const id = idBruto && idBruto !== guidZerado
+      ? String(idBruto).trim()
+      : (codigoBruto != null && String(codigoBruto).trim() ? String(codigoBruto).trim() : null);
+    const descricao = typeof nomeBruto === 'string' && nomeBruto.trim()
+      ? nomeBruto.trim()
+      : (codigoBruto != null && String(codigoBruto).trim() ? `Motorista/Operador ${String(codigoBruto).trim()}` : null);
+    const codigo = codigoBruto != null && String(codigoBruto).trim() ? String(codigoBruto).trim() : null;
+
+    return { id, descricao, codigo };
+  }
+
+  private obterFrentistaFallback(dados: any): { id: string | null; descricao: string | null; codigo: string | null } {
+    const guidZerado = '00000000-0000-0000-0000-000000000000';
+    const idBruto = this.getItemValue(dados, [
+      'frentistaId',
+      'idFrentista',
+      'FrentistaId',
+      'colaboradorFrentistaId',
+      'ColaboradorFrentistaId'
+    ]);
+    const codigoBruto = this.getItemValue(dados, ['frentistaCod', 'codigoFrentista']);
+    const nomeBruto = this.getItemValue(dados, [
+      'frentistalNome',
+      'frentistaNome',
+      'colaboradorFrentistaNome',
+      'nomeFrentista'
+    ]);
+
+    const id = idBruto && idBruto !== guidZerado
+      ? String(idBruto).trim()
+      : (codigoBruto != null && String(codigoBruto).trim() ? String(codigoBruto).trim() : null);
+    const descricao = typeof nomeBruto === 'string' && nomeBruto.trim()
+      ? nomeBruto.trim()
+      : (codigoBruto != null && String(codigoBruto).trim() ? `Frentista ${String(codigoBruto).trim()}` : null);
+    const codigo = codigoBruto != null && String(codigoBruto).trim() ? String(codigoBruto).trim() : null;
+
+    return { id, descricao, codigo };
+  }
+
   private resolverMotoristaOperadorSelecionado(dados: any): string | null {
+    const fallback = this.obterMotoristaOperadorFallback(dados);
     if (!this.motoristasOperadores?.length) {
-      return null;
+      return fallback.id;
     }
 
     const guidZerado = '00000000-0000-0000-0000-000000000000';
@@ -721,10 +843,66 @@ ngOnInit() {
 
     const nome = this.getItemValue(dados, ['responsavelNome', 'colaboradorNome']);
     if (typeof nome === 'string' && nome.trim()) {
-      const nomeNormalizado = nome.trim().toUpperCase();
+      const nomeNormalizado = this.normalizarTextoComparacao(nome);
       const encontradoPorNome = this.motoristasOperadores.find(
-        (item) => String(item.colaboradorNome ?? '').trim().toUpperCase() === nomeNormalizado
+        (item) => {
+          const nomeItem = this.normalizarTextoComparacao(item.colaboradorNome);
+          return nomeItem === nomeNormalizado || nomeItem.includes(nomeNormalizado) || nomeNormalizado.includes(nomeItem);
+        }
       );
+
+      if (encontradoPorNome?.id !== null && typeof encontradoPorNome?.id !== 'undefined') {
+        return String(encontradoPorNome.id);
+      }
+    }
+
+    return fallback.id;
+  }
+
+  private resolverColaboradorFrentistaSelecionado(dados: any): string | null {
+    if (!this.colaboradoresFrentista?.length) {
+      return null;
+    }
+
+    const guidZerado = '00000000-0000-0000-0000-000000000000';
+    const candidatosId = [
+      this.getItemValue(dados, ['frentistaId', 'idFrentista', 'FrentistaId', 'colaboradorFrentistaId', 'ColaboradorFrentistaId'])
+    ]
+      .filter((valor) => valor !== null && typeof valor !== 'undefined' && String(valor) !== guidZerado)
+      .map((valor) => String(valor));
+
+    for (const candidatoId of candidatosId) {
+      const encontradoPorId = this.colaboradoresFrentista.find((item: any) => {
+        const ids = [item.id, item.colaboradorId, item.pessoaId, item.entidadeId, item.fornId]
+          .filter((valor) => valor !== null && typeof valor !== 'undefined')
+          .map((valor) => String(valor));
+
+        return ids.includes(candidatoId);
+      });
+
+      if (encontradoPorId?.id !== null && typeof encontradoPorId?.id !== 'undefined') {
+        return String(encontradoPorId.id);
+      }
+    }
+
+    const codigo = this.getItemValue(dados, ['frentistaCod', 'colaboradorFrentistaCod', 'codigoFrentista']);
+    if (codigo !== null && typeof codigo !== 'undefined') {
+      const encontradoPorCodigo = this.colaboradoresFrentista.find(
+        (item: any) => String(item.colaboradorCod ?? item.codigo ?? '') === String(codigo)
+      );
+
+      if (encontradoPorCodigo?.id !== null && typeof encontradoPorCodigo?.id !== 'undefined') {
+        return String(encontradoPorCodigo.id);
+      }
+    }
+
+    const nome = this.getItemValue(dados, ['frentistalNome', 'frentistaNome', 'colaboradorFrentistaNome', 'nomeFrentista']);
+    if (typeof nome === 'string' && nome.trim()) {
+      const nomeNormalizado = this.normalizarTextoComparacao(nome);
+      const encontradoPorNome = this.colaboradoresFrentista.find((item: any) => {
+        const nomeItem = this.normalizarTextoComparacao(item.descricao ?? item.nome ?? item.colaboradorNome);
+        return nomeItem === nomeNormalizado || nomeItem.includes(nomeNormalizado) || nomeNormalizado.includes(nomeItem);
+      });
 
       if (encontradoPorNome?.id !== null && typeof encontradoPorNome?.id !== 'undefined') {
         return String(encontradoPorNome.id);
@@ -787,12 +965,63 @@ ngOnInit() {
     }
   }
 
+  private obterRegistroCacheAtual(): CamposPersistidosLocal | null {
+    if (!this.abastecimentoId) return null;
+    const cache = this.obterCacheCampos();
+    return cache[String(this.abastecimentoId)] ?? null;
+  }
+
+  private reinjetarSelecoesCacheadas(): void {
+    const registro = this.obterRegistroCacheAtual();
+    if (!registro) return;
+
+    if (registro.etapaSelecionada) {
+      this.etapaSelecionada = this.etapaSelecionada ?? registro.etapaSelecionada;
+      if (!this.etapas.some(e => String(e.id) === String(registro.etapaSelecionada))) {
+        this.etapas = [
+          ...this.etapas,
+          {
+            id: registro.etapaSelecionada,
+            descricao: registro.etapaDescricao || 'Etapa (cache local)'
+          }
+        ];
+      }
+    }
+
+    if (registro.motoristaOperadorSelecionado) {
+      this.motoristaOperadorSelecionado = this.motoristaOperadorSelecionado ?? registro.motoristaOperadorSelecionado;
+      this.motoristasOperadores = this.garantirOpcaoSelecionada(
+        this.motoristasOperadores,
+        registro.motoristaOperadorSelecionado,
+        registro.motoristaOperadorDescricao || 'Motorista (cache local)',
+        {
+          colaboradorNome: registro.motoristaOperadorDescricao || 'Motorista (cache local)',
+          colaboradorCod: registro.motoristaOperadorCodigo || undefined
+        } as any
+      );
+    }
+
+    if (registro.colaboradorFrentistaSelecionado) {
+      this.colaboradorFrentistaSelecionado = this.colaboradorFrentistaSelecionado ?? registro.colaboradorFrentistaSelecionado;
+      this.colaboradoresFrentista = this.garantirOpcaoSelecionada(
+        this.colaboradoresFrentista,
+        registro.colaboradorFrentistaSelecionado,
+        registro.colaboradorFrentistaDescricao || 'Frentista (cache local)',
+        {
+          colaboradorCod: registro.colaboradorFrentistaCodigo || undefined
+        } as any
+      );
+    }
+  }
+
   private salvarCacheCampos(abastecimentoId: string): void {
     if (!abastecimentoId) return;
 
     const blocoAtual = this.blocos.find(b => String(b.id) === String(this.blocoSelecionado));
     const etapaAtual = this.etapas.find(e => String(e.id) === String(this.etapaSelecionada));
     const aplicacaoAtual = this.aplicacoes.find(a => String(a.id) === String(this.aplicacaoSelecionada));
+    const motoristaAtual = this.motoristasOperadores.find(m => String(m.id ?? m.fornId ?? '') === String(this.motoristaOperadorSelecionado ?? ''));
+    const frentistaAtual = this.colaboradoresFrentista.find((f: any) => String(f.id ?? f.fornId ?? '') === String(this.colaboradorFrentistaSelecionado ?? ''));
 
     const registro: CamposPersistidosLocal = {
       tipoPrevAbast: this.tipoPrevAbast,
@@ -802,6 +1031,16 @@ ngOnInit() {
       etapaDescricao: etapaAtual?.descricao ?? null,
       aplicacaoSelecionada: this.aplicacaoSelecionada,
       aplicacaoDescricao: aplicacaoAtual?.descricao ?? null,
+      motoristaOperadorSelecionado: this.motoristaOperadorSelecionado,
+      motoristaOperadorDescricao: motoristaAtual?.colaboradorNome ?? null,
+      motoristaOperadorCodigo: motoristaAtual?.colaboradorCod != null ? String(motoristaAtual.colaboradorCod) : null,
+      colaboradorFrentistaSelecionado: this.colaboradorFrentistaSelecionado,
+      colaboradorFrentistaDescricao: (frentistaAtual as any)?.descricao ?? null,
+      colaboradorFrentistaCodigo: (frentistaAtual as any)?.colaboradorCod != null ? String((frentistaAtual as any).colaboradorCod) : null,
+      observacao: this.observacao ?? null,
+      numBombaInicial: this.numBombaInicial,
+      numBombaFinal: this.numBombaFinal,
+      horaAbastecimento: this.horaAbastecimento,
       horimetroAtual: this.horimetroAtual,
       odometroAtual: this.odometroAtual,
       atualizadoEm: new Date().toISOString()
@@ -860,6 +1099,47 @@ ngOnInit() {
           }
         ];
       }
+    }
+
+    if (!this.motoristaOperadorSelecionado && registro.motoristaOperadorSelecionado) {
+      this.motoristaOperadorSelecionado = registro.motoristaOperadorSelecionado;
+      this.motoristasOperadores = this.garantirOpcaoSelecionada(
+        this.motoristasOperadores,
+        registro.motoristaOperadorSelecionado,
+        registro.motoristaOperadorDescricao || 'Motorista (cache local)',
+        {
+          colaboradorNome: registro.motoristaOperadorDescricao || 'Motorista (cache local)',
+          colaboradorCod: registro.motoristaOperadorCodigo || undefined
+        } as any
+      );
+    }
+
+    if (!this.colaboradorFrentistaSelecionado && registro.colaboradorFrentistaSelecionado) {
+      this.colaboradorFrentistaSelecionado = registro.colaboradorFrentistaSelecionado;
+      this.colaboradoresFrentista = this.garantirOpcaoSelecionada(
+        this.colaboradoresFrentista,
+        registro.colaboradorFrentistaSelecionado,
+        registro.colaboradorFrentistaDescricao || 'Frentista (cache local)',
+        {
+          colaboradorCod: registro.colaboradorFrentistaCodigo || undefined
+        } as any
+      );
+    }
+
+    if (!this.observacao && registro.observacao) {
+      this.observacao = registro.observacao;
+    }
+
+    if (this.numBombaInicial == null && registro.numBombaInicial != null) {
+      this.numBombaInicial = Number(registro.numBombaInicial);
+    }
+
+    if (this.numBombaFinal == null && registro.numBombaFinal != null) {
+      this.numBombaFinal = Number(registro.numBombaFinal);
+    }
+
+    if (!this.horaAbastecimento && registro.horaAbastecimento) {
+      this.horaAbastecimento = registro.horaAbastecimento;
     }
 
     // Backend pode devolver valor padrão nesses campos; prioriza o último valor salvo localmente.
@@ -1003,10 +1283,39 @@ ngOnInit() {
       this.blocoSelecionado = null;
     }
 
-    const frentistaRaw = this.getItemValue(dados, ['frentistaId', 'idFrentista', 'FrentistaId']);
-    this.colaboradorFrentistaSelecionado = (frentistaRaw && frentistaRaw !== guidZerado) ? String(frentistaRaw) : null;
+    const frentistaFallback = this.obterFrentistaFallback(dados);
+    const frentistaRaw = frentistaFallback.id ?? this.getItemValue(dados, ['frentistaId', 'idFrentista', 'FrentistaId', 'colaboradorFrentistaId', 'ColaboradorFrentistaId']);
+    this.colaboradorFrentistaSelecionado = this.resolverColaboradorFrentistaSelecionado(dados);
 
+    const nomeFrentista = frentistaFallback.descricao ?? this.getItemValue(dados, ['frentistalNome', 'frentistaNome', 'colaboradorFrentistaNome', 'nomeFrentista']);
+    if (this.colaboradorFrentistaSelecionado) {
+      this.colaboradoresFrentista = this.garantirOpcaoSelecionada(
+        this.colaboradoresFrentista,
+        this.colaboradorFrentistaSelecionado,
+        nomeFrentista ?? frentistaFallback.codigo ?? this.getItemValue(dados, ['frentistaCod']) ?? 'Frentista carregado'
+      );
+    } else if (frentistaRaw && frentistaRaw !== guidZerado) {
+      this.colaboradorFrentistaSelecionado = String(frentistaRaw);
+      this.colaboradoresFrentista = this.garantirOpcaoSelecionada(
+        this.colaboradoresFrentista,
+        frentistaRaw,
+        nomeFrentista ?? frentistaFallback.codigo ?? this.getItemValue(dados, ['frentistaCod']) ?? 'Frentista carregado'
+      );
+    }
+
+    const motoristaFallback = this.obterMotoristaOperadorFallback(dados);
     this.motoristaOperadorSelecionado = this.resolverMotoristaOperadorSelecionado(dados);
+    if (this.motoristaOperadorSelecionado) {
+      this.motoristasOperadores = this.garantirOpcaoSelecionada(
+        this.motoristasOperadores,
+        this.motoristaOperadorSelecionado,
+        motoristaFallback.descricao ?? this.getItemValue(dados, ['responsavelNome', 'colaboradorNome']) ?? this.getItemValue(dados, ['responsavelCod', 'colaboradorCod']) ?? 'Motorista carregado',
+        {
+          colaboradorNome: String(motoristaFallback.descricao ?? this.getItemValue(dados, ['responsavelNome', 'colaboradorNome']) ?? 'Motorista carregado'),
+          colaboradorCod: motoristaFallback.codigo ?? this.getItemValue(dados, ['responsavelCod', 'colaboradorCod'])
+        } as any
+      );
+    }
 
     const aplicacaoRaw = this.getItemValue(dados, [
       'aplicacaoId',
@@ -1091,7 +1400,7 @@ if (!this.tipoPrevAbast) {
     this.numBombaInicial = this.getItemValue(dados, ['numBombaInicial', 'bombaInicial', 'numBicoInicial']);
     this.numBombaFinal = this.getItemValue(dados, ['numBombaFinal', 'bombaFinal', 'numBicoFinal']);
 
-    this.observacao = this.getItemValue(dados, ['observacao', 'Observacao', 'obs']) || '';
+    this.observacao = this.getItemValue(dados, ['observacao', 'Observacao', 'obs', 'observacoes', 'Observacoes', 'obsAbastecimento']) || '';
 
     if (dados.dataAbastecimento) {
       this.data = String(dados.dataAbastecimento).split('T')[0];
@@ -1106,7 +1415,7 @@ if (!this.tipoPrevAbast) {
     this.centroDespesaDescr = this.getItemValue(dados, ['centroDespesaDescr']);
     this.emprDesc = this.getItemValue(dados, ['emprDesc']);
     this.frentistaCod = this.getItemValue(dados, ['frentistaCod']);
-    this.frentistalNome = this.getItemValue(dados, ['frentistalNome']);
+    this.frentistalNome = this.getItemValue(dados, ['frentistalNome', 'frentistaNome', 'colaboradorFrentistaNome']);
     this.frentistaId = (frentistaRaw && frentistaRaw !== guidZerado) ? String(frentistaRaw) : null;
 
     if (this.abastecimentoId) {
@@ -1239,7 +1548,18 @@ private testarEmpreendimentosComBlocos(): void {
   private carregarColaboradoresFrentista() {
     this.abastecimentoService.listarColaboradoresFrentista().subscribe({
       next: (colabs) => {
-        this.colaboradoresFrentista = colabs || [];
+        const lista = this.extrairLista<any>(colabs);
+        this.colaboradoresFrentista = (lista || []).map((c: any) => ({
+          ...c,
+          id: String(c.id ?? c.colaboradorId ?? c.pessoaId ?? c.entidadeId ?? c.fornId ?? c.codigo ?? c.colaboradorCod ?? ''),
+          descricao: c.descricao ?? c.nome ?? c.razaoSocial ?? c.colaboradorNome ?? ''
+        })).filter((c: any) => String(c.id).trim() !== '');
+
+        if (this.dadosAbastecimento && !this.colaboradorFrentistaSelecionado) {
+          this.colaboradorFrentistaSelecionado = this.resolverColaboradorFrentistaSelecionado(this.dadosAbastecimento);
+        }
+
+        this.reinjetarSelecoesCacheadas();
       },
       error: () => {},
     });
@@ -1248,15 +1568,19 @@ private testarEmpreendimentosComBlocos(): void {
   private carregarMotoristasOperadores() {
     this.abastecimentoService.listarColaboradoresMotoristaOperador().subscribe({
       next: (colabs) => {
-        this.motoristasOperadores = (colabs || []).map((c: any) => ({
+        const lista = this.extrairLista<any>(colabs);
+        this.motoristasOperadores = (lista || []).map((c: any) => ({
           ...c,
           id: c.id ?? c.colaboradorId ?? c.colaColaboradorId ?? c.fornId ?? c.colaboradorCod,
+          colaboradorCod: c.colaboradorCod ?? c.codigo ?? c.cod,
           colaboradorNome: c.colaboradorNome ?? c.descricao ?? c.nome
-        }));
+        })).filter((c: any) => String(c.id ?? '').trim() !== '');
 
         if (this.dadosAbastecimento && !this.motoristaOperadorSelecionado) {
           this.motoristaOperadorSelecionado = this.resolverMotoristaOperadorSelecionado(this.dadosAbastecimento);
         }
+
+        this.reinjetarSelecoesCacheadas();
       },
       error: () => {},
     });
@@ -1389,7 +1713,7 @@ private carregarUltimoNumeroBico() {
         return extrairNumeracao(JSON.parse(texto));
       } catch {
         const numeroTexto = Number(texto.replace(',', '.'));
-        return Number.isSafeInteger(numeroTexto) && numeroTexto >= 0
+        return Number.isFinite(numeroTexto) && numeroTexto >= 0 && numeroTexto <= this.maxIntPayloadValue
           ? numeroTexto
           : null;
       }
@@ -1427,7 +1751,7 @@ private carregarUltimoNumeroBico() {
         ? valorBruto
         : Number(String(valorBruto ?? '').trim().replace(',', '.'));
 
-      if (Number.isSafeInteger(numero) && numero >= 0 && numero <= this.maxIntPayloadValue) {
+      if (Number.isFinite(numero) && numero >= 0 && numero <= this.maxIntPayloadValue) {
         return numero;
       }
     }
@@ -1454,6 +1778,7 @@ private carregarUltimoNumeroBico() {
       },
       error: () => {
         this.numBombaInicial = null;
+        this.toast('Não foi possível carregar automaticamente o No.Bomba Inicial para a bomba/bico selecionados. Informe o valor manualmente.', 'warning');
       }
     });
 }
@@ -1540,6 +1865,8 @@ private carregarEtapas() {
         this.etapas = [...this.etapas, etapaAnterior];
       }
     }
+
+    this.reinjetarSelecoesCacheadas();
 
     return this.etapas.length > 0;
   };
@@ -1824,23 +2151,28 @@ private getTipoControleEquipamentoSelecionado(): string {
     .toUpperCase();
 }
 
-private normalizarInteiroPayload(label: string, value: unknown): number | undefined | null {
+private normalizarNumeroPayload(label: string, value: unknown, apenasInteiro = true): number | undefined | null {
   if (value === null || typeof value === 'undefined' || value === '') {
     return undefined;
   }
 
+  const texto = String(value).trim();
+  const textoSemSeparadorMilhar = /^\d{1,3}([.,\s]\d{3})+$/.test(texto)
+    ? texto.replace(/[.,\s]/g, '')
+    : texto;
+
   const numero = typeof value === 'number'
     ? value
-    : Number(String(value).trim().replace(',', '.'));
+    : Number(textoSemSeparadorMilhar.replace(',', '.'));
 
   if (
     !Number.isFinite(numero) ||
-    !Number.isInteger(numero) ||
+    (apenasInteiro && !Number.isInteger(numero)) ||
     numero < 0 ||
     numero > this.maxIntPayloadValue
   ) {
     this.toast(
-      `${label} inválido. Informe um número inteiro entre 0 e ${this.maxIntPayloadValue}.`,
+      `${label} inválido. Informe um número ${apenasInteiro ? 'inteiro ' : ''}entre 0 e ${this.maxIntPayloadValue}.`,
       'warning'
     );
     return null;
@@ -1948,22 +2280,22 @@ onAplicacaoChange(event: any) {
     return;
   }
 
-  const odometroPayload = this.normalizarInteiroPayload('Odômetro Abastecimento', this.odometro);
+  const odometroPayload = this.normalizarNumeroPayload('Odômetro Abastecimento', this.odometro);
   if (odometroPayload === null) return;
 
-  const odometroAtualPayload = this.normalizarInteiroPayload('Odômetro Atual', this.odometroAtual);
+  const odometroAtualPayload = this.normalizarNumeroPayload('Odômetro Atual', this.odometroAtual);
   if (odometroAtualPayload === null) return;
 
-  const horimetroPayload = this.normalizarInteiroPayload('Horímetro', this.horimetro);
+  const horimetroPayload = this.normalizarNumeroPayload('Horímetro', this.horimetro, false);
   if (horimetroPayload === null) return;
 
-  const horimetroAtualPayload = this.normalizarInteiroPayload('Horímetro Atual', this.horimetroAtual);
+  const horimetroAtualPayload = this.normalizarNumeroPayload('Horímetro Atual', this.horimetroAtual, false);
   if (horimetroAtualPayload === null) return;
 
-  const numBicoInicialPayload = this.normalizarInteiroPayload('No.Bomba Inicial', this.numBombaInicial);
+  const numBicoInicialPayload = this.normalizarNumeroPayload('No.Bomba Inicial', this.numBombaInicial, false);
   if (numBicoInicialPayload === null) return;
 
-  const numBicoFinalPayload = this.normalizarInteiroPayload('No.Bomba Final', this.numBombaFinal);
+  const numBicoFinalPayload = this.normalizarNumeroPayload('No.Bomba Final', this.numBombaFinal, false);
   if (numBicoFinalPayload === null) return;
 
 // ------------------ DATA FORMATADA (SEM UTC) ------------------
@@ -2058,6 +2390,7 @@ const params: Record<string, unknown> = {
   Origem: 3,
   IdEmprd: idEmprdFinal,
   IdEtapa: this.etapaSelecionada ?? undefined,
+  EtapaId: this.etapaSelecionada ?? undefined,
   IdBloco: idBlocoFinal,
   Odometro: odometroPayload,
   OdometroAtual: odometroAtualPayload,
@@ -2065,10 +2398,15 @@ const params: Record<string, unknown> = {
   HorimetroAtual: horimetroAtualPayload,
   horaAbastecimento: this.horaAbastecimento ?? undefined,
   NumBicoInicial: numBicoInicialPayload,
+  NumBombaInicial: numBicoInicialPayload,
   NumBicoFinal: numBicoFinalPayload,
+  NumBombaFinal: numBicoFinalPayload,
   Observacao: (this.observacao ?? '').trim() || undefined,
+  observacao: (this.observacao ?? '').trim() || undefined,
   OperadorSolicitanteId: operadorId ?? undefined,
+  ResponsavelId: operadorId ?? undefined,
   FrentistaId: this.colaboradorFrentistaSelecionado ?? undefined,
+  ColaboradorFrentistaId: this.colaboradorFrentistaSelecionado ?? undefined,
   TipoPrevAbast: tipoPrevAbastPayload,
   AplicacaoPrevId: this.aplicacaoHabilitada
     ? aplicacaoPrevIdPayload
@@ -2169,14 +2507,25 @@ this.navCtrl.navigateRoot('/tabs/abastecimento-proprio-pesquisa', {
         this.carregando = false;
 
         const mensagemErro = this.getErrorMessage(err, 'Erro ao salvar abastecimento.');
+        const mensagemErroLower = mensagemErro.toLowerCase();
         const erroSqlIntermitente =
-          mensagemErro.toLowerCase().includes('dynamic sql error') ||
-          mensagemErro.toLowerCase().includes('unexpected end of command') ||
-          mensagemErro.toLowerCase().includes('sql error code = -104');
-
+          mensagemErroLower.includes('dynamic sql error') ||
+          mensagemErroLower.includes('unexpected end of command') ||
+          mensagemErroLower.includes('sql error code = -104');
+        const erroDuplicidadeEdicao =
+          mensagemErroLower.includes('attempt to store duplicate value') ||
+          mensagemErroLower.includes('idx_tb23_cdgweb') ||
+          mensagemErroLower.includes('duplicate value');
         if (erroSqlIntermitente && tentativa < 2) {
           this.toast('Oscilacao no servidor ao salvar. Tentando novamente...', 'warning');
           enviarGravacao(tentativa + 1);
+          return;
+        }
+
+        if (erroDuplicidadeEdicao && this.abastecimentoId) {
+          this.mostrarAlertaErro(
+            'A API recebeu a alteracao, mas tratou esta edicao como um novo cadastro com o mesmo identificador do abastecimento. No estado atual do backend, este endpoint nao atualiza registros existentes.'
+          );
           return;
         }
 

@@ -6,7 +6,7 @@
         <img src="../../assets/icon/topoRequest.svg" alt="Voltar" />
       </button>
 
-      <h1 class="os-title">Abastecimento Próprio - Edição</h1>
+      <h1 class="os-title">{{ tituloPagina }}</h1>
 
       <div class="os-header-spacer"></div>
     </div>
@@ -16,7 +16,6 @@
 <ion-content class="os-content">
   <div class="os-page">
     <div class="os-card">
-
 
 <div class="abp-field">
   <label class="abp-label">Origem / Tanque</label>
@@ -255,7 +254,7 @@ campoDescricao="descricao"
       placeholder="Informe o numero inicial"
       min="0"
       max="2147483647"
-      step="1"
+      step="0.1"
       [(ngModel)]="numBombaInicial"
       (input)="onNumBombaInicialChange($event)"
     />
@@ -270,7 +269,7 @@ campoDescricao="descricao"
       placeholder="Informe o numero final"
       min="0"
       max="2147483647"
-      step="1"
+      step="0.1"
       [(ngModel)]="numBombaFinal"
       (input)="onNumBombaFinalChange($event)"
     />
