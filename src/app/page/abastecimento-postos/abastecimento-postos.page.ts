@@ -67,7 +67,7 @@ export class AbastecimentoPostosPage implements OnInit {
       });
 
       await alert.present();
-      
+
     }
 
   carregarListas() {
