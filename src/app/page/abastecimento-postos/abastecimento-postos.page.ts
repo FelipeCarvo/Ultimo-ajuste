@@ -80,7 +80,7 @@ export class AbastecimentoPostosPage implements OnInit {
       }
     });
 
-    this.abastecimentoService.listarEquipamentosMobile().subscribe({
+    this.abastecimentoService.listarEquipamentos().subscribe({
       next: dados => {
         this.equipamentosLista = dados ?? [];
       },

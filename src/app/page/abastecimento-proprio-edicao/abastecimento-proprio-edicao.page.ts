@@ -351,6 +351,7 @@ tiposPrevAbast = [
 
   // ID do abastecimento para edição
   abastecimentoId: string | null = null;
+  codAbastecimentoExterno: string | null = null;
   // Dados do abastecimento para edição
   dadosAbastecimento: any = null;
 
@@ -541,9 +542,13 @@ ngOnInit() {
 
       this.carregarBombas();
 
-      this.abastecimentoService.listarEquipamentos().subscribe({
-        next: (eqps) => {
-          this.equipamentos = eqps || [];
+      this.abastecimentoService.listarEquipamentosMobile().subscribe({
+        next: (eqps: any[]) => {
+          this.equipamentos = (eqps || []).map(e => ({
+            id: e.id,
+            descricao: e.descricao,
+            tipoControle: e.tipoControle ?? e.TipoControle ?? e.tpControle
+          }));
 
           this.abastecimentoService
             .consultarAbastecimentoProprioPorId(id)
@@ -1161,6 +1166,14 @@ ngOnInit() {
   private preencherFormularioComDados(dados: any) {
     this.dadosAbastecimento = dados;
     this.abastecimentoId = this.getItemValue(dados, ['abastecimentoId', 'IdAbastecimento', 'idAbastecimento']);
+    this.codAbastecimentoExterno = this.getItemValue(dados, [
+      'codAbastecimentoExterno',
+      'CodAbastecimentoExterno',
+      'codigoExterno',
+      'CodigoExterno',
+      'cdgWeb',
+      'CdgWeb'
+    ]);
     const guidZerado = '00000000-0000-0000-0000-000000000000';
 
     const bombaRaw = this.getItemValue(dados, ['comboioBombaId', 'bombaId', 'idBomba', 'IdTanqueOrigem']);
@@ -2417,6 +2430,9 @@ const params: Record<string, unknown> = {
   AplicacaoId: this.aplicacaoHabilitada
     ? aplicacaoPrevIdPayload
     : undefined,
+  CodAbastecimentoExterno: this.codAbastecimentoExterno ?? undefined,
+  codAbastecimentoExterno: this.codAbastecimentoExterno ?? undefined,
+  CodigoExterno: this.codAbastecimentoExterno ?? undefined,
 
   // Se for edição
   ...(this.abastecimentoId ? { IdAbastecimento: this.abastecimentoId } : {})

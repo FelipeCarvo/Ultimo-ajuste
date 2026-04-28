@@ -1,0 +1,140 @@
+ROTAS FRONT X REGRAS PENDENTES DO BACKEND
+
+Data: 23/04/2026
+Objetivo: registrar o que foi alinhado no frontend com a documentacao e o que ainda depende de regra/contrato do backend.
+
+====================================================================
+1. AJUSTES IMPLEMENTADOS NO FRONTEND
+====================================================================
+
+1) Pesquisa de Abastecimento Proprio
+- Documento de referencia: Documentacao/Frt_ApiFrotas.md (secao 1.10)
+- Regra da doc: ConsultaAbastecimento com TpAbastecimento = 0 e Origem = 3
+- Ajuste aplicado:
+  - src/app/services/abastecimento.service.ts
+  - consultarAbastecimentoProprio() agora envia Origem = 3
+
+2) Pesquisa de Abastecimento em Postos
+- Documento de referencia: Documentacao/Frt_ApiFrotas.md (secao 1.12)
+- Regra da doc: lookup de Equipamento deve usar /api/frotas/Lookups/Equipamentos
+- Ajuste aplicado:
+  - src/app/page/abastecimento-postos/abastecimento-postos.page.ts
+  - a tela passou a usar listarEquipamentos() em vez de listarEquipamentosMobile()
+
+3) Edicao / Detalhes de Abastecimento Proprio
+- Documento de referencia: Documentacao/Frt_ApiFrotas.md (secao 1.11)
+- Regra da doc: lookup de Equipamento no fluxo proprio usa /api/frotas/Lookups/EquipamentosMobile
+- Ajuste aplicado:
+  - src/app/page/abastecimento-proprio-edicao/abastecimento-proprio-edicao.page.ts
+  - o carregamento da tela em modo edicao passou a usar listarEquipamentosMobile()
+
+4) ConsultaAbastecimento alinhada ao Swagger oficial
+- Documento de referencia: https://demo.poliview.com.br:21000/sieconwebwebapi/swagger/1.0/swagger.json
+- Swagger publicado:
+  - GET /api/frotas/Abastecimentos/ConsultaAbastecimento
+  - parametros oficiais relevantes: DataIni, DataFim, IdEquipamento, Origem, TpAbastecimento, ComboioBomba, IdFornecedor, IdAbastecimento, NumVoucher
+- Ajuste aplicado:
+  - src/app/services/abastecimento.service.ts
+  - pesquisa passou a enviar DataIni/DataFim e ComboioBomba, mantendo aliases legados por compatibilidade
+  - consulta por ID passou a priorizar IdAbastecimento, mantendo alias adicional entre ambientes
+
+====================================================================
+2. ROTAS JA ESTAO IMPLEMENTADAS NO FRONTEND
+====================================================================
+
+Abastecimento Proprio:
+- /api/frotas/Abastecimentos/ConsultaBomba
+- /api/frotas/Abastecimentos/ConsultaBico
+- /api/frotas/Abastecimentos/ConsultaDestinoAbastecimentos
+- /api/frotas/Abastecimentos/ConsultaEstoqueComboio
+- /api/frotas/Abastecimentos/ConsultaAplicacaoPrevEquipInsumo
+- /api/frotas/Abastecimentos/ConsultaUltimoNumeroBico
+- /api/frotas/Abastecimentos/ConsultaAbastecimento
+- /api/frotas/Abastecimentos/GravaAbastecimento
+- /api/frotas/Lookups/EquipamentosMobile
+- /api/cadastros/Lookups/Empreendimentos
+- /api/orcamentos/Lookups/Etapas
+- /api/cadastros/Lookups/Pessoas (Funcionario)
+- /api/cadastros/Lookups/Unidades
+
+Abastecimento em Postos:
+- /api/frotas/Abastecimentos/ConsultaAbastecimento
+- /api/frotas/Abastecimentos/GravaAbastecimento
+- /api/frotas/Lookups/Equipamentos
+- /api/frotas/Lookups/EquipamentosMobile
+- /api/cadastros/Lookups/Pessoas (Fornecedor)
+- /api/cadastros/Lookups/Empreendimentos
+- /api/cadastros/Lookups/Empresas
+- /api/cadastros/Lookups/PlanoContasDespesas
+- /api/orcamentos/Lookups/Etapas
+- /api/suprimentos/Lookups/Insumos
+- /api/cadastros/Lookups/Blocos
+
+====================================================================
+3. REGRAS DE NEGOCIO / CONTRATOS QUE AINDA PRECISAM DO BACKEND
+====================================================================
+
+1) Regra exata de EDICAO via GravaAbastecimento
+- A documentacao mostra apenas o endpoint /api/frotas/Abastecimentos/GravaAbastecimento.
+- O Swagger oficial publica IdAbastecimento no endpoint de gravacao.
+- O Swagger oficial NAO publica nenhum endpoint separado de update, editar, alterar ou buscar detalhes completos de Abastecimentos. So existem endpoints de Consulta* e GravaAbastecimento.
+- Ainda assim, nao descreve em texto a regra de negocio que distingue CRIACAO de EDICAO.
+- No frontend hoje ja enviamos variacoes de IdAbastecimento e tambem CodAbastecimentoExterno quando ele vier da consulta.
+- Mesmo assim, no ambiente do cliente Francisco a API ainda responde com duplicidade no IDX_TB23_CDGWEB.
+
+O backend precisa informar objetivamente:
+- Qual campo identifica update: IdAbastecimento, AbastecimentoId, idAbastecimento, CodAbastecimentoExterno ou outro
+- Se update e suportado no mesmo endpoint GravaAbastecimento
+- Se existe outro endpoint ou outra versao de contrato para atualizar abastecimento existente
+
+2) Campos faltantes na API de consulta para reconstituir a edicao completa
+- Os documentos internos ja registram que ConsultaAbastecimento nao retorna todos os IDs necessarios.
+- Isso afeta principalmente o fluxo proprio ao abrir detalhes/edicao.
+
+O backend precisa esclarecer ou fornecer:
+- destinoId
+- empreendimentoId/emprdId
+- etapaId
+- blocoId
+- responsavelId valido
+- colaborador/frentista
+- aplicacaoId
+- tipoPrevAbast
+- horaAbastecimento
+
+3) Regra para destino nao equipamento no Abastecimento Proprio
+- A documentacao diz para enviar IdTanqueDestino quando destinoTipo <> M.
+- O frontend ja faz isso.
+- Falta confirmacao do backend sobre a combinacao valida com IdEquipamento.
+
+O backend precisa informar:
+- Quando IdEquipamento deve ser omitido obrigatoriamente
+- Se ha combinacoes validas para destino B, C e D
+
+4) Contrato do codAbastecimentoExterno / TB23_CDGWEB
+- A documentacao de consulta mostra codAbastecimentoExterno no retorno.
+- O erro do cliente referencia o indice IDX_TB23_CDGWEB.
+- O Swagger oficial de GravaAbastecimento NAO publica codAbastecimentoExterno como parametro do endpoint.
+- Portanto, por contrato publicado, o update deveria depender de IdAbastecimento e nao deste campo.
+- Ainda assim, o backend precisa esclarecer a relacao entre o erro do indice TB23_CDGWEB e a logica interna de atualizacao.
+
+O backend precisa informar:
+- Se TB23_CDGWEB e o mesmo conceito de codAbastecimentoExterno
+- Se esse campo precisa ser reenviado obrigatoriamente para update
+- Se esse campo e gerado pelo servidor ou deve ser preservado pelo app
+
+====================================================================
+4. RESUMO EXECUTIVO
+====================================================================
+
+O que estava claramente faltando no frontend, conforme documentacao, foi implementado.
+
+O que continua pendente nao e descoberta de rota nova; e definicao do contrato de edicao do abastecimento e dos identificadores obrigatorios para update no backend.
+
+Evidencia objetiva adicional do Swagger oficial:
+- Endpoints publicados de Abastecimentos: ConsultaAbastecimento, ConsultaAplicacaoPrevEquipInsumo, ConsultaBico, ConsultaBomba, ConsultaDestinoAbastecimentos, ConsultaEstoqueComboio, ConsultaFornecedorAbastecimento, ConsultaUltimoNumeroBico e GravaAbastecimento.
+- Nenhum endpoint publicado com nome de update/editar/alterar/detalhe completo para abastecimentos.
+
+Proxima acao sugerida com o time de backend:
+- responder formalmente qual e o payload correto para atualizar um abastecimento existente no endpoint GravaAbastecimento
+- ou disponibilizar endpoint especifico de update/busca completa, se o contrato atual nao suportar isso com clareza

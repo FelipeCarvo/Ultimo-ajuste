@@ -164,6 +164,23 @@ export interface AbastecimentoConsulta {
 export class AbastecimentoService {
   constructor(private api: ApiService) {}
 
+  private normalizePayloadForCompat(payload: Record<string, unknown>): Record<string, unknown> {
+    const nextPayload = { ...payload };
+    const abastecimentoId =
+      nextPayload['IdAbastecimento'] ??
+      nextPayload['AbastecimentoId'] ??
+      nextPayload['idAbastecimento'] ??
+      nextPayload['abastecimentoId'];
+
+    if (abastecimentoId !== null && typeof abastecimentoId !== 'undefined' && String(abastecimentoId).trim() !== '') {
+      nextPayload['IdAbastecimento'] = abastecimentoId;
+      nextPayload['AbastecimentoId'] = abastecimentoId;
+      nextPayload['idAbastecimento'] = abastecimentoId;
+    }
+
+    return nextPayload;
+  }
+
   private normalizeConsultaAbastecimentoPorIdResponse(response: unknown, abastecimentoId: string) {
     const norm = normalizeNulls(response);
     if (Array.isArray(norm)) {
@@ -217,8 +234,14 @@ export class AbastecimentoService {
       params['IdEquipamento'] = equipamentoId;
       params['equipamentoId'] = equipamentoId;
     }
-    if (filtros.dataInicial) params['DataInicial'] = filtros.dataInicial;
-    if (filtros.dataFinal) params['DataFinal'] = filtros.dataFinal;
+    if (filtros.dataInicial) {
+      params['DataIni'] = filtros.dataInicial;
+      params['DataInicial'] = filtros.dataInicial;
+    }
+    if (filtros.dataFinal) {
+      params['DataFim'] = filtros.dataFinal;
+      params['DataFinal'] = filtros.dataFinal;
+    }
     if (numVoucher) {
       params['NumVoucher'] = numVoucher;
       params['numVoucher'] = numVoucher;
@@ -236,7 +259,8 @@ export class AbastecimentoService {
       TpAbastecimento: 1,
       // compat: registros do app são gravados com Origem=3
       Origem: 3,
-      // utilize apenas um parâmetro de ID
+      // swagger publica IdAbastecimento; mantemos alias por compatibilidade entre ambientes
+      IdAbastecimento: abastecimentoId,
       AbastecimentoId: abastecimentoId,
     };
     return this.api.get<unknown[]>('/api/frotas/Abastecimentos/ConsultaAbastecimento', params);
@@ -342,11 +366,11 @@ listarColaboradoresFrentista() {
   }) {
     const params: Record<string, unknown> = {
       TpAbastecimento: 0,
-      // TpAbastecimento: 0 = Abastecimento Próprio
-      // Não filtramos por Origem para buscar todos os registros retornados pela API
+      Origem: 3,
     };
 
     if (filtros.origemTanque) {
+      params.ComboioBomba = filtros.origemTanque;
       params.BombaId = filtros.origemTanque;
       params.IdTanqueOrigem = filtros.origemTanque;
       params.comboioBombaId = filtros.origemTanque;
@@ -357,8 +381,14 @@ listarColaboradoresFrentista() {
       params.equipamentoId = filtros.equipamento;
     }
 
-    if (filtros.dataInicial) params.DataInicial = filtros.dataInicial;
-    if (filtros.dataFinal) params.DataFinal = filtros.dataFinal;
+    if (filtros.dataInicial) {
+      params.DataIni = filtros.dataInicial;
+      params.DataInicial = filtros.dataInicial;
+    }
+    if (filtros.dataFinal) {
+      params.DataFim = filtros.dataFinal;
+      params.DataFinal = filtros.dataFinal;
+    }
 
     return this.api.get<AbastecimentoConsulta[]>(
       '/api/frotas/Abastecimentos/ConsultaAbastecimento',
@@ -374,15 +404,15 @@ listarColaboradoresFrentista() {
     const paramsComOrigem: Record<string, string | number> = {
       TpAbastecimento: 0,
       Origem: 3,
+      IdAbastecimento: abastecimentoId,
       AbastecimentoId: abastecimentoId,
       idAbastecimento: abastecimentoId,
-      IdAbastecimento: abastecimentoId,
     };
     const paramsSemOrigem: Record<string, string | number> = {
       TpAbastecimento: 0,
+      IdAbastecimento: abastecimentoId,
       AbastecimentoId: abastecimentoId,
       idAbastecimento: abastecimentoId,
-      IdAbastecimento: abastecimentoId,
     };
 
     return this.api.get<unknown[]>(endpoint, paramsComOrigem).pipe(
@@ -401,6 +431,7 @@ listarColaboradoresFrentista() {
 
   // Gravação de abastecimento (Próprio ou Posto)
   gravarAbastecimento(payload: Record<string, unknown>) {
+    const normalizedPayload = this.normalizePayloadForCompat(payload);
     const obrigatorios: { campo: string; label: string; regra?: (v: unknown) => boolean; }[] = [
       {
         campo: 'TpAbastecimento',
@@ -410,11 +441,11 @@ listarColaboradoresFrentista() {
       { campo: 'DataAbastecimento', label: 'Data do Abastecimento', regra: v => !!v },
       // Só exige Origem/Tanque para abastecimento próprio (TpAbastecimento: 0)
       // Para postos (TpAbastecimento: 1), não é obrigatório
-      ...(payload['TpAbastecimento'] === 0 ? [
+      ...(normalizedPayload['TpAbastecimento'] === 0 ? [
         { campo: 'IdTanqueOrigem', label: 'Origem/Tanque', regra: v => !!v && v !== '00000000-0000-0000-0000-000000000000' }
       ] : []),
       // Só exige Bico para abastecimento próprio (TpAbastecimento: 0)
-      ...(payload['TpAbastecimento'] === 0 ? [
+      ...(normalizedPayload['TpAbastecimento'] === 0 ? [
         { campo: 'IdBico', label: 'Bico', regra: v => !!v && v !== '00000000-0000-0000-0000-000000000000' }
       ] : []),
       { campo: 'IdInsumo', label: 'Insumo', regra: v => !!v && v !== '00000000-0000-0000-0000-000000000000' },
@@ -422,31 +453,31 @@ listarColaboradoresFrentista() {
       { campo: 'Origem', label: 'Origem (fixo 3)', regra: v => v === 3 },
     ];
     // Só exige TpDestino (Destino) se for abastecimento próprio (TpAbastecimento: 0)
-    if (payload['TpAbastecimento'] === 0) {
+    if (normalizedPayload['TpAbastecimento'] === 0) {
       obrigatorios.push({ campo: 'TpDestino', label: 'Destino', regra: v => !!v });
     }
     // IdEquipamento obrigatório quando destinoTipo = 'M'
-    const destinoTipo = payload['TpDestino'] || payload['destinoTipo'];
+    const destinoTipo = normalizedPayload['TpDestino'] || normalizedPayload['destinoTipo'];
     if (destinoTipo === 'M') {
       obrigatorios.push({ campo: 'IdEquipamento', label: 'Equipamento', regra: v => !!v && v !== '00000000-0000-0000-0000-000000000000' });
     }
     // Validação dos campos obrigatórios
     for (const ob of obrigatorios) {
-      const valor = payload[ob.campo];
+      const valor = normalizedPayload[ob.campo];
       if (!ob.regra ? !valor : !ob.regra(valor)) {
         throw new Error(`O campo obrigatório "${ob.label}" não foi informado ou está inválido.`);
       }
     }
 
     // Remover duplicidade de AbastecimentoId/abastecimentoId
-    if ('abastecimentoId' in payload && 'AbastecimentoId' in payload) {
-      delete payload['abastecimentoId'];
+    if ('abastecimentoId' in normalizedPayload && 'AbastecimentoId' in normalizedPayload) {
+      delete normalizedPayload['abastecimentoId'];
     }
 
     // Monta a query string manualmente
     const params = new URLSearchParams();
-    Object.keys(payload).forEach(key => {
-      const value = payload[key];
+    Object.keys(normalizedPayload).forEach(key => {
+      const value = normalizedPayload[key];
       if (value !== null && typeof value !== 'undefined') {
         params.append(key, String(value));
       }
