@@ -143,12 +143,18 @@ export class OrdemServicoService {
 
   // Colaboradores Motoristas / Operadores
   listarColaboradoresMotoristas(): Observable<LookupItem[]> {
-    return this.api.get<LookupItem[]>('/api/frotas/OrdensServico/ConsultaColaborador', { Classificacao: 1 });
+    return this.api.get<LookupItem[]>('/api/frotas/OrdensServico/ConsultaColaborador', {
+      Classificacao: 1,
+      TodosColaboradores: 1,
+    });
   }
 
   // Colaboradores Manutentores
   listarColaboradoresManutentores(): Observable<LookupItem[]> {
-    return this.api.get<LookupItem[]>('/api/frotas/OrdensServico/ConsultaColaborador', { Classificacao: 2 });
+    return this.api.get<LookupItem[]>('/api/frotas/OrdensServico/ConsultaColaborador', {
+      Classificacao: 2,
+      TodosColaboradores: 1,
+    });
   }
 
   // Mock para evitar erro de compilação
