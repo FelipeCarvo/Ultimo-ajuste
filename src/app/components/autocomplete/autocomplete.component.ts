@@ -31,6 +31,8 @@ export class AutocompleteComponent implements OnChanges {
   @Input() valorSelecionado: any;
 
   @Output() selecionado = new EventEmitter<any>();
+  @Output() dropdownAberto = new EventEmitter<void>();
+  @Output() buscaAlterada = new EventEmitter<string>();
 
   @ViewChild('inputRef') inputRef!: ElementRef<HTMLInputElement>;
 
@@ -42,19 +44,33 @@ export class AutocompleteComponent implements OnChanges {
   // 🔄 ATUALIZA QUANDO RECEBE ID
   // =============================
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['lista'] || changes['valorSelecionado']) {
+    const valorSelecionadoMudou = !!changes['valorSelecionado'];
+    const listaMudou = !!changes['lista'];
+
+    if (valorSelecionadoMudou || (listaMudou && this.temValorSelecionado())) {
       this.sincronizarValorSelecionado();
+    }
+
+    if (listaMudou && this.aberto) {
+      this.atualizarListaFiltrada();
     }
   }
 
-  private sincronizarValorSelecionado() {
-    const valorNaoInformado =
+  private temValorSelecionado(): boolean {
+    return !(
       this.valorSelecionado === null ||
       this.valorSelecionado === undefined ||
-      String(this.valorSelecionado).trim() === '';
+      String(this.valorSelecionado).trim() === ''
+    );
+  }
+
+  private sincronizarValorSelecionado() {
+    const valorNaoInformado = !this.temValorSelecionado();
 
     if (valorNaoInformado || !this.lista?.length) {
-      this.textoBusca = '';
+      if (!this.aberto) {
+        this.textoBusca = '';
+      }
       return;
     }
 
@@ -90,6 +106,7 @@ export class AutocompleteComponent implements OnChanges {
 
     this.aberto = true;
     this.listaFiltrada = [...this.lista];
+    this.dropdownAberto.emit();
 
     setTimeout(() => {
       this.inputRef?.nativeElement.focus();
@@ -102,8 +119,14 @@ export class AutocompleteComponent implements OnChanges {
       return;
     }
 
-    const termo = (this.textoBusca || '').toLowerCase();
     this.aberto = true;
+    this.buscaAlterada.emit(this.textoBusca || '');
+
+    this.atualizarListaFiltrada();
+  }
+
+  private atualizarListaFiltrada() {
+    const termo = (this.textoBusca || '').toLowerCase();
 
     if (!termo) {
       this.listaFiltrada = [...this.lista];
@@ -127,6 +150,7 @@ export class AutocompleteComponent implements OnChanges {
     this.textoBusca = '';
     this.listaFiltrada = [...this.lista];
     this.aberto = false;
+    this.buscaAlterada.emit('');
     this.selecionado.emit(null);
   }
 

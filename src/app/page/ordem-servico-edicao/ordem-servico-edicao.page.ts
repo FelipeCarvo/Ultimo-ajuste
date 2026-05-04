@@ -58,6 +58,89 @@ import { HostListener, ElementRef } from '@angular/core';
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class OrdemServicoEdicaoPage implements OnInit {
+  private isUuid(value: unknown): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value ?? '').trim());
+  }
+
+  private isMeaningfulValue(value: unknown): boolean {
+    if (value === null || value === undefined) return false;
+    const normalized = String(value).trim();
+    if (!normalized) return false;
+    if (normalized === '0') return false;
+    if (normalized === '00000000-0000-0000-0000-000000000000') return false;
+    if (normalized.toLowerCase() === 'null') return false;
+    return true;
+  }
+
+  private mergeOsDetalhe(cache: ItemComId | null, api: ItemComId | null): ItemComId | null {
+    if (!cache && !api) return null;
+    if (!cache) return api;
+    if (!api) return cache;
+
+    const merged: ItemComId = { ...cache, ...api };
+
+    const preferCacheWhenApiEmpty: Array<[string, string[]]> = [
+      ['TipoServicoId', ['TipoServicoId', 'tipoServicoId', 'tipo']],
+      ['tpServDescricao', ['tpServDescricao', 'tipoDescricao', 'TipoDescricao']],
+      ['tpServCod', ['tpServCod', 'tpServcod']],
+      ['EquipamentoId', ['EquipamentoId', 'equipId']],
+      ['equipCod', ['equipCod']],
+      ['equipIndentificador', ['equipIndentificador']],
+      ['MotoristaOperadorId', ['MotoristaOperadorId', 'colaboradorId', 'colaColaboradorId']],
+      ['colaboradorNome', ['colaboradorNome']],
+      ['colaboradorCod', ['colaboradorCod']],
+    ];
+
+    for (const [cacheKey, apiKeys] of preferCacheWhenApiEmpty) {
+      const cacheValue = cache[cacheKey];
+      if (!this.isMeaningfulValue(cacheValue)) {
+        continue;
+      }
+
+      const apiHasMeaningfulValue = apiKeys.some((apiKey) => this.isMeaningfulValue(api[apiKey]));
+      if (!apiHasMeaningfulValue) {
+        merged[cacheKey] = cacheValue;
+      }
+    }
+
+    return merged;
+  }
+
+  private atualizarCacheDetalheOsAposSalvar() {
+    const osId = String(this.osId || '').trim();
+    if (!this.isUuid(osId)) {
+      return;
+    }
+
+    const tipoSelecionado = this.tiposOsLista.find((item: ItemComId) => String(item.id ?? '').trim() === String(this.tipo).trim());
+    const equipamentoSelecionado = this.equipamentosLista.find((item: ItemComId) => String(item.id ?? '').trim() === String(this.equipamento).trim());
+    const motoristaSelecionado = this.motoristasLista.find((item: ItemComId) => String(item.id ?? '').trim() === String(this.operadorMotorista).trim());
+
+    const cacheAtual = this.obterDetalheOsCache(osId) || {};
+    this.salvarDetalheOsCache(osId, {
+      ...cacheAtual,
+      osId,
+      OsId: osId,
+      numeroOs: this.numeroOS,
+      NumeroOs: this.numeroOS,
+      osDescricao: this.descricao,
+      Descricao: this.descricao,
+      TipoServicoId: this.tipo || cacheAtual['TipoServicoId'],
+      tipoServicoId: this.tipo || cacheAtual['tipoServicoId'],
+      tpServDescricao: tipoSelecionado?.descricao ?? tipoSelecionado?.nome ?? cacheAtual['tpServDescricao'],
+      tpServCod: tipoSelecionado?.codigo ?? cacheAtual['tpServCod'],
+      tipoDescricao: tipoSelecionado?.descricao ?? tipoSelecionado?.nome ?? cacheAtual['tipoDescricao'],
+      EquipamentoId: this.equipamento || cacheAtual['EquipamentoId'],
+      equipId: this.equipamento || cacheAtual['equipId'],
+      equipCod: equipamentoSelecionado?.codigo ?? cacheAtual['equipCod'],
+      equipIndentificador: equipamentoSelecionado?.descricao ?? equipamentoSelecionado?.nome ?? cacheAtual['equipIndentificador'],
+      MotoristaOperadorId: this.operadorMotorista || cacheAtual['MotoristaOperadorId'],
+      colaboradorId: this.operadorMotorista || cacheAtual['colaboradorId'],
+      colaboradorNome: motoristaSelecionado?.colaboradorNome ?? motoristaSelecionado?.descricao ?? cacheAtual['colaboradorNome'],
+      colaboradorCod: motoristaSelecionado?.codigo ?? cacheAtual['colaboradorCod'],
+    });
+  }
+
   private getDetalheOsCacheKey(osId: string) {
     return `os:detalhe:${osId}`;
   }
@@ -225,136 +308,6 @@ this.dataAbertura = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStar
     this.fotoPreviewDataUrl = null;
     this.fotoModalAberto = false;
     this.atualizarHrefSeguro();
-  }
-
-  private valorLookup(value: unknown): string {
-    if (value === null || value === undefined) return '';
-    return String(value).trim();
-  }
-
-  private temValorLookup(value: unknown): boolean {
-    const normalized = this.valorLookup(value);
-    if (!normalized) return false;
-    if (normalized === '00000000-0000-0000-0000-000000000000') return false;
-
-    const lower = normalized.toLowerCase();
-    return lower !== 'null' && lower !== 'undefined';
-  }
-
-  private normalizarTextoLookup(value: unknown): string {
-    return this.valorLookup(value)
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
-  }
-
-  private garantirOpcaoSelecionada<T extends Record<string, unknown>>(
-    lista: T[],
-    id: unknown,
-    descricao: unknown,
-    extras?: Partial<T>
-  ): T[] {
-    const idNormalizado = this.valorLookup(id);
-    const descricaoNormalizada = this.valorLookup(descricao);
-
-    if (!this.temValorLookup(idNormalizado) || !descricaoNormalizada) {
-      return lista;
-    }
-
-    if (lista.some((item) => this.valorLookup(item['id']) === idNormalizado)) {
-      return lista;
-    }
-
-    return [
-      ...lista,
-      {
-        id: idNormalizado,
-        descricao: descricaoNormalizada,
-        ...(extras ?? {}),
-      } as unknown as T,
-    ];
-  }
-
-  private obterMotoristaOperadorFallback(dados: ItemComId): { id: string | null; descricao: string | null; codigo: string | null } {
-    const id = [
-      dados.MotoristaOperadorId,
-      dados.ColaboradorId,
-      dados.colaboradorId,
-      dados.colaColaboradorId,
-      dados.colaboradorCod,
-      dados.colaborador,
-    ].map((value) => this.valorLookup(value)).find((value) => this.temValorLookup(value)) || null;
-
-    const codigo = [dados.colaboradorCod, dados.codigo]
-      .map((value) => this.valorLookup(value))
-      .find((value) => this.temValorLookup(value)) || null;
-
-    const descricao = [dados.colaboradorNome, dados.nomeMotoristaOperador, dados.colaborador, dados.nome]
-      .map((value) => this.valorLookup(value))
-      .find((value) => !!value) || (codigo ? `Motorista/Operador ${codigo}` : null);
-
-    return { id, descricao, codigo };
-  }
-
-  private obterManutentorFallback(dados: ItemComId): { id: string | null; descricao: string | null; codigo: string | null } {
-    const id = [
-      dados.ManutentorResponsavelId,
-      dados.manutentorResponsavelId,
-      dados.manutentorId,
-      dados.fornId,
-      dados.colaboradorId,
-      dados.colaboradorCod,
-    ].map((value) => this.valorLookup(value)).find((value) => this.temValorLookup(value)) || null;
-
-    const codigo = [dados.manutentorCod, dados.colaboradorCod, dados.codigo]
-      .map((value) => this.valorLookup(value))
-      .find((value) => this.temValorLookup(value)) || null;
-
-    const descricao = [dados.manutentorNome, dados.colaboradorNome, dados.nome, dados.razaoSocial]
-      .map((value) => this.valorLookup(value))
-      .find((value) => !!value) || (codigo ? `Manutentor ${codigo}` : null);
-
-    return { id, descricao, codigo };
-  }
-
-  private encontrarItemLista(
-    lista: ItemComId[] | null | undefined,
-    candidatos: unknown[],
-    campos: string[] = [],
-    descricoes: string[] = []
-  ): ItemComId | null {
-    if (!lista?.length) return null;
-
-    const valores = Array.from(
-      new Set(
-        candidatos
-          .map((value) => this.valorLookup(value))
-          .filter((value) => this.temValorLookup(value))
-      )
-    );
-
-    if (!valores.length) return null;
-
-    const camposBusca = ['id', 'codigo', 'valor', ...campos];
-
-    for (const valor of valores) {
-      const encontrado = lista.find((item) =>
-        camposBusca.some((campo) => this.valorLookup(item[campo]) === valor)
-      );
-      if (encontrado) return encontrado;
-    }
-
-    if (!descricoes.length) return null;
-
-    for (const valor of valores) {
-      const texto = this.normalizarTextoLookup(valor);
-      const encontrado = lista.find((item) =>
-        descricoes.some((campo) => this.normalizarTextoLookup(item[campo]) === texto)
-      );
-      if (encontrado) return encontrado;
-    }
-
-    return null;
   }
 
   abrirFotoOverlay(index?: number) {
@@ -755,36 +708,11 @@ ngOnInit() {
         motoristas,
         manutentores,
       }) => {
-        this.equipamentosLista = (equipamentos || []).map((e: ItemComId) => ({
-          ...e,
-          id: String(e.id || e.EquipamentoId || e.equipamentoId || ''),
-          codigo: e.codigo || e.equipCod || e.codEquipamento || '',
-          descricao: String(e.descricao || e.nome || e.equipamento || e.equipIndentificador || '')
-        }));
-        this.empreendimentosLista = (empreendimentos || []).map((e: ItemComId) => ({
-          ...e,
-          id: String(e.id || e.EmpreendimentoId || e.empreendimentoId || e.emprdId || e.emprdAberturaId || ''),
-          codigo: e.codigo || e.emprdCod || e.empreendimentoCod || e.emprdAberturaCod || '',
-          descricao: String(e.descricao || e.nome || e.empreendimento || '')
-        }));
-        this.classificacoesLista = (classificacoes || []).map((c: ItemComId) => ({
-          ...c,
-          id: String(c.id || c.ClassificacaoId || c.classificacaoId || c.Classificacao || ''),
-          codigo: c.codigo || c.classifCod || c.ClassificacaoCod || '',
-          descricao: String(c.descricao || c.nome || c.classificacaoDescricao || '')
-        }));
-        this.tiposOsLista = (tipos || []).map((t: ItemComId) => ({
-          ...t,
-          id: String(t.id || t.TipoServicoId || t.tipoServicoId || t.TipoOs || ''),
-          codigo: t.codigo || t.tpServCod || t.tpServcod || '',
-          descricao: String(t.descricao || t.nome || t.tpServDescricao || '')
-        }));
-        this.causasIntervencaoLista = (causas || []).map((c: ItemComId) => ({
-          ...c,
-          id: String(c.id || c.CausaIntervencao || c.causaIntervencaoId || c.CausasId || ''),
-          codigo: c.codigo || c.causaIntervenId || '',
-          descricao: String(c.descricao || c.nome || c.causasDescri || '')
-        }));
+        this.equipamentosLista = equipamentos || [];
+        this.empreendimentosLista = empreendimentos || [];
+        this.classificacoesLista = classificacoes || [];
+        this.tiposOsLista = (tipos || []).map((item: ItemComId) => this.normalizeTipoLookupItem(item));
+        this.causasIntervencaoLista = causas || [];
 
         this.motoristasLista = (motoristas || []).map((m: ItemComId) => ({
           ...m,
@@ -795,13 +723,11 @@ ngOnInit() {
             m.colaboradorCod ||
             ''
           ),
-          codigo: m.codigo || m.colaboradorCod || '',
           colaboradorNome:
             m.colaboradorNome ||
             m.nome ||
             m.descricao ||
             m.razaoSocial ||
-            m.colaborador ||
             ''
         }));
         this.motoristasFiltrados = [...this.motoristasLista];
@@ -809,16 +735,7 @@ ngOnInit() {
         this.manutentoresLista = (manutentores || []).map((m: ItemComId) => ({
           ...m,
           id: String(m.fornId || m.colaboradorId || m.id || m.colaboradorCod || ''),
-          codigo: m.codigo || m.colaboradorCod || '',
-          colaboradorNome:
-            m.colaboradorNome ||
-            m.nome ||
-            m.descricao ||
-            m.razaoSocial ||
-            m.colaborador ||
-            ''
         }));
-        this.manutentoresFiltrados = [...this.manutentoresLista];
 
         callback();
       },
@@ -990,7 +907,7 @@ onEquipamentoSelecionado(item: ItemComId | Event) {
   }
   // Se for Event, ignora
   if ((item as Event).type) return;
-  this.equipamento = String((item as ItemComId).id || '');
+  this.equipamento = String((item as ItemComId).id ?? '');
 }
   /* ==========================
    DROPDOWN EMPREENDIMENTO
@@ -1001,7 +918,7 @@ onEmpreendimentoSelecionado(item: ItemComId | Event) {
     return;
   }
   if ((item as Event).type) return;
-  this.empreendimento = String((item as ItemComId).id || '');
+  this.empreendimento = String((item as ItemComId).id ?? '');
 }
 
   /* =============================
@@ -1013,7 +930,7 @@ onCausaSelecionada(item: ItemComId | Event) {
     return;
   }
   if ((item as Event).type) return;
-  this.causaIntervencao = String((item as ItemComId).id || '');
+  this.causaIntervencao = String((item as ItemComId).id ?? '');
 }
 
   /* ===========================
@@ -1025,7 +942,7 @@ onMotoristaSelecionado(item: ItemComId | Event) {
     return;
   }
   if ((item as Event).type) return;
-  this.operadorMotorista = String((item as ItemComId).id || '');
+  this.operadorMotorista = String((item as ItemComId).id ?? '');
 }
 
   /* =====================================
@@ -1037,7 +954,7 @@ onEmpreendimentoIntervSelecionado(item: ItemComId | Event) {
     return;
   }
   if ((item as Event).type) return;
-  this.empreendimentoIntervencao = String((item as ItemComId).id || '');
+  this.empreendimentoIntervencao = String((item as ItemComId).id ?? '');
 }
 
   /* =====================================
@@ -1063,7 +980,7 @@ onManutentorSelecionado(item: ItemComId | Event) {
     return;
   }
   if ((item as Event).type) return;
-  this.manutentor = String((item as ItemComId).id || '');
+  this.manutentor = String((item as ItemComId).id ?? '');
 }
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1106,8 +1023,8 @@ somenteNumero(event: Event, campo: 'hodometro' | 'horimetro') {
       operadorMotorista: this.operadorMotorista,
       manutentor: this.manutentor,
       statusCodigo: String(this.statusCodigo),
-      dataAbertura: this.toApiDate(this.dataAbertura) || undefined,
-      dataConclusao: this.toApiDate(this.dataConclusao) || undefined,
+      dataAbertura: this.toApiDate(this.dataAbertura) ?? undefined,
+      dataConclusao: this.toApiDate(this.dataConclusao) ?? undefined,
       hodometro: this.hodometro,
       horimetro: this.horimetro,
 
@@ -1157,7 +1074,7 @@ filtrarEquipamentos() {
 }
 
   selecionarEquipamento(eq: ItemComId) {
-  this.equipamento = String(eq.id || '');
+  this.equipamento = String(eq.id ?? '');
   this.textoBuscaEquipamento = String(eq.descricao || eq.nome || eq.equipamento || '');
   this.modalEquipamentoAberto = false;
 }
@@ -1494,43 +1411,13 @@ private carregarOsCompleta(osId: string) {
   next: (res: ItemComId | ItemComId[] | null) => {
 
   const osApi = Array.isArray(res) ? res[0] : res;
-  const osDados = osApi
-    ? { ...(detalheCache || {}), ...osApi }
-    : detalheCache;
+  const osDados = this.mergeOsDetalhe(detalheCache, osApi ?? null);
 
   if (!osDados) {
     return;
   }
 
   this.salvarDetalheOsCache(osId, osDados);
-
-  const motoristaFallback = this.obterMotoristaOperadorFallback(osDados);
-  if (motoristaFallback.id && motoristaFallback.descricao) {
-    this.motoristasLista = this.garantirOpcaoSelecionada(
-      this.motoristasLista,
-      motoristaFallback.id,
-      motoristaFallback.descricao,
-      {
-        colaboradorNome: motoristaFallback.descricao,
-        colaboradorCod: motoristaFallback.codigo || undefined,
-      }
-    );
-    this.motoristasFiltrados = [...this.motoristasLista];
-  }
-
-  const manutentorFallback = this.obterManutentorFallback(osDados);
-  if (manutentorFallback.id && manutentorFallback.descricao) {
-    this.manutentoresLista = this.garantirOpcaoSelecionada(
-      this.manutentoresLista,
-      manutentorFallback.id,
-      manutentorFallback.descricao,
-      {
-        colaboradorNome: manutentorFallback.descricao,
-        colaboradorCod: manutentorFallback.codigo || undefined,
-      }
-    );
-    this.manutentoresFiltrados = [...this.manutentoresLista];
-  }
 
   // ===============================
   //  NÚMERO OS (do osCod da API)
@@ -1575,21 +1462,7 @@ this.dataConclusao = dataConclusaoRaw ? dataConclusaoRaw.split('T')[0] : null;
       this.horimetro = String(osDados.horimetro ?? osDados.Horimetro ?? osDados.osHorimetro ?? '');
 
       // Tipo
-      const tipoEncontrado = this.encontrarItemLista(
-        this.tiposOsLista,
-        [
-          osDados.TipoServicoId,
-          osDados.tipoServicoId,
-          osDados.TipoOs,
-          osDados.tpServCod,
-          osDados.tpServcod,
-          osDados.tipo,
-          osDados.tpServDescricao
-        ],
-        ['TipoServicoId', 'tipoServicoId', 'TipoOs', 'tpServCod', 'tpServcod'],
-        ['descricao', 'nome']
-      );
-      this.tipo = tipoEncontrado?.id ? String(tipoEncontrado.id) : '';
+      this.preencherTipoOs(osDados);
 
       // Status
       const statusCodigoApiRaw = osDados.statusCodigo ?? osDados.statusCod ?? osDados.Status ?? osDados.status ?? null;
@@ -1612,142 +1485,285 @@ this.dataConclusao = dataConclusaoRaw ? dataConclusaoRaw.split('T')[0] : null;
       }
       this.statusCodigo = statusEncontrado ? statusEncontrado.valor : statusCodigoApi;
 
-      // Operador/Motorista
-      const motoristaId =
-        osDados.MotoristaOperadorId ??
-        osDados.ColaboradorId ??
-        osDados.colaboradorId ??
-        osDados.colaboradorCod ??
-        osDados.colaColaboradorId ??
-        osDados.colaborador ??
-        null;
-      const motoristaEncontrado = this.encontrarItemLista(
-        this.motoristasLista,
-        [
-          osDados.MotoristaOperadorId,
-          osDados.ColaboradorId,
-          osDados.colaboradorId,
-          osDados.colaboradorCod,
-          osDados.colaColaboradorId,
-          osDados.colaborador,
-          osDados.colaboradorNome
-        ],
-        ['colaboradorId', 'colaColaboradorId', 'colaboradorCod', 'fornId'],
-        ['colaboradorNome', 'descricao', 'nome']
-      );
-      if (motoristaEncontrado) {
-        this.operadorMotorista = String(motoristaEncontrado.id);
-      } else if (motoristaId) {
-        this.operadorMotorista = String(motoristaId);
-      } else {
-        this.operadorMotorista = '';
-      }
+      this.preencherMotoristaOperadorOs(osDados);
       // Bloco duplicado removido: tipoCodigo já tratado acima
-      const equipamento = this.encontrarItemLista(
-        this.equipamentosLista,
-        [
-          osDados.equipId,
-          osDados.EquipamentoId,
-          osDados.equipamentoId,
-          osDados.equipCod,
-          osDados.codEquipamento,
-          osDados.equipIndentificador
-        ],
-        ['EquipamentoId', 'equipamentoId', 'equipCod', 'codEquipamento'],
-        ['descricao', 'nome', 'equipamento', 'equipIndentificador']
-      );
-      this.equipamento = equipamento?.id || '';
+      this.preencherEquipamentoOs(osDados);
       // ===============================
       // EMPREENDIMENTO
       // ===============================
-      const empId = String(
-        osDados.emprdAberturaId ??
-        osDados.emprdAberturaCod ??
-        ''
-      );
-      const empreendimentoEncontrado =
-        empId && empId !== '00000000-0000-0000-0000-000000000000'
-          ? this.empreendimentosLista.find((e: ItemComId) =>
-              String(e.id ?? e.codigo ?? e.EmpreendimentoId ?? e.empreendimentoId ?? '') === empId
-            )
-          : null;
-      this.empreendimento = empreendimentoEncontrado?.id
-        ? String(empreendimentoEncontrado.id)
-        : (empId && empId !== '00000000-0000-0000-0000-000000000000' ? empId : '');
+      const empId = String(osDados.emprdId ?? osDados.emprdintervencaoId ?? '');
+      this.empreendimento = (empId && empId !== '00000000-0000-0000-0000-000000000000') ? empId : '';
 
       // ===============================
       // CLASSIFICAÇÃO
       // ==============================
 
-      const classificacaoEncontrada = this.encontrarItemLista(
-        this.classificacoesLista,
-        [
-          osDados.ClassificacaoId,
-          osDados.Classificacao,
-          osDados.classificacaoId,
-          osDados.classifCod,
-          osDados.classifId,
-          osDados.classificacaoDescricao
-        ],
-        ['ClassificacaoId', 'classificacaoId', 'Classificacao', 'classifCod', 'classifId'],
-        ['descricao', 'nome']
-      );
-      this.classificacao = classificacaoEncontrada?.id ? String(classificacaoEncontrada.id) : '';
+      const classifId = osDados.ClassificacaoId ?? osDados.classifCod ?? osDados.classifId ?? null;
+      if (classifId && this.classificacoesLista?.length) {
+        const classificacaoEncontrada = this.classificacoesLista.find((c: ItemComId) =>
+          String(c.id) === String(classifId) ||
+          String(c.ClassificacaoId) === String(classifId) ||
+          String(c.codigo) === String(classifId)
+        );
+        this.classificacao = classificacaoEncontrada ? String(classificacaoEncontrada.id) : String(classifId);
+      } else {
+        this.classificacao = '';
+      }
 // ===============================
 // CAUSA INTERVENÇÃO
 // ===============================
 
-      const causa = this.encontrarItemLista(
-        this.causasIntervencaoLista,
-        [
-          osDados.causasId,
-          osDados.CausasId,
-          osDados.causaIntervenId,
-          osDados.causaIntervencaoId,
-          osDados.CausaIntervencao,
-          osDados.causasDescri
-        ],
-        ['CausasId', 'causaIntervenId', 'causaIntervencaoId', 'CausaIntervencao'],
-        ['descricao', 'nome']
-      );
+      let causa = null;
+      const causaId = String(osDados.causasId ?? osDados.CausasId ?? '');
+      if (causaId && causaId !== '00000000-0000-0000-0000-000000000000') {
+        causa = this.causasIntervencaoLista.find((c: ItemComId) => String(c.id ?? c.codigo ?? c.CausaIntervencao) === causaId);
+      }
       this.causaIntervencao = causa?.id || '';
 
 
       // ===============================
       // MANUTENTOR
       // ===============================
-      const manutentor = this.encontrarItemLista(
-        this.manutentoresLista,
-        [
-          osDados.manutentorId,
-          osDados.ManutentorResponsavelId,
-          osDados.manutentorResponsavelId,
-          osDados.fornId,
-          osDados.colaboradorId,
-          osDados.colaboradorCod,
-          osDados.manutentorNome,
-          osDados.colaboradorNome
-        ],
-        ['manutentorId', 'ManutentorResponsavelId', 'manutentorResponsavelId', 'fornId', 'colaboradorId', 'colaboradorCod'],
-        ['colaboradorNome', 'descricao', 'nome', 'razaoSocial']
-      );
+      let manutentor = null;
+      const manutentorId = String(osDados.manutentorId ?? osDados.ManutentorResponsavelId ?? '');
+      if (manutentorId && manutentorId !== '00000000-0000-0000-0000-000000000000') {
+        manutentor = this.manutentoresLista.find((m: ItemComId) => String(m.id ?? m.manutentorId ?? m.colaboradorCod) === manutentorId);
+      }
       this.manutentor = manutentor?.id || '';
 
       // ===============================
       //  EMPREENDIMENTO INTERVENÇÃO
       // ===============================
       let empInterv = null;
-      const empIntervId = String(
-        osDados.emprdintervencaoId ??
-        osDados.emprdintervencaoCod ??
-        ''
-      );
+      const empIntervId = String(osDados.emprdintervencaoId ?? osDados.emprdintervencaoCod ?? '');
       if (empIntervId && empIntervId !== '00000000-0000-0000-0000-000000000000') {
         empInterv = this.empreendimentosLista.find((e: ItemComId) => String(e.id ?? e.codigo ?? e.EmpreendimentoId) === empIntervId);
       }
       this.empreendimentoIntervencao = empInterv?.id || '';
     },
   });
+}
+
+private prependLookupOption(lista: ItemComId[], item: ItemComId): ItemComId[] {
+  const itemId = String(item.id ?? '').trim();
+  if (!itemId) {
+    return lista;
+  }
+
+  const semDuplicado = (lista || []).filter(existing => String(existing.id ?? '').trim() !== itemId);
+  return [item, ...semDuplicado];
+}
+
+private normalizeTipoLookupItem(item: ItemComId): ItemComId {
+  return {
+    ...item,
+    descricao: String(
+      item.descricao ??
+      item.nome ??
+      item.tipoDescricao ??
+      item.TipoDescricao ??
+      item.tpServDescricao ??
+      item.label ??
+      item.codigo ??
+      ''
+    ).trim(),
+    codigo: item.codigo ?? item.tpServCod ?? item.tpServcod,
+  };
+}
+
+private preencherEquipamentoOs(osDados: ItemComId) {
+  const equipId = String(osDados.equipId ?? osDados.EquipamentoId ?? '').trim();
+  const equipCod = String(osDados.equipCod ?? osDados.EquipamentoCod ?? '').trim();
+  const equipIdentificador = String(osDados.equipIndentificador ?? osDados.equipDescricao ?? osDados.equipamento ?? '').trim();
+
+  if (!equipId || equipId === '00000000-0000-0000-0000-000000000000') {
+    this.equipamento = '';
+    return;
+  }
+
+  const equipamentoExistente = this.equipamentosLista.find((item: ItemComId) => String(item.id ?? '').trim() === equipId);
+  if (equipamentoExistente?.id) {
+    this.equipamento = String(equipamentoExistente.id);
+    return;
+  }
+
+  const descricaoFallback = [equipCod, equipIdentificador].filter(Boolean).join(' - ');
+  if (descricaoFallback) {
+    this.equipamentosLista = this.prependLookupOption(this.equipamentosLista, {
+      id: equipId,
+      descricao: descricaoFallback,
+      codigo: equipCod || undefined,
+    });
+    this.equipamento = equipId;
+    return;
+  }
+
+  this.ordemService.listarEquipamentos('', equipId).subscribe({
+    next: (itens) => {
+      const item = (itens || []).find((entry: ItemComId) => String(entry.id ?? '').trim() === equipId);
+      if (item) {
+        this.equipamentosLista = this.prependLookupOption(this.equipamentosLista, item);
+        this.equipamento = String(item.id ?? '');
+        return;
+      }
+
+      this.equipamento = equipId;
+    },
+    error: () => {
+      this.equipamento = equipId;
+    }
+  });
+}
+
+private preencherTipoOs(osDados: ItemComId) {
+  const tipoId = String(osDados.TipoServicoId ?? osDados.tipoServicoId ?? osDados.tipo ?? '').trim();
+  const tipoCodigo = String(osDados.tpServCod ?? osDados.tpServcod ?? osDados.codigo ?? '').trim();
+  const tipoDescricao = String(osDados.tpServDescricao ?? osDados.tipoDescricao ?? osDados.TipoDescricao ?? '').trim();
+
+  const tipoExistente = (this.tiposOsLista || []).find((item: ItemComId) => {
+    const itemId = String(item.id ?? '').trim();
+    const itemCodigo = String(item.codigo ?? '').trim();
+    const itemDescricao = String(item.descricao ?? item.nome ?? '').trim().toUpperCase();
+
+    return (
+      (!!tipoId && itemId === tipoId) ||
+      (!!tipoCodigo && itemCodigo === tipoCodigo) ||
+      (!!tipoDescricao && itemDescricao === tipoDescricao.toUpperCase())
+    );
+  });
+
+  if (tipoExistente?.id) {
+    this.tipo = String(tipoExistente.id);
+    return;
+  }
+
+  if (tipoId && this.isUuid(tipoId)) {
+    this.ordemService.listarTiposOs('', tipoId).subscribe({
+      next: (itens) => {
+        const item = (itens || [])
+          .map((entry: ItemComId) => this.normalizeTipoLookupItem(entry))
+          .find((entry: ItemComId) => String(entry.id ?? '').trim() === tipoId);
+        if (item?.id) {
+          this.tiposOsLista = this.prependLookupOption(this.tiposOsLista, item);
+          this.tipo = String(item.id);
+          return;
+        }
+
+        this.tipo = '';
+      },
+      error: () => {
+        this.tipo = '';
+      }
+    });
+    return;
+  }
+
+  if (tipoCodigo) {
+    this.ordemService.listarTiposOs(tipoCodigo, '').subscribe({
+      next: (itens) => {
+        const item = (itens || [])
+          .map((entry: ItemComId) => this.normalizeTipoLookupItem(entry))
+          .find((entry: ItemComId) =>
+          String(entry.codigo ?? '').trim() === tipoCodigo ||
+          String(entry.descricao ?? entry.nome ?? '').trim().toUpperCase() === tipoDescricao.toUpperCase()
+        );
+        if (item?.id) {
+          this.tiposOsLista = this.prependLookupOption(this.tiposOsLista, item);
+          this.tipo = String(item.id);
+          return;
+        }
+
+        if (tipoId && this.isUuid(tipoId) && tipoDescricao) {
+          this.tiposOsLista = this.prependLookupOption(this.tiposOsLista, {
+            id: tipoId,
+            descricao: tipoDescricao,
+            codigo: tipoCodigo || undefined,
+          });
+          this.tipo = tipoId;
+          return;
+        }
+
+        this.tipo = '';
+      },
+      error: () => {
+        this.tipo = '';
+      }
+    });
+    return;
+  }
+
+  if (tipoDescricao) {
+    this.ordemService.listarTiposOs(tipoDescricao, '').subscribe({
+      next: (itens) => {
+        const item = (itens || [])
+          .map((entry: ItemComId) => this.normalizeTipoLookupItem(entry))
+          .find((entry: ItemComId) =>
+          String(entry.descricao ?? entry.nome ?? '').trim().toUpperCase() === tipoDescricao.toUpperCase()
+        );
+        if (item?.id) {
+          this.tiposOsLista = this.prependLookupOption(this.tiposOsLista, item);
+          this.tipo = String(item.id);
+          return;
+        }
+
+        this.tipo = '';
+      },
+      error: () => {
+        this.tipo = '';
+      }
+    });
+    return;
+  }
+
+  this.tipo = '';
+}
+
+private preencherMotoristaOperadorOs(osDados: ItemComId) {
+  const motoristaId = String(
+    osDados.MotoristaOperadorId ??
+    osDados.colaboradorId ??
+    osDados.colaColaboradorId ??
+    ''
+  ).trim();
+  const motoristaCodigo = String(osDados.colaboradorCod ?? '').trim();
+  const motoristaNome = String(osDados.colaboradorNome ?? '').trim();
+
+  let motoristaEncontrado = null;
+  if (this.motoristasLista?.length) {
+    motoristaEncontrado = this.motoristasLista.find(m => String(m.id ?? '').trim() === motoristaId);
+
+    if (!motoristaEncontrado && motoristaCodigo) {
+      motoristaEncontrado = this.motoristasLista.find(m => String(m.codigo ?? '').trim() === motoristaCodigo);
+    }
+
+    if (!motoristaEncontrado && motoristaNome) {
+      motoristaEncontrado = this.motoristasLista.find(m =>
+        String(m.colaboradorNome ?? m.nome ?? m.descricao ?? '').trim().toUpperCase() === motoristaNome.toUpperCase()
+      );
+    }
+  }
+
+  if (motoristaEncontrado?.id) {
+    this.operadorMotorista = String(motoristaEncontrado.id);
+    return;
+  }
+
+  if (motoristaId && motoristaId !== '00000000-0000-0000-0000-000000000000') {
+    const descricaoFallback = motoristaNome || motoristaCodigo;
+    if (descricaoFallback) {
+      this.motoristasLista = this.prependLookupOption(this.motoristasLista, {
+        id: motoristaId,
+        colaboradorNome: descricaoFallback,
+        descricao: descricaoFallback,
+        codigo: motoristaCodigo || undefined,
+      });
+      this.motoristasFiltrados = [...this.motoristasLista];
+      this.operadorMotorista = motoristaId;
+      return;
+    }
+  }
+
+  this.operadorMotorista = '';
 }
 private setarTipoPorCodigo(codigo: number) {
 
@@ -1891,6 +1907,7 @@ console.log('DATA FECHAMENTO ENVIADA:', params.OsDataConclusao);
         this.osId = returnedId;
       }
 
+      this.atualizarCacheDetalheOsAposSalvar();
       this.atualizarQueryParamOsComNovoId(this.osId);
       this.migrarCacheFotoSeMudou(oldOsId, this.osId, osCod);
       this.atualizarPreviewFoto();

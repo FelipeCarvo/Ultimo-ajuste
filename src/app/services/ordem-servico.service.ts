@@ -127,13 +127,19 @@ export class OrdemServicoService {
   }
 
   // Classificação de serviço
-  listarClassificacoesServico(): Observable<LookupItem[]> {
-    return this.api.post<LookupItem[]>('/api/frotas/Lookups/ClassificacaoOs', {});
+  listarClassificacoesServico(pesquisa: string = '', valorSelecionado: string = ''): Observable<LookupItem[]> {
+    return this.api.post<LookupItem[]>('/api/frotas/Lookups/ClassificacaoOs', {
+      pesquisa,
+      valorSelecionado,
+    });
   }
 
   // Tipos de OS
-  listarTiposOs(): Observable<LookupItem[]> {
-    return this.api.post<LookupItem[]>('/api/frotas/Lookups/TipoOs', {});
+  listarTiposOs(pesquisa: string = '', valorSelecionado: string = ''): Observable<LookupItem[]> {
+    return this.api.post<LookupItem[]>('/api/frotas/Lookups/TipoOs', {
+      pesquisa,
+      valorSelecionado,
+    });
   }
 
   // Causas de intervenção
@@ -163,8 +169,11 @@ export class OrdemServicoService {
     return this.api.post('/api/frotas/OrdensServico/GravarDetOrdemServico', payload);
   }
 
-  listarEquipamentos(): Observable<LookupItem[]> {
-    return this.api.post<LookupItem[]>('/api/frotas/Lookups/EquipamentosMobile', {});
+  listarEquipamentos(pesquisa: string = '', valorSelecionado: string = ''): Observable<LookupItem[]> {
+    return this.api.post<LookupItem[]>('/api/frotas/Lookups/EquipamentosMobile', {
+      pesquisa,
+      valorSelecionado,
+    });
     }
 
     public listarStatusOS(): Array<{ codigo: number; descricao: string }> {

@@ -17,6 +17,11 @@
   <div class="os-page">
     <div class="os-card">
 
+      <div class="abp-alert" *ngIf="isModoEdicao">
+        {{ mensagemEdicaoIndisponivel }}
+      </div>
+
+
 <div class="abp-field">
   <label class="abp-label">Origem / Tanque</label>
 
@@ -348,8 +353,8 @@ campoDescricao="descricao"
 
       <!-- Botão confirmar -->
       <div class="abp-actions">
-        <button type="button" class="abp-primary-btn" [disabled]="carregando" (click)="confirmar()">
-          CONFIRMAR
+        <button type="button" class="abp-primary-btn" [disabled]="carregando || isModoEdicao" (click)="confirmar()">
+          {{ isModoEdicao ? 'EDIÇÃO INDISPONÍVEL' : 'CONFIRMAR' }}
         </button>
       </div>
     </div>

@@ -22,6 +22,46 @@ export class AbastecimentoPostosPesquisaPage implements OnInit {
     numVoucher?: string;
   } = {};
 
+  private extrairLista(response: any): any[] {
+    if (!response) return [];
+
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    if (typeof response === 'string') {
+      try {
+        return this.extrairLista(JSON.parse(response));
+      } catch {
+        return [];
+      }
+    }
+
+    if (typeof response === 'object') {
+      const candidatos = [
+        response.items,
+        response.data,
+        response.result,
+        response.resultado,
+        response.value,
+        response.values,
+        response.lista,
+        response.$values,
+        response.registros,
+        response.itens,
+      ];
+
+      const lista = candidatos.find(Array.isArray);
+      if (Array.isArray(lista)) {
+        return lista;
+      }
+
+      return [response];
+    }
+
+    return [];
+  }
+
   formatarData(value?: string | null): string {
     if (!value) return '';
     try {
@@ -256,7 +296,7 @@ if (!possuiFiltroInformado) {
     this.abastecimentoService.consultarAbastecimentoPosto(serverFiltros)
       .subscribe({
         next: (dados) => {
-          const lista = Array.isArray(dados) ? dados : [];
+          const lista = this.extrairLista(dados);
           this.resultados = this.ordenarResultadosPorMaisRecente(
             this.aplicarFiltrosLocal(lista, filtros)
           );
@@ -315,7 +355,7 @@ if (!possuiFiltroInformado) {
     this.carregando = true;
     this.abastecimentoService.consultarAbastecimentoPostoPorId(id).subscribe({
       next: (dados: any) => {
-        const lista = Array.isArray(dados) ? dados : (dados ? [dados] : []);
+        const lista = this.extrairLista(dados);
         const item = lista.find((registro) => this.obterIdAbastecimento(registro) === id) || lista[0] || null;
 
         this.resultados = item ? [item] : [];

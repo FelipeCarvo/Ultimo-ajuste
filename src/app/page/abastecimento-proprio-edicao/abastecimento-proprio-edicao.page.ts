@@ -351,7 +351,6 @@ tiposPrevAbast = [
 
   // ID do abastecimento para edição
   abastecimentoId: string | null = null;
-  codAbastecimentoExterno: string | null = null;
   // Dados do abastecimento para edição
   dadosAbastecimento: any = null;
 
@@ -361,8 +360,12 @@ tiposPrevAbast = [
 
   get tituloPagina(): string {
     return this.isModoEdicao
-      ? 'Abastecimento Próprio - Edição'
+      ? 'Abastecimento Próprio - Detalhes'
       : 'Abastecimento Próprio - Edição';
+  }
+
+  get mensagemEdicaoIndisponivel(): string {
+    return 'Este registro foi carregado para consulta. A API disponível no backend está inserindo um novo abastecimento em vez de atualizar o existente, então a alteração foi bloqueada no app para evitar erro e duplicidade.';
   }
 
   destinoTravado = false;
@@ -542,13 +545,9 @@ ngOnInit() {
 
       this.carregarBombas();
 
-      this.abastecimentoService.listarEquipamentosMobile().subscribe({
-        next: (eqps: any[]) => {
-          this.equipamentos = (eqps || []).map(e => ({
-            id: e.id,
-            descricao: e.descricao,
-            tipoControle: e.tipoControle ?? e.TipoControle ?? e.tpControle
-          }));
+      this.abastecimentoService.listarEquipamentos().subscribe({
+        next: (eqps) => {
+          this.equipamentos = eqps || [];
 
           this.abastecimentoService
             .consultarAbastecimentoProprioPorId(id)
@@ -1166,14 +1165,6 @@ ngOnInit() {
   private preencherFormularioComDados(dados: any) {
     this.dadosAbastecimento = dados;
     this.abastecimentoId = this.getItemValue(dados, ['abastecimentoId', 'IdAbastecimento', 'idAbastecimento']);
-    this.codAbastecimentoExterno = this.getItemValue(dados, [
-      'codAbastecimentoExterno',
-      'CodAbastecimentoExterno',
-      'codigoExterno',
-      'CodigoExterno',
-      'cdgWeb',
-      'CdgWeb'
-    ]);
     const guidZerado = '00000000-0000-0000-0000-000000000000';
 
     const bombaRaw = this.getItemValue(dados, ['comboioBombaId', 'bombaId', 'idBomba', 'IdTanqueOrigem']);
@@ -2228,6 +2219,11 @@ onAplicacaoChange(event: any) {
 
   const isEdicao = !!this.abastecimentoId;
 
+  if (isEdicao) {
+    this.mostrarAlertaErro(this.mensagemEdicaoIndisponivel);
+    return;
+  }
+
   if (isEdicao && !this.abastecimentoId) {
     this.toast('Erro interno: ID do abastecimento não encontrado para edição!', 'danger');
     return;
@@ -2299,10 +2295,10 @@ onAplicacaoChange(event: any) {
   const odometroAtualPayload = this.normalizarNumeroPayload('Odômetro Atual', this.odometroAtual);
   if (odometroAtualPayload === null) return;
 
-  const horimetroPayload = this.normalizarNumeroPayload('Horímetro', this.horimetro, false);
+  const horimetroPayload = this.normalizarNumeroPayload('Horímetro', this.horimetro);
   if (horimetroPayload === null) return;
 
-  const horimetroAtualPayload = this.normalizarNumeroPayload('Horímetro Atual', this.horimetroAtual, false);
+  const horimetroAtualPayload = this.normalizarNumeroPayload('Horímetro Atual', this.horimetroAtual);
   if (horimetroAtualPayload === null) return;
 
   const numBicoInicialPayload = this.normalizarNumeroPayload('No.Bomba Inicial', this.numBombaInicial, false);
@@ -2430,9 +2426,6 @@ const params: Record<string, unknown> = {
   AplicacaoId: this.aplicacaoHabilitada
     ? aplicacaoPrevIdPayload
     : undefined,
-  CodAbastecimentoExterno: this.codAbastecimentoExterno ?? undefined,
-  codAbastecimentoExterno: this.codAbastecimentoExterno ?? undefined,
-  CodigoExterno: this.codAbastecimentoExterno ?? undefined,
 
   // Se for edição
   ...(this.abastecimentoId ? { IdAbastecimento: this.abastecimentoId } : {})
@@ -2532,6 +2525,7 @@ this.navCtrl.navigateRoot('/tabs/abastecimento-proprio-pesquisa', {
           mensagemErroLower.includes('attempt to store duplicate value') ||
           mensagemErroLower.includes('idx_tb23_cdgweb') ||
           mensagemErroLower.includes('duplicate value');
+
         if (erroSqlIntermitente && tentativa < 2) {
           this.toast('Oscilacao no servidor ao salvar. Tentando novamente...', 'warning');
           enviarGravacao(tentativa + 1);
@@ -2540,7 +2534,7 @@ this.navCtrl.navigateRoot('/tabs/abastecimento-proprio-pesquisa', {
 
         if (erroDuplicidadeEdicao && this.abastecimentoId) {
           this.mostrarAlertaErro(
-            'A API recebeu a alteracao, mas tratou esta edicao como um novo cadastro com o mesmo identificador do abastecimento. No estado atual do backend, este endpoint nao atualiza registros existentes.'
+            'O backend recusou esta gravação porque está tratando a edição como inclusão de um novo abastecimento com o mesmo identificador. No estado atual da API, este registro não pode ser atualizado por esse endpoint.'
           );
           return;
         }

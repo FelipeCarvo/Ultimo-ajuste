@@ -398,7 +398,17 @@ verDetalhes(os: OrdemServicoListaItem) {
 
   try {
     if (os.rawData) {
-      sessionStorage.setItem(`os:detalhe:${guid}`, JSON.stringify(os.rawData));
+      const cacheKey = `os:detalhe:${guid}`;
+      const cacheExistenteRaw = sessionStorage.getItem(cacheKey);
+      const cacheExistente = cacheExistenteRaw ? JSON.parse(cacheExistenteRaw) : null;
+
+      sessionStorage.setItem(
+        cacheKey,
+        JSON.stringify({
+          ...(os.rawData || {}),
+          ...(cacheExistente && typeof cacheExistente === 'object' ? cacheExistente : {}),
+        })
+      );
     }
   } catch {
     // ignore

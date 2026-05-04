@@ -24,6 +24,8 @@
     [lista]="equipamentos"
     campoDescricao="descricao"
     [valorSelecionado]="equipamento"
+    (dropdownAberto)="logDebugEquipamentos(); recarregarEquipamentosComDebug()"
+    (buscaAlterada)="onEquipamentoBuscaAlterada($event)"
     (selecionado)="equipamento = $event?.id ?? null">
   </app-autocomplete>
 </div>

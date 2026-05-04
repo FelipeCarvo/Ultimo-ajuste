@@ -58,6 +58,7 @@ export class AbastecimentoPostosEdicaoPage implements OnInit {
   etapas: LookupItem[] = [];
   insumos: LookupItem[] = [];
   blocos: LookupItem[] = [];
+  private equipamentoBuscaTimer: ReturnType<typeof setTimeout> | null = null;
 
 
   private ultimoAbastecimentoIdCarregado: string | null = null;
@@ -219,11 +220,12 @@ export class AbastecimentoPostosEdicaoPage implements OnInit {
   };
 
   ngOnInit() {
-    this.abastecimentoService.listarEquipamentosMobile().subscribe({
+    this.abastecimentoService.listarEquipamentos().subscribe({
       next: dados => {
         this.equipamentos = dados;
       },
-      error: () => {
+      error: err => {
+        console.debug('[POSTOS-EDICAO][EQUIPAMENTOS] erro ao carregar lista', err);
       }
     });
     this.abastecimentoService.listarEmpreendimentos().subscribe({
@@ -247,6 +249,57 @@ export class AbastecimentoPostosEdicaoPage implements OnInit {
       error: err => {}
     });
     this.centrosDespesas = [];
+  }
+
+  logDebugEquipamentos() {
+    const equipamentoSelecionado = this.equipamento;
+    const existeNaLista = equipamentoSelecionado !== null && typeof equipamentoSelecionado !== 'undefined'
+      ? this.equipamentos.some(item => String(item.id) === String(equipamentoSelecionado))
+      : false;
+
+    console.debug('[POSTOS-EDICAO][EQUIPAMENTOS] dropdown aberto', {
+      quantidade: this.equipamentos.length,
+      equipamentoSelecionado,
+      existeNaLista,
+      lista: this.equipamentos,
+    });
+  }
+
+  onEquipamentoBuscaAlterada(termo: string) {
+    if (this.equipamentoBuscaTimer) {
+      clearTimeout(this.equipamentoBuscaTimer);
+    }
+
+    this.equipamentoBuscaTimer = setTimeout(() => {
+      const pesquisa = (termo || '').trim();
+      const valorSelecionado = this.equipamento ? String(this.equipamento) : '';
+
+      this.abastecimentoService.listarEquipamentos(pesquisa, valorSelecionado).subscribe({
+        next: dados => {
+          this.equipamentos = dados;
+          console.debug('[POSTOS-EDICAO][EQUIPAMENTOS] retorno da API por pesquisa', {
+            pesquisa,
+            quantidade: dados?.length ?? 0,
+            lista: dados,
+          });
+        },
+        error: err => {
+          console.debug('[POSTOS-EDICAO][EQUIPAMENTOS] erro na pesquisa remota', { pesquisa, err });
+        }
+      });
+    }, 400);
+  }
+
+  recarregarEquipamentosComDebug() {
+    this.abastecimentoService.listarEquipamentos().subscribe({
+      next: dados => {
+        this.equipamentos = dados;
+        console.debug('[POSTOS-EDICAO][EQUIPAMENTOS] retorno bruto da API', dados);
+      },
+      error: err => {
+        console.debug('[POSTOS-EDICAO][EQUIPAMENTOS] erro ao recarregar lista', err);
+      }
+    });
   }
 
   ionViewWillEnter() {
