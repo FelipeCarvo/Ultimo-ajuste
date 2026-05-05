@@ -1498,8 +1498,14 @@ this.dataConclusao = dataConclusaoRaw ? dataConclusaoRaw.split('T')[0] : null;
       // ===============================
       // EMPREENDIMENTO
       // ===============================
-      const empId = String(osDados.emprdId ?? osDados.emprdintervencaoId ?? '');
-      this.empreendimento = (empId && empId !== '00000000-0000-0000-0000-000000000000') ? empId : '';
+      let empreendimentoAbertura = null;
+      const empreendimentoAberturaId = String(osDados.emprdAberturaId ?? osDados.emprdAberturaCod ?? '').trim();
+      if (empreendimentoAberturaId && empreendimentoAberturaId !== '00000000-0000-0000-0000-000000000000') {
+        empreendimentoAbertura = this.empreendimentosLista.find((e: ItemComId) =>
+          String(e.id ?? e.codigo ?? e.EmpreendimentoId ?? e.empreendimentoId ?? '').trim() === empreendimentoAberturaId
+        );
+      }
+      this.empreendimento = empreendimentoAbertura?.id ? String(empreendimentoAbertura.id) : '';
 
       // ===============================
       // CLASSIFICAÇÃO
@@ -1531,6 +1537,26 @@ this.dataConclusao = dataConclusaoRaw ? dataConclusaoRaw.split('T')[0] : null;
       // ===============================
       // MANUTENTOR
       // ===============================
+      let manutentor = null;
+      const manutentorId = String(osDados.manutentorId ?? osDados.ManutentorResponsavelId ?? '').trim();
+      if (manutentorId && manutentorId !== '00000000-0000-0000-0000-000000000000') {
+        manutentor = this.manutentoresLista.find((m: ItemComId) =>
+          String(m.id ?? m.manutentorId ?? m.colaboradorCod ?? '').trim() === manutentorId
+        );
+      }
+      this.manutentor = manutentor?.id ? String(manutentor.id) : '';
+
+      // ===============================
+      // EMPREENDIMENTO INTERVENCAO
+      // ===============================
+      let empreendimentoIntervencao = null;
+      const empreendimentoIntervencaoId = String(osDados.emprdintervencaoId ?? osDados.emprdintervencaoCod ?? '').trim();
+      if (empreendimentoIntervencaoId && empreendimentoIntervencaoId !== '00000000-0000-0000-0000-000000000000') {
+        empreendimentoIntervencao = this.empreendimentosLista.find((e: ItemComId) =>
+          String(e.id ?? e.codigo ?? e.EmpreendimentoId ?? e.empreendimentoId ?? '').trim() === empreendimentoIntervencaoId
+        );
+      }
+      this.empreendimentoIntervencao = empreendimentoIntervencao?.id ? String(empreendimentoIntervencao.id) : '';
     },
   });
 }
