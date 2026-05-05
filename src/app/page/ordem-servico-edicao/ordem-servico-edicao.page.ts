@@ -145,9 +145,9 @@ export class OrdemServicoEdicaoPage implements OnInit {
     return `os:detalhe:${osId}`;
   }
 
-  private obterDetalheOsCache(osId: string): ItemComId | null {
+  private readOsCacheStorage(storage: Storage, osId: string): ItemComId | null {
     try {
-      const raw = sessionStorage.getItem(this.getDetalheOsCacheKey(osId));
+      const raw = storage.getItem(this.getDetalheOsCacheKey(osId));
       if (!raw) return null;
       const parsed = JSON.parse(raw) as Record<string, unknown>;
       return parsed && typeof parsed === 'object' ? parsed : null;
@@ -156,9 +156,16 @@ export class OrdemServicoEdicaoPage implements OnInit {
     }
   }
 
+  private obterDetalheOsCache(osId: string): ItemComId | null {
+    const sessionCache = this.readOsCacheStorage(sessionStorage, osId);
+    const localCache = this.readOsCacheStorage(localStorage, osId);
+    return this.mergeOsDetalhe(localCache, sessionCache);
+  }
+
   private salvarDetalheOsCache(osId: string, dados: ItemComId) {
     try {
       sessionStorage.setItem(this.getDetalheOsCacheKey(osId), JSON.stringify(dados));
+      localStorage.setItem(this.getDetalheOsCacheKey(osId), JSON.stringify(dados));
     } catch {
       // ignore
     }
@@ -292,7 +299,7 @@ statusLista = [
     this.operadorMotorista = '';
     this.manutentor = '';
     this.statusCodigo = null;
-    
+
 const hoje = new Date();
 this.dataAbertura = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
 
@@ -417,10 +424,10 @@ this.dataAbertura = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStar
     private ordemService: OrdemServicoService,
     private toastCtrl: ToastController, //  ALTERAÇÃO injeção do ToastController
     private sanitizer: DomSanitizer,
-    private navCtrl: NavController,//nova nevegação 
+    private navCtrl: NavController,//nova nevegação
     private elementRef: ElementRef,//novo
     private alertCtrl: AlertController
-    
+
   ) {}
 
 @HostListener('document:click', ['$event'])
@@ -786,7 +793,7 @@ private async mostrarAlerta(message: string) {
     });
     await toast.present();
   }
-  
+
 
   // --------- NAVEGAÇÃO / CALENDÁRIO ---------
 
@@ -895,7 +902,7 @@ private toApiDate(dateStr: string | null): string | null {
 return `${ano}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}T06:00:00`;
 }
 
- 
+
 
   /* ================================
    DROPDOWN EQUIPAMENTO
@@ -1524,22 +1531,6 @@ this.dataConclusao = dataConclusaoRaw ? dataConclusaoRaw.split('T')[0] : null;
       // ===============================
       // MANUTENTOR
       // ===============================
-      let manutentor = null;
-      const manutentorId = String(osDados.manutentorId ?? osDados.ManutentorResponsavelId ?? '');
-      if (manutentorId && manutentorId !== '00000000-0000-0000-0000-000000000000') {
-        manutentor = this.manutentoresLista.find((m: ItemComId) => String(m.id ?? m.manutentorId ?? m.colaboradorCod) === manutentorId);
-      }
-      this.manutentor = manutentor?.id || '';
-
-      // ===============================
-      //  EMPREENDIMENTO INTERVENÇÃO
-      // ===============================
-      let empInterv = null;
-      const empIntervId = String(osDados.emprdintervencaoId ?? osDados.emprdintervencaoCod ?? '');
-      if (empIntervId && empIntervId !== '00000000-0000-0000-0000-000000000000') {
-        empInterv = this.empreendimentosLista.find((e: ItemComId) => String(e.id ?? e.codigo ?? e.EmpreendimentoId) === empIntervId);
-      }
-      this.empreendimentoIntervencao = empInterv?.id || '';
     },
   });
 }
@@ -1619,21 +1610,57 @@ private preencherTipoOs(osDados: ItemComId) {
   const tipoId = String(osDados.TipoServicoId ?? osDados.tipoServicoId ?? osDados.tipo ?? '').trim();
   const tipoCodigo = String(osDados.tpServCod ?? osDados.tpServcod ?? osDados.codigo ?? '').trim();
   const tipoDescricao = String(osDados.tpServDescricao ?? osDados.tipoDescricao ?? osDados.TipoDescricao ?? '').trim();
+  const tipoDescricaoNormalizada = tipoDescricao.toUpperCase();
+  const tipoCodigoNormalizado = tipoCodigo.trim();
 
-  const tipoExistente = (this.tiposOsLista || []).find((item: ItemComId) => {
-    const itemId = String(item.id ?? '').trim();
-    const itemCodigo = String(item.codigo ?? '').trim();
-    const itemDescricao = String(item.descricao ?? item.nome ?? '').trim().toUpperCase();
+  const correspondeDescricaoTipo = (item: ItemComId) => {
+    const descricaoItem = String(item.descricao ?? item.nome ?? '').trim().toUpperCase();
+    if (!descricaoItem) {
+      return false;
+    }
 
-    return (
-      (!!tipoId && itemId === tipoId) ||
-      (!!tipoCodigo && itemCodigo === tipoCodigo) ||
-      (!!tipoDescricao && itemDescricao === tipoDescricao.toUpperCase())
-    );
-  });
+    if (tipoDescricaoNormalizada && descricaoItem === tipoDescricaoNormalizada) {
+      return true;
+    }
+
+    if (tipoDescricaoNormalizada && descricaoItem.endsWith(` - ${tipoDescricaoNormalizada}`)) {
+      return true;
+    }
+
+    if (tipoCodigoNormalizado && descricaoItem.startsWith(`${tipoCodigoNormalizado} -`)) {
+      return true;
+    }
+
+    return false;
+  };
+
+  const listaTipos = this.tiposOsLista || [];
+  const tipoPorDescricao = tipoDescricao
+    ? listaTipos.find((item: ItemComId) => correspondeDescricaoTipo(item))
+    : null;
+  const tipoPorCodigo = !tipoPorDescricao && tipoCodigo
+    ? listaTipos.find((item: ItemComId) =>
+        String(item.codigo ?? '').trim() === tipoCodigo || correspondeDescricaoTipo(item)
+      )
+    : null;
+  const tipoPorId = !tipoPorDescricao && !tipoPorCodigo && tipoId
+    ? listaTipos.find((item: ItemComId) => String(item.id ?? '').trim() === tipoId)
+    : null;
+
+  const tipoExistente = tipoPorDescricao || tipoPorCodigo || tipoPorId;
 
   if (tipoExistente?.id) {
     this.tipo = String(tipoExistente.id);
+    return;
+  }
+
+  if (tipoId && this.isUuid(tipoId) && tipoDescricao) {
+    this.tiposOsLista = this.prependLookupOption(this.tiposOsLista, this.normalizeTipoLookupItem({
+      id: tipoId,
+      descricao: tipoDescricao,
+      codigo: tipoCodigo || undefined,
+    }));
+    this.tipo = tipoId;
     return;
   }
 
@@ -1665,7 +1692,7 @@ private preencherTipoOs(osDados: ItemComId) {
           .map((entry: ItemComId) => this.normalizeTipoLookupItem(entry))
           .find((entry: ItemComId) =>
           String(entry.codigo ?? '').trim() === tipoCodigo ||
-          String(entry.descricao ?? entry.nome ?? '').trim().toUpperCase() === tipoDescricao.toUpperCase()
+          correspondeDescricaoTipo(entry)
         );
         if (item?.id) {
           this.tiposOsLista = this.prependLookupOption(this.tiposOsLista, item);
@@ -1697,9 +1724,7 @@ private preencherTipoOs(osDados: ItemComId) {
       next: (itens) => {
         const item = (itens || [])
           .map((entry: ItemComId) => this.normalizeTipoLookupItem(entry))
-          .find((entry: ItemComId) =>
-          String(entry.descricao ?? entry.nome ?? '').trim().toUpperCase() === tipoDescricao.toUpperCase()
-        );
+          .find((entry: ItemComId) => correspondeDescricaoTipo(entry));
         if (item?.id) {
           this.tiposOsLista = this.prependLookupOption(this.tiposOsLista, item);
           this.tipo = String(item.id);
@@ -1800,15 +1825,6 @@ if (!this.dataConclusao || this.dataConclusao === 'dd/mm/aaaa') {
 }
 
   // ===============================
-  // 🔎 LOGS COMPLETOS (DEBUG)
-  // ===============================
-  console.log('dataAbertura RAW:', this.dataAbertura);
-  console.log('dataConclusao RAW:', this.dataConclusao);
-
-  console.log('convertido abertura:', this.toApiDate(this.dataAbertura));
-  console.log('convertido conclusao:', this.toApiDate(this.dataConclusao));
-
-  // ===============================
   // MONTA PAYLOAD
   // ===============================
   const idOsValido = (this.osId && this.osId.length === 36) ? this.osId : undefined;
@@ -1863,15 +1879,6 @@ if (!this.dataConclusao || this.dataConclusao === 'dd/mm/aaaa') {
     CausasProvaveis: (this.causasProvaveis || '').toString().trim(),
     Observacao: (this.observacoes || '').toString().trim(),
   });
-
-  // ===============================
-  // 🔎 LOG FINAL
-  // ===============================
-console.log('STATUS ENVIADO:', this.statusCodigo);
-
-  console.log('PAYLOAD FINAL:', params);
-console.log('DATA ABERTURA ENVIADA:', params.OsDataAbertura);
-console.log('DATA FECHAMENTO ENVIADA:', params.OsDataConclusao);
 
   // ===============================
   // VALIDAÇÃO

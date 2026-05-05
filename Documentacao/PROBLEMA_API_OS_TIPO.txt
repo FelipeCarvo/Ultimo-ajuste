@@ -1,0 +1,78 @@
+PROBLEMA IDENTIFICADO - ORDEM DE SERVICO / CAMPO TIPO
+
+Data: 04/05/2026
+
+RESUMO
+
+O campo Tipo da Ordem de Servico nao esta sendo retornado de forma confiavel pela API de detalhe.
+No navegador normal, o frontend consegue exibir o valor salvo porque reaplica o cache local.
+No navegador anonimo, sem cache previo, a mesma OS abre com outro tipo retornado pela API.
+
+
+EVIDENCIA REPRODUZIDA
+
+OS testada:
+- OsId: 0a555880-5c78-486f-8eaf-af15cd472c90
+- Numero OS: 103
+
+Cenario 1 - navegador normal
+- Usuario selecionou e salvou Tipo = 4 - SENSORIAL
+- Ao reabrir, a tela mostrou 4 - SENSORIAL
+- Console registrado:
+  - [OS-EDICAO][DETALHE] fontes
+  - [OS-EDICAO][TIPO] entrada
+  - [OS-EDICAO][DETALHE] resolucao-campos
+
+Cenario 2 - navegador anonimo
+- Mesma OS 103 aberta sem cache local anterior
+- A tela mostrou 3 - PREDITIVA
+- Console registrado:
+  - [OS-EDICAO][TIPO] entrada { tipoId: 'eefd1d4c-1782-4d18-87a8-930ccaaeb30c', tipoCodigo: '3', tipoDescricao: 'PREDITIVA' }
+
+Lookup TipoOs retornado no frontend:
+- 6c907330-c874-489d-87f0-68f55aa5ef80 -> 2 - CORRETIVA
+- eefd1d4c-1782-4d18-87a8-930ccaaeb30c -> 3 - PREDITIVA
+- 3b70f7a5-6816-4922-835f-791d0945e4ef -> 1 - PREVENTIVA
+- 1173b574-a144-4ce6-8391-c9d6fc3ccdd4 -> 4 - SENSORIAL
+
+
+CONCLUSAO TECNICA
+
+1. O frontend esta conseguindo salvar a OS sem erro de validacao de TipoServicoId.
+
+2. O frontend passou a preservar e reaplicar localmente os dados de Tipo, Equipamento e Operador/Motorista para evitar perda visual ao reabrir.
+
+3. Mesmo assim, o teste em janela anonima prova que o retorno bruto da API de detalhe da OS ainda informa Tipo divergente do valor salvo.
+
+4. Portanto, o problema raiz atual nao e mais de exibicao local: e inconsistencia do contrato/resposta da API de detalhe da Ordem de Servico.
+
+
+IMPACTO
+
+- Em navegadores com cache local, o usuario pode ver o valor salvo corretamente por causa do fallback do frontend.
+- Em navegadores sem cache, modo anonimo ou outra maquina, a tela depende apenas da API e pode mostrar Tipo incorreto.
+- Isso mascara o problema real quando o teste e feito sempre no mesmo navegador.
+
+
+ACOES APLICADAS NO FRONTEND
+
+1. Reinjecao de item de Tipo quando o lookup inicial nao traz a opcao correspondente.
+2. Persistencia local de detalhe da OS para preservar Tipo, Equipamento e Operador/Motorista.
+3. Merge defensivo entre cache e API para evitar apagar campos quando a API vier vazia.
+4. Logs comparativos de diagnostico na carga da OS:
+   - [OS-EDICAO][DETALHE] fontes
+   - [OS-EDICAO][TIPO] entrada
+   - [OS-EDICAO][DETALHE] resolucao-campos
+
+
+PROXIMO PASSO RECOMENDADO
+
+Acionar backend com esta evidencia e solicitar validacao da API usada para reabrir a OS:
+- /api/frotas/OrdensServico/ConsultaGeralOrdensServico?OsId=<guid>
+
+Ponto a validar no backend:
+- A OS e salva com um TipoServicoId
+- A reconsulta por OsId retorna outro TipoServicoId / tpServDescricao
+
+Resultado esperado do backend:
+- A API de detalhe deve refletir o Tipo salvo mais recente da OS, sem depender de cache local do navegador.
