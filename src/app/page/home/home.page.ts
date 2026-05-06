@@ -30,7 +30,7 @@ export class homePage {
   dataInicial = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
   dataFinal = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000);
 
-  /** 
+  /**
    * false = tela só com os dois botões (Requisição / Estoque)
    * true  = tela com "Nova Requisição" + lista
    */
@@ -86,7 +86,7 @@ export class homePage {
 
   /** Botão "Estoque" (tela de Obras) */
   goEstoque() {
-    this.router.navigate(['/tabs/home-estoque']);
+    this.router.navigate(['/tabs/home-estoque'], { queryParams: { origem: 'obras' } });
   }
 
   // Mantive os métodos de frota, se ainda forem usados em outro lugar

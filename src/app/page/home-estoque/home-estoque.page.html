@@ -14,7 +14,7 @@
 </ion-header>
 <ion-content [fullscreen]="true" >
 
-  <div style="height: 80px;margin-top:10%;">
+  <div style="height: 80px;margin-top:10%;" *ngIf="origemEstoque === 'frotas'">
     <ion-grid class="ion-no-padding">
       <ion-row class="ion-justify-content-center">
         <ion-col size="5" >
@@ -25,7 +25,7 @@
     </ion-grid>
   </div>
 
-  <div style="height: 80px;margin-top: 5%;">
+  <div style="height: 80px;margin-top: 5%;" *ngIf="origemEstoque === 'frotas'">
     <ion-grid  class="ion-no-padding">
       <ion-row class="ion-justify-content-center">
         <ion-col size="5" >
@@ -36,9 +36,12 @@
     </ion-grid>
   </div>
 
-  <div style="height: 80px;margin-top: 5%;">
+  <div style="height: 80px;margin-top: 5%;" *ngIf="origemEstoque === 'obras'">
     <ion-grid  class="ion-no-padding">
       <ion-row class="ion-justify-content-center">
+        <ion-col size="5">
+          <ion-button style="font-size: 15px; " class="btnBaixaEstoque " (click)="newRequestEpi()">Baixa de Estoque</ion-button>
+        </ion-col>
       </ion-row>
     </ion-grid>
   </div>

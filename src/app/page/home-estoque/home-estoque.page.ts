@@ -1,5 +1,5 @@
 import { Component,OnInit} from '@angular/core';
-import { Router} from '@angular/router';
+import { ActivatedRoute, Router} from '@angular/router';
 import { Injectable } from '@angular/core';
 import {RequestService} from '@services/request/request.service';
 import {translateAnimation,rotateAnimation} from '@services/animation/custom-animation';
@@ -24,11 +24,13 @@ export class HomeEstoquePage {
   load = false;
   showFIlters: Boolean = false;
   statusRequisicao: Number = 2;
+  origemEstoque: 'obras' | 'frotas' = 'obras';
   empreendimentoDescricao:any = '';
   dataInicial = new Date(Date.now()  - 10 * 24 * 60 * 60 * 1000);
   dataFinal = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000);
   constructor(
     private router:Router,
+    private route: ActivatedRoute,
     private rquestService:RequestService,
     private store:Store,
 
@@ -43,7 +45,8 @@ export class HomeEstoquePage {
   }
   ionViewWillEnter(){
     console.log('ionViewWillEnter');
-
+    const origem = String(this.route.snapshot.queryParamMap.get('origem') ?? '').trim().toLowerCase();
+    this.origemEstoque = origem === 'frotas' ? 'frotas' : 'obras';
   }
   ngOnInit() {
     console.log('ngOnInit');
@@ -66,6 +69,11 @@ export class HomeEstoquePage {
     this.store.dispatch(new ResetStateReq());
     this.router.navigate(['tabs/central-req/nova-req-frota/dev']);
   }
+  newRequestEpi(){
+    this.store.dispatch(new ResetStateInsumos());
+    this.store.dispatch(new ResetStateReq());
+    this.router.navigate(['tabs/central-req/nova-req-frota/epi']);
+  }
   viewAllRequest(){
     this.router.navigate(['tabs/all-request']);
   }
@@ -76,7 +84,7 @@ export class HomeEstoquePage {
     this.dataFinal = dataFim;
     this.statusRequisicao = status;
     this.empreendimentoDescricao = empreendimento;
-  
+
     setTimeout(() =>{
       this.getReq();
     },250);

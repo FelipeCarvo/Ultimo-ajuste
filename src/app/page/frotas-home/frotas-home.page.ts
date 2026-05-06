@@ -19,6 +19,6 @@ export class FrotasHomePage {
   }
 
   goEstoque() {
-    this.router.navigate(['/tabs/home-estoque']);
+    this.router.navigate(['/tabs/home-estoque'], { queryParams: { origem: 'frotas' } });
   }
 }
